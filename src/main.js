@@ -110,7 +110,10 @@ const digitsInput = document.getElementById('digits');
 const digitsEndInput = document.getElementById('digits-end');
 const batchCountInput = document.getElementById('batch-count');
 const bulkToggle = document.getElementById('bulk-mode-toggle');
-const batchEndGroup = document.getElementById('batch-end-group');
+const bulkInputsGroup = document.getElementById('bulk-inputs');
+const num8StartInput = document.getElementById('num8-start');
+const num8Counter = document.getElementById('num8-counter');
+const num8Warn = document.getElementById('num8-warn');
 
 const recipientInput = document.getElementById('recipient');
 const destInput = document.getElementById('destination');
@@ -506,8 +509,9 @@ function updatePreview() {
 }
 
 function syncBatchInputs(source) {
-    let startStr = digitsInput.value.replace(/\D/g, '');
-    if (currentServiceTab === 'CUSTOM') startStr = digitsInput.value;
+    const inputEl = (bulkToggle && bulkToggle.checked) ? num8StartInput : digitsInput;
+    let startStr = inputEl.value.replace(/\D/g, '');
+    if (currentServiceTab === 'CUSTOM') startStr = inputEl.value;
     
     const startNum = parseInt(startStr);
     if (isNaN(startNum)) return;
@@ -547,7 +551,7 @@ function generateShipmentNote(s) {
     if (s.options.arTracking) notes.push("Track");
     if (s.options.isRemote) notes.push("ห่างไกล");
     if (s.options.hasFuelSurcharge) notes.push("Fuel");
-    if (s.options.isJumbo) notes.push("Jumbo");
+    if (s.options.isJumbo) notes.push("ขนาดใหญ่");
     if (s.serviceType === 'REG') {
         notes.push(s.options.regType === 'BOX' ? "กล่อง" : "ซอง");
     }
@@ -811,7 +815,7 @@ regTypeInput.onchange = updatePreview;
 addBtn.onclick = async (e) => {
   e.preventDefault();
   const p = prefixInput.value.trim().toUpperCase();
-  const startD = digitsInput.value.trim();
+  const startD = (bulkToggle.checked ? num8StartInput.value : digitsInput.value).trim();
   const type = getServiceType(p);
   const w = parseFloat(weightInput.value) || 0;
   
@@ -1040,6 +1044,38 @@ nextNumBtn.onclick = () => {
     updatePreview();
     if (bulkToggle.checked) syncBatchInputs('count');
   }
+};
+
+// NEW: 8-digit tracking validation for bulk mode
+if (num8StartInput) {
+    num8StartInput.oninput = () => {
+        const val = num8StartInput.value.replace(/\D/g, ''); // only digits
+        num8StartInput.value = val;
+        
+        const len = val.length;
+        num8Counter.textContent = `${len}/8 หลัก`;
+        
+        if (len === 8) {
+            num8Counter.style.color = '#10b981'; // Green
+            num8Warn.style.display = 'none';
+            if (bulkToggle.checked) syncBatchInputs('count');
+        } else {
+            num8Counter.style.color = '#ef4444'; // Red
+            num8Warn.style.display = 'block';
+        }
+    };
+}
+
+bulkToggle.onchange = () => {
+    const isBulk = bulkToggle.checked;
+    bulkInputsGroup.style.display = isBulk ? 'block' : 'none';
+    document.querySelectorAll('.single-only').forEach(el => el.style.display = isBulk ? 'none' : 'block');
+    
+    if (isBulk) {
+        // If switching to bulk, sync if 8 digits already there
+        if (num8StartInput.value.length === 8) syncBatchInputs('count');
+    }
+    updatePreview();
 };
 
 // Service Tabs Switching
