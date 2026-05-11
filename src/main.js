@@ -469,7 +469,16 @@ function updatePreview() {
       if (settings.fuelSurcharge && (activeSvc === 'EMS' || activeSvc === 'ECO')) {
           total += 3;
       }
-      feeInput.value = total;
+
+      // Check if this is the "Starting" state (no user input yet)
+      const isInitialState = !recipientInput.value && !destInput.value && w === 0;
+      if (isInitialState) {
+          feeInput.value = `เริ่มต้น ${total}`;
+          feeInput.style.color = '#888'; // Make it less prominent
+      } else {
+          feeInput.value = total;
+          feeInput.style.color = 'inherit';
+      }
   }
 }
 
@@ -755,7 +764,8 @@ feeInput.oninput = updatePreview;
 optAR.onchange = updatePreview;
 optInsurance.onchange = updatePreview;
 insuranceVal.oninput = updatePreview;
-destInput.oninput = () => updatePreview();
+recipientInput.oninput = updatePreview;
+destInput.oninput = updatePreview;
 optArTracking.onchange = updatePreview;
 dimW.oninput = updatePreview;
 dimL.oninput = updatePreview;
