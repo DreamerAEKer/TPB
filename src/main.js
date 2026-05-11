@@ -429,6 +429,14 @@ function updatePreview() {
       badge.classList.add('hidden');
   }
 
+  // Fuel Surcharge Note
+  const fuelBadge = document.getElementById('fuel-surcharge-badge');
+  if (settings.fuelSurcharge && (activeSvc === 'EMS' || activeSvc === 'ECO')) {
+      fuelBadge.classList.remove('hidden');
+  } else {
+      fuelBadge.classList.add('hidden');
+  }
+
   // Insurance detail depends on both EMS tab and checkbox
   document.getElementById('insurance-detail').style.display = (optInsurance.checked && activeSvc === 'EMS') ? 'flex' : 'none';
 
