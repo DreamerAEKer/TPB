@@ -92,8 +92,8 @@ const rates = {
   PARCEL: { base: 25, baseWeight: 1000, perKg: 20, ar: 3 }
 };
 
-const REMOTE_ALWAYS_ZIPCODES = new Set(['20150', '21160', '23000', '23120', '23170', '50250', '50310', '50350', '55130', '55220', '57170', '57180', '57260', '57310', '57340', '58000', '58110', '58120', '58130', '58140', '58150', '63150', '63170', '71180', '71240', '81210', '82000', '83000', '83100', '83110', '83120', '83130', '83150', '84140', '84310', '85000', '91000', '91110', '92110', '92120', '94000', '94110', '94120', '94130', '94140', '94150', '94160', '94170', '94180', '94190', '94220', '94230', '95000', '95110', '95120', '95130', '95140', '95150', '95160', '95170', '96000', '96110', '96120', '96130', '96140', '96150', '96160', '96170', '96180', '96190', '96210', '96220']);
-const REMOTE_ISLAND_ZIPCODES = new Set(['20120', '81130', '81150', '82160', '84220', '84280', '84320', '84330', '84360']);
+const REMOTE_ALWAYS_ZIPCODES = new Set(['21160', '23000', '23120', '23170', '50250', '50310', '50350', '55130', '55220', '57170', '57180', '57260', '57310', '57340', '58000', '58110', '58120', '58130', '58140', '58150', '63150', '63170', '71180', '71240', '81210', '82000', '83000', '83100', '83110', '83120', '83130', '83150', '84140', '84310', '85000', '91000', '91110', '92110', '92120', '94000', '94110', '94120', '94130', '94140', '94150', '94160', '94170', '94180', '94190', '94220', '94230', '95000', '95110', '95120', '95130', '95140', '95150', '95160', '95170', '96000', '96110', '96120', '96130', '96140', '96150', '96160', '96170', '96180', '96190', '96210', '96220']);
+const REMOTE_ISLAND_ZIPCODES = new Set(['20120', '20150', '81130', '81150', '82160', '84220', '84280', '84320', '84330', '84360']);
 
 // --- APP STATE ---
 let shipments = [];
@@ -401,6 +401,12 @@ function applySmartPricing(i) {
     }
 }
 
+window.toggleRemoteSurcharge = () => {
+    optRemote.checked = !optRemote.checked;
+    window.isManualRemoteOverride = true;
+    updatePreview();
+};
+
 function updatePreview() {
   const w = parseFloat(weightInput.value) || 0;
   
@@ -417,16 +423,33 @@ function updatePreview() {
   const zip = destinationZip ? destinationZip[0] : null;
   const badge = document.getElementById('remote-status-badge');
   
+  // Track zip changes to reset manual override
+  if (zip !== window.lastZipForRemote) {
+      window.isManualRemoteOverride = false;
+      window.lastZipForRemote = zip;
+  }
+
   const isAlwaysRemote = zip && REMOTE_ALWAYS_ZIPCODES.has(zip) && canHaveRemote;
   const isIslandPotential = zip && REMOTE_ISLAND_ZIPCODES.has(zip) && canHaveRemote;
   
-  if (isAlwaysRemote || isIslandPotential) {
-      optRemote.checked = true;
-      badge.classList.remove('hidden');
-      badge.querySelector('span:last-child').textContent = isAlwaysRemote ? 'บวกพื้นที่ห่างไกล (+20 ฿)' : 'พบรหัสพื้นที่เกาะ (+20 ฿)';
+  if (!window.isManualRemoteOverride) {
+      if (isAlwaysRemote || isIslandPotential) {
+          optRemote.checked = true;
+          badge.classList.remove('hidden');
+          badge.querySelector('.badge-text').textContent = isAlwaysRemote ? 'บวกพื้นที่ห่างไกล (+20 ฿)' : 'พบรหัสพื้นที่เกาะ (+20 ฿)';
+      } else {
+          optRemote.checked = false;
+          badge.classList.add('hidden');
+      }
   } else {
-      optRemote.checked = false;
-      badge.classList.add('hidden');
+      // If override is on, respect optRemote.checked but still show badge if it was auto-detected
+      // so user can re-enable it. But usually, if they cancel, we hide it or show it as "disabled".
+      // Let's just hide it if optRemote is false, and show it if optRemote is true.
+      if (optRemote.checked) {
+          badge.classList.remove('hidden');
+      } else {
+          badge.classList.add('hidden');
+      }
   }
 
   // Fuel Surcharge Note

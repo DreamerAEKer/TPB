@@ -119,9 +119,10 @@
                         <input type="number" id="insurance-val" value="2000" style="padding: 4px; font-size: 0.9rem;">
                         <span id="ins-warn" style="color: var(--primary-color); font-size: 0.7rem; display: none;">ยอด 2,000 - 50,000 บาทเท่านั้น</span>
                     </div>
-                    <div id="remote-status-badge" class="hidden" style="margin-bottom: 10px;">
+                    <div id="remote-status-badge" class="hidden" style="margin-bottom: 10px; cursor: pointer; border: 1px solid #fee2e2; background: #fff1f2; padding: 5px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px;" onclick="toggleRemoteSurcharge()" title="คลิกเพื่อยกเลิกการบวกเพิ่มพื้นที่ห่างไกล">
                         <span style="font-size: 1.1rem;">🏝️</span>
-                        <span>บวกพื้นที่ห่างไกล/เกาะ (+20 ฿)</span>
+                        <span class="badge-text">บวกพื้นที่ห่างไกล/เกาะ (+20 ฿)</span>
+                        <span style="font-size: 0.7rem; color: #ef4444; margin-left: 5px;">[ยกเลิก]</span>
                     </div>
                     <div id="fuel-surcharge-badge" class="hidden" style="margin-bottom: 10px; color: #be123c; font-size: 0.85rem; font-weight: 600;">
                         ⛽ มีการบวกเพิ่ม 3บาท ค่า Fuel Charge
