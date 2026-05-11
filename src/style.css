@@ -385,3 +385,7 @@ th {
     display: table-header-group;
   }
 }
+
+.hidden {
+  display: none !important;
+}
