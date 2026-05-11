@@ -541,6 +541,19 @@ function syncBatchInputs(source) {
     }
 }
 
+function generateShipmentNote(s) {
+    const notes = [];
+    if (s.options.ar) notes.push("AR");
+    if (s.options.arTracking) notes.push("Track");
+    if (s.options.isRemote) notes.push("ห่างไกล");
+    if (s.options.hasFuelSurcharge) notes.push("Fuel");
+    if (s.options.isJumbo) notes.push("Jumbo");
+    if (s.serviceType === 'REG') {
+        notes.push(s.options.regType === 'BOX' ? "กล่อง" : "ซอง");
+    }
+    return notes.join(", ");
+}
+
 // --- PRINTING LOGIC ---
 function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
     const ITEMS_PER_PAGE = 30;
@@ -567,7 +580,7 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
                         <td style="padding: 3px 4px;">${s.options?.insurance ? s.options.insuranceVal : ''}</td>
                         <td style="padding: 3px 4px;">${s.weight}</td>
                         <td style="padding: 3px 4px;">${s.fee}</td>
-                        <td style="padding: 3px 4px;"></td>
+                        <td style="padding: 3px 4px; font-size: 8pt; text-align: left;">${generateShipmentNote(s)}</td>
                     </tr>
                 `;
             } else {
@@ -844,7 +857,9 @@ addBtn.onclick = async (e) => {
                 insuranceVal: parseFloat(insuranceVal.value),
                 regType: regTypeInput.value,
                 isJumbo: jumboBadge.style.display === 'block',
-                dimensions: { w: parseFloat(dimW.value), l: parseFloat(dimL.value), h: parseFloat(dimH.value) }
+                dimensions: { w: parseFloat(dimW.value), l: parseFloat(dimL.value), h: parseFloat(dimH.value) },
+                isRemote: optRemote.checked,
+                hasFuelSurcharge: settings.fuelSurcharge && (type === 'EMS' || type === 'ECO')
               },
               isIsland: false,
               trackingFormatted: trackingFormatted,
@@ -880,7 +895,9 @@ addBtn.onclick = async (e) => {
                 insuranceVal: parseFloat(insuranceVal.value),
                 regType: regTypeInput.value,
                 isJumbo: jumboBadge.style.display === 'block',
-                dimensions: { w: parseFloat(dimW.value), l: parseFloat(dimL.value), h: parseFloat(dimH.value) }
+                dimensions: { w: parseFloat(dimW.value), l: parseFloat(dimL.value), h: parseFloat(dimH.value) },
+                isRemote: optRemote.checked,
+                hasFuelSurcharge: settings.fuelSurcharge && (type === 'EMS' || type === 'ECO')
               },
               isIsland: optRemote.checked && REMOTE_ISLAND_ZIPCODES.has(destInput.value.match(/\d{5}/)?.[0]),
               trackingFormatted: trackingFormatted,

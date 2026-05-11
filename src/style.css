@@ -344,6 +344,10 @@ th {
 }
 
 @media print {
+  @page {
+    margin: 10mm; /* Helps hide browser headers/footers like URLs */
+  }
+
   body * {
     visibility: hidden;
   }
