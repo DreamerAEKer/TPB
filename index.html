@@ -45,12 +45,15 @@
                     <div id="tracking-preview" style="display: none;">-</div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                    <label class="bulk-toggle-label" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 8px; width: 100%; display: flex; align-items: center; cursor: pointer; transition: all 0.2s;">
+                        <input type="checkbox" id="bulk-mode-toggle" style="width: 18px; height: 18px; margin-right: 8px;"> 📋 เพิ่มแบบชุด (Bulk Entry)
+                    </label>
+                </div>
+
+                <div id="single-tracking-group">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                         <label for="digits" id="digits-label">ตัวเลข (8 หลัก)</label>
-                        <label class="bulk-toggle-label">
-                            <input type="checkbox" id="bulk-mode-toggle"> 📋 เพิ่มแบบชุด (Bulk)
-                        </label>
                     </div>
                     <div style="display:flex; gap:5px;">
                         <input type="text" id="digits" placeholder="12345678" maxlength="8" style="flex:1;">
@@ -74,7 +77,7 @@
 
                 <div class="form-group single-only">
                     <label for="recipient">ชื่อผู้รับ</label>
-                    <input type="text" id="recipient" placeholder="สมชาย ใจดี">
+                    <input type="text" id="recipient" placeholder="โปรดระบุ">
                 </div>
 
                 <div class="form-group single-only">
@@ -103,8 +106,20 @@
                 </div>
 
                 <div id="custom-service-group" class="form-group" style="display: none; margin-top: 0.5rem; background: #f0fdf4; padding: 10px; border-radius: 8px; border: 1px solid #bbf7d0;">
-                    <label for="custom-service-name" style="color: #166534;">ชื่อบริการ (กำหนดเอง)</label>
-                    <input type="text" id="custom-service-name" placeholder="เช่น Shopee Drop-off, ฯลฯ" style="border-color: #86efac;">
+                    <label for="custom-service-name" style="color: #166534;">ชื่อบริการ</label>
+                    <select id="custom-service-name" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #86efac;">
+                        <option value="จดหมาย ในประเทศ">✉️ จดหมาย ในประเทศ</option>
+                        <option value="สิ่งพิมพ์ ในประเทศ">📑 สิ่งพิมพ์ ในประเทศ</option>
+                        <option value="EMS World">🌍 EMS World</option>
+                        <option value="จดหมาย ทางอากาศ">✈️ จดหมาย ทางอากาศ</option>
+                        <option value="จดหมายลงทะเบียนทางอากาศ">📦 จดหมายลงทะเบียนทางอากาศ</option>
+                        <option value="ePacket">📧 ePacket</option>
+                        <option value="ePacket Plus">📧 ePacket Plus</option>
+                        <option value="พัสดุทางอากาศ">✈️ พัสดุทางอากาศ</option>
+                        <option value="พัสดุทางภาคพื้น">🚚 พัสดุทางภาคพื้น</option>
+                        <option value="">-- อื่นๆ (กำหนดเอง) --</option>
+                    </select>
+                    <input type="text" id="custom-service-manual" placeholder="ระบุชื่อบริการอื่นๆ..." style="margin-top: 8px; display: none; border-color: #86efac;">
                 </div>
 
                 <div class="form-group">
@@ -177,7 +192,7 @@
                 <div style="flex: 1; overflow-y: auto; border-top: 1px solid #e2e8f0;">
                     <table id="shipment-table" style="font-size: 0.9rem;">
                         <thead style="position: sticky; top: 0; z-index: 10; background: #f1f3f5;">
-                            <tr><th>ลำดับ</th><th>นามผู้รับ</th><th>ปลายทาง</th><th>เลขที่ TRACKING</th><th>น้ำหนัก</th><th>ค่าบริการ</th><th>ลบ</th></tr>
+                            <tr><th>ลำดับ</th><th>นามผู้รับ</th><th>ปลายทาง</th><th>เลขที่ TRACKING</th><th>บริการเสริม</th><th>น้ำหนัก</th><th>ค่าบริการ</th><th>ลบ</th></tr>
                         </thead>
                         <tbody id="shipment-list"></tbody>
                     </table>
@@ -245,8 +260,8 @@
         <div style="background: white; padding: 2rem; border-radius: var(--radius); width: 400px; max-width: 90%;">
             <h2 style="margin-bottom: 1.5rem; color: var(--primary-color);">ตั้งค่าข้อมูลหัวกระดาษ</h2>
             <div class="form-group" style="margin-bottom: 1rem;">
-                <label>ชื่อบริษัท/หน่วยงาน</label>
-                <input type="text" id="set-company" placeholder="บริษัท ตัวอย่าง จำกัด">
+                <label>ชื่อผู้ฝาก / บริษัท</label>
+                <input type="text" id="set-company" placeholder="โปรดระบุ">
             </div>
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label>ที่อยู่</label>
@@ -259,6 +274,14 @@
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label>ใบอนุญาตพิเศษที่</label>
                 <input type="text" id="set-license" placeholder="พ. 123 / 2563">
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label>ประเภทการชำระเงิน (หัวใบนำส่ง)</label>
+                <select id="set-payment-type" style="padding: 10px; border-radius: 6px; border: 1px solid #dee2e6;">
+                    <option value="เงินสด">💵 เงินสด</option>
+                    <option value="เงินเชื่อ">💳 เงินเชื่อ</option>
+                    <option value="เครื่องประทับไปรษณียากร">📠 เครื่องประทับไปรษณียากร</option>
+                </select>
             </div>
             <div class="form-group" style="margin-bottom: 1rem; flex-direction: row; align-items: center; gap: 10px; background: #fff1f2; padding: 10px; border-radius: 8px;">
                 <input type="checkbox" id="set-fuel-surcharge" style="width: 20px; height: 20px;">

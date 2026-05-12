@@ -100,7 +100,7 @@ let shipments = [];
 let history = [];
 let historyIndex = 0;
 let currentServiceTab = 'EMS';
-let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: false };
+let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: false, paymentType: 'เงินเชื่อ' };
 let editingArchiveId = null;
 let currentView = 'dashboard';
 
@@ -114,11 +114,13 @@ const bulkInputsGroup = document.getElementById('bulk-inputs');
 const num8StartInput = document.getElementById('num8-start');
 const num8Counter = document.getElementById('num8-counter');
 const num8Warn = document.getElementById('num8-warn');
+const singleTrackingGroup = document.getElementById('single-tracking-group');
 
 const recipientInput = document.getElementById('recipient');
 const destInput = document.getElementById('destination');
 const customServiceGroup = document.getElementById('custom-service-group');
 const customServiceNameInput = document.getElementById('custom-service-name');
+const customServiceManualInput = document.getElementById('custom-service-manual');
 const weightInput = document.getElementById('weight');
 const feeInput = document.getElementById('fee');
 const feeUnitLabel = document.getElementById('fee-unit-label');
@@ -319,7 +321,14 @@ function renderShipments() {
         <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 2px;">${svcDisplay}</div>
         <div style="font-weight: 600;">${s.trackingFormatted}</div>
       </td>
-      <td>${s.weight} กรัม</td>
+      <td class="services-cell">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+            <label class="svc-mini" title="ตอบรับ (AR)"><input type="checkbox" ${s.options?.ar ? 'checked' : ''} onchange="toggleRowService(${i}, 'ar', this.checked)"> AR</label>
+            ${s.serviceType === 'EMS' ? `<label class="svc-mini" title="ประกัน"><input type="checkbox" ${s.options?.insurance ? 'checked' : ''} onchange="toggleRowService(${i}, 'insurance', this.checked)"> 🛡️</label>` : ''}
+            ${(s.serviceType !== 'PARCEL' && s.serviceType !== 'REG') ? `<label class="svc-mini" title="พื้นที่ห่างไกล"><input type="checkbox" ${s.options?.isRemote ? 'checked' : ''} onchange="toggleRowService(${i}, 'isRemote', this.checked)"> 🏝️</label>` : ''}
+        </div>
+      </td>
+      <td style="${s.options?.isJumbo ? 'font-weight: 800;' : ''}">${s.weight} กรัม</td>
       <td class="editable-cell ${priceClass}" contenteditable="true" data-field="fee" data-index="${i}" title="${priceClass ? 'พื้นที่ปกติ แต่มีการบวกเพิ่ม 20 บาท?' : ''}">${s.fee} ฿</td>
       <td><button class="btn-icon delete-btn" data-index="${i}">ลบ</button></td>
     `;
@@ -383,6 +392,32 @@ function highlightPostcode(text, isRemote) {
 window.toggleIsland = async (i, checked) => {
     shipments[i].isIsland = checked;
     applySmartPricing(i);
+    renderShipments();
+    updateSummary();
+    await updateHistory();
+};
+
+window.toggleRowService = async (i, serviceType, checked) => {
+    const s = shipments[i];
+    if (!s.options) s.options = {};
+    
+    if (serviceType === 'ar') {
+        s.options.ar = checked;
+    } else if (serviceType === 'insurance') {
+        s.options.insurance = checked;
+        if (checked && !s.options.insuranceVal) s.options.insuranceVal = 2000;
+    } else if (serviceType === 'isRemote') {
+        s.options.isRemote = checked;
+    }
+    
+    // Recalculate fee
+    const base = calculateBaseFee(s.serviceType, s.weight, s.options);
+    let total = base;
+    if (s.options.isRemote) total += 20;
+    if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
+    
+    s.fee = total;
+    
     renderShipments();
     updateSummary();
     await updateHistory();
@@ -550,7 +585,7 @@ function generateShipmentNote(s) {
     if (s.options.ar) notes.push("AR");
     if (s.options.arTracking) notes.push("Track");
     if (s.options.isRemote) notes.push("ห่างไกล");
-    if (s.options.hasFuelSurcharge) notes.push("Fuel");
+    if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) notes.push("Fuel");
     if (s.options.isJumbo) notes.push("ขนาดใหญ่");
     if (s.serviceType === 'REG') {
         notes.push(s.options.regType === 'BOX' ? "กล่อง" : "ซอง");
@@ -579,10 +614,10 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
                     <tr>
                         <td style="padding: 3px 4px;">${p * ITEMS_PER_PAGE + i + 1}</td>
                         <td style="text-align: left; padding: 3px 4px;">${s.recipient || ''}</td>
-                        <td style="text-align: left; padding: 3px 4px;">${s.destination || ''}</td>
+                        <td style="text-align: left; padding: 3px 4px;">${highlightPostcode(s.destination, s.options?.isRemote)}</td>
                         <td style="font-family: monospace; font-size: 11pt; padding: 3px 4px;">${s.trackingFormatted}</td>
                         <td style="padding: 3px 4px;">${s.options?.insurance ? s.options.insuranceVal : ''}</td>
-                        <td style="padding: 3px 4px;">${s.weight}</td>
+                        <td style="padding: 3px 4px; ${s.options?.isJumbo ? 'font-weight: bold;' : ''}">${s.weight}</td>
                         <td style="padding: 3px 4px;">${s.fee}</td>
                         <td style="padding: 3px 4px; font-size: 8pt; text-align: left;">${generateShipmentNote(s)}</td>
                     </tr>
@@ -601,14 +636,14 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
                         <div style="font-size: 11pt;">โทรศัพท์ <b>${phone}</b></div>
                     </div>
                     <div style="text-align: right;">
-                        <h2 style="margin: 0; font-size: 14pt;">ใบนำส่งสิ่งของทางไปรษณีย์ โดยชำระค่าบริการเป็นเงินเชื่อ</h2>
+                        <h2 style="margin: 0; font-size: 14pt;">ใบนำส่งสิ่งของทางไปรษณีย์ โดยชำระค่าบริการเป็น${settings.paymentType || 'เงินเชื่อ'}</h2>
                         ${titleSuffix ? `<div style="font-size: 12pt; font-weight: bold;">(${titleSuffix})</div>` : ''}
                         <div style="font-size: 11pt; margin-top: 5px;">ใบอนุญาตพิเศษที่ <b>${license}</b></div>
                         <div style="font-size: 11pt;">วันที่ ........................................ ฝากส่งครั้งที่ ........... ใบที่ <b>${p + 1} / ${totalPages}</b></div>
                     </div>
                 </div>
                 <div style="margin-bottom: 5px; font-size: 11pt;">
-                    เรียน หัวหน้าทำการไปรษณีย์กลาง ขอนำส่งไปรษณียภัณฑ์ตามรายการดังนี้
+                    &nbsp;
                 </div>
                 <div style="flex: 1;">
                     <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11pt;" border="1">
@@ -634,12 +669,12 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 11pt; border-top: 1px dashed #ccc; padding-top: 10px;">
                     <div style="width: 50%;">
-                        <div style="margin-bottom: 8px;">ลงชื่อ ........................................................ ผู้รับผิดชอบฝากส่ง</div>
+                        <div style="margin-bottom: 8px;">ลงชื่อ ...................................... รับผิดชอบฝากส่ง</div>
                         <div style="margin-bottom: 8px;">(........................................................)</div>
                         <div style="margin-bottom: 0;">ลงชื่อ ........................................................ ผู้จัดส่ง</div>
                     </div>
                     <div style="width: 45%; text-align: right;">
-                        <div style="margin-bottom: 5px;">ผู้ตรวจสอบและรับฝากไว้แล้ว</div>
+                        <div style="margin-bottom: 5px;">ตรวจสอบและรับฝากไว้แล้ว</div>
                         <div style="margin-bottom: 5px;">ลงชื่อ ........................................................</div>
                         <div style="margin-bottom: 5px;">เจ้าหน้าที่รับฝาก</div>
                         <div style="margin-top: 5px; font-size: 10pt;">ไปรษณีย์กลาง 10501</div>
@@ -698,7 +733,7 @@ function generateSummarySheet(items, titleSuffix) {
     
     return `
         <div class="print-page">
-            <center><h2 style="font-size: 18pt;">ใบสรุปการฝากส่งไปรษณียภัณฑ์ชำระค่าฝากส่งเป็นเงินเชื่อ<br><span style="color: #444; font-size: 16pt;">หมวด: ${titleSuffix}</span></h2></center>
+            <center><h2 style="font-size: 18pt;">ใบสรุปการฝากส่งไปรษณียภัณฑ์ชำระค่าฝากส่งเป็น${settings.paymentType || 'เงินเชื่อ'}<br><span style="color: #444; font-size: 16pt;">หมวด: ${titleSuffix}</span></h2></center>
             <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 12pt;">
                 <div>
                     <div>บริษัท <b>${company}</b></div>
@@ -749,7 +784,7 @@ function generateSummarySheet(items, titleSuffix) {
                 <div style="width: 50%; text-align: center;">
                     <div style="margin-bottom: 10px;">ลงชื่อ ........................................................</div>
                     <div style="margin-bottom: 10px;">(........................................................)</div>
-                    <div>ผู้รับผิดชอบในการฝากส่ง</div>
+                    <div>รับผิดชอบในการฝากส่ง</div>
                 </div>
                 <div style="width: 45%; text-align: center;">
                     <div style="margin-bottom: 10px;">ลงชื่อ ........................................................</div>
@@ -812,6 +847,12 @@ dimL.oninput = updatePreview;
 dimH.oninput = updatePreview;
 regTypeInput.onchange = updatePreview;
 
+customServiceNameInput.onchange = () => {
+    customServiceManualInput.style.display = (customServiceNameInput.value === '') ? 'block' : 'none';
+    updatePreview();
+};
+customServiceManualInput.oninput = updatePreview;
+
 addBtn.onclick = async (e) => {
   e.preventDefault();
   const p = prefixInput.value.trim().toUpperCase();
@@ -852,7 +893,7 @@ addBtn.onclick = async (e) => {
               recipient: '',
               destination: '',
               serviceType: type,
-              customServiceName: type === 'CUSTOM' ? (customServiceNameInput.value || 'กำหนดเอง') : null,
+              customServiceName: type === 'CUSTOM' ? (customServiceNameInput.value || customServiceManualInput.value || 'กำหนดเอง') : null,
               weight: w,
               options: { 
                 ar: optAR.checked, 
@@ -867,7 +908,7 @@ addBtn.onclick = async (e) => {
               },
               isIsland: false,
               trackingFormatted: trackingFormatted,
-              fee: feeInput.value || 0
+              fee: (feeInput.value || '0').toString().replace('เริ่มต้น ', '')
           });
       }
       
@@ -890,7 +931,7 @@ addBtn.onclick = async (e) => {
               recipient: recipientInput.value || '',
               destination: destInput.value || '',
               serviceType: type,
-              customServiceName: type === 'CUSTOM' ? (customServiceNameInput.value || 'กำหนดเอง') : null,
+              customServiceName: type === 'CUSTOM' ? (customServiceNameInput.value || customServiceManualInput.value || 'กำหนดเอง') : null,
               weight: w,
               options: { 
                 ar: optAR.checked, 
@@ -905,7 +946,7 @@ addBtn.onclick = async (e) => {
               },
               isIsland: optRemote.checked && REMOTE_ISLAND_ZIPCODES.has(destInput.value.match(/\d{5}/)?.[0]),
               trackingFormatted: trackingFormatted,
-              fee: feeInput.value || 0
+              fee: (feeInput.value || '0').toString().replace('เริ่มต้น ', '')
           });
       
       if (type !== 'CUSTOM') {
@@ -1069,10 +1110,17 @@ if (num8StartInput) {
 bulkToggle.onchange = () => {
     const isBulk = bulkToggle.checked;
     bulkInputsGroup.style.display = isBulk ? 'block' : 'none';
+    singleTrackingGroup.style.display = isBulk ? 'none' : 'block';
     document.querySelectorAll('.single-only').forEach(el => el.style.display = isBulk ? 'none' : 'block');
     
     if (isBulk) {
-        // If switching to bulk, sync if 8 digits already there
+        // อนุมัติ: ถ้ามีการพิมพ์ เลข 8 หลักไว้ก่อนแล้ว ดึง ค่านั้นลงมาให้ด้วย
+        if (digitsInput.value.length === 8) {
+            num8StartInput.value = digitsInput.value;
+            // Trigger input event to update validation UI
+            num8StartInput.dispatchEvent(new Event('input'));
+        }
+        
         if (num8StartInput.value.length === 8) syncBatchInputs('count');
     }
     updatePreview();
@@ -1087,6 +1135,11 @@ document.querySelectorAll('.service-tab').forEach(tab => {
         serviceTitle.textContent = `จัดการรายการ: ${currentServiceTab === 'CUSTOM' ? 'อื่นๆ' : currentServiceTab}`;
         
         customServiceGroup.style.display = (currentServiceTab === 'CUSTOM') ? 'block' : 'none';
+        if (currentServiceTab === 'CUSTOM') {
+            feeInput.placeholder = "ระบุค่าบริการ...";
+            if (feeInput.value.startsWith('เริ่มต้น')) feeInput.value = '';
+            feeInput.style.color = 'inherit';
+        }
         
         renderShipments();
         updateSummary();
@@ -1102,6 +1155,7 @@ saveSettingsBtn.onclick = async () => {
     settings.address = document.getElementById('set-address').value;
     settings.phone = document.getElementById('set-phone').value;
     settings.license = document.getElementById('set-license').value;
+    settings.paymentType = document.getElementById('set-payment-type').value;
     settings.fuelSurcharge = setFuelSurcharge.checked;
     await saveToDB('settings', settings);
     settingsModal.style.display = 'none';
@@ -1238,11 +1292,21 @@ async function renderArchiveView() {
             await saveToDB('historyIndex', historyIndex);
             await saveToDB('editingArchiveId', editingArchiveId);
             
-            navDashboard.click(); // switch tab
+            // Auto-switch to the first item's service tab
+            if (shipments.length > 0) {
+                currentServiceTab = shipments[0].serviceType;
+                document.querySelectorAll('.service-tab').forEach(t => {
+                    t.classList.toggle('active', t.dataset.service === currentServiceTab);
+                });
+                serviceTitle.textContent = `จัดการรายการ: ${currentServiceTab === 'CUSTOM' ? 'อื่นๆ' : currentServiceTab}`;
+            }
+
+            navDashboard.click(); // switch to dashboard view
             
             renderShipments();
             updateSummary();
             updateHistoryButtons();
+            updatePreview();
         };
         
         archiveList.appendChild(tr);
@@ -1295,6 +1359,7 @@ async function initApp() {
     if (savedSettings) settings = savedSettings;
     
     document.getElementById('set-license').value = settings.license || '';
+    document.getElementById('set-payment-type').value = settings.paymentType || 'เงินเชื่อ';
     setFuelSurcharge.checked = settings.fuelSurcharge || false;
 
     updatePreview();
@@ -1302,11 +1367,76 @@ async function initApp() {
     updateSummary();
     updateHistoryButtons();
     
+    // Setup Fluent Navigation (Enter Key)
+    setupFluentNavigation();
+    
     // set dispatch btn state if editing
     if (editingArchiveId) {
         dispatchBtn.innerHTML = '💾 บันทึกการแก้ไข (Update)';
         dispatchBtn.style.background = '#0ea5e9';
     }
+}
+
+function setupFluentNavigation() {
+    const fields = [
+        prefixInput,
+        digitsInput,
+        num8StartInput,
+        digitsEndInput,
+        batchCountInput,
+        recipientInput,
+        destInput,
+        weightInput
+    ];
+
+    fields.forEach(f => {
+        if (!f) return;
+        f.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                
+                // If it's the weight field, trigger ADD
+                if (f === weightInput) {
+                    addBtn.click();
+                    // Return focus to digits/num8-start for next entry
+                    setTimeout(() => {
+                        if (bulkToggle.checked) num8StartInput.focus();
+                        else digitsInput.focus();
+                    }, 100);
+                    return;
+                }
+
+                // Normal navigation
+                let nextIdx = fields.indexOf(f) + 1;
+                
+                // Skip hidden or irrelevant fields
+                while (nextIdx < fields.length) {
+                    const nextField = fields[nextIdx];
+                    const isBulk = bulkToggle.checked;
+                    
+                    // Logic to skip fields based on bulk mode
+                    if (isBulk) {
+                        if (nextField === digitsInput || nextField === recipientInput || nextField === destInput) {
+                            nextIdx++;
+                            continue;
+                        }
+                    } else {
+                        if (nextField === num8StartInput || nextField === digitsEndInput || nextField === batchCountInput) {
+                            nextIdx++;
+                            continue;
+                        }
+                    }
+                    
+                    if (nextField && nextField.offsetParent !== null) {
+                        nextField.focus();
+                        if (nextField.select) nextField.select();
+                        break;
+                    }
+                    nextIdx++;
+                }
+            }
+        });
+    });
 }
 
 window.onload = initApp;

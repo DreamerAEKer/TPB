@@ -279,13 +279,8 @@ th {
 }
 
 .remote-highlight {
-  color: var(--primary-color);
-  font-weight: 700;
-    color: var(--primary-color);
     font-weight: 800;
-    background: #fff1f2;
-    padding: 2px 4px;
-    border-radius: 4px;
+    color: inherit;
 }
 
 .price-warn {
@@ -318,6 +313,41 @@ th {
 }
 
 .island-check input {
+    margin: 0;
+}
+
+/* Service Mini Checkboxes in Table */
+.services-cell {
+    text-align: center;
+}
+
+.svc-mini {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.svc-mini:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+}
+
+.svc-mini input {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    padding: 0;
     margin: 0;
 }
 
