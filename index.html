@@ -13,7 +13,7 @@
 <body style="display: flex; flex-direction: column; height: 100vh;">
     <!-- Top Navigation -->
     <div style="background: var(--secondary-color); color: white; padding: 0 2rem; display: flex; align-items: center; height: 60px; flex-shrink: 0;">
-        <div style="font-weight: bold; font-size: 1.2rem; margin-right: 2rem;">📦 Thai Post Manifest</div>
+        <div style="font-weight: bold; font-size: 1.2rem; margin-right: 2rem;">📦 Thai Post Bill</div>
         <div style="display: flex; gap: 1rem;">
             <button id="nav-dashboard" style="background: transparent; color: white; border: none; padding: 10px 15px; font-size: 1rem; border-bottom: 3px solid var(--primary-color);">แผงควบคุมหลัก</button>
             <button id="nav-archive" style="background: transparent; color: #cbd5e1; border: none; padding: 10px 15px; font-size: 1rem; border-bottom: 3px solid transparent;">📚 ประวัติและรายงาน</button>
@@ -25,32 +25,33 @@
         <!-- Dashboard View (Original) -->
         <div id="view-dashboard" style="display: flex; width: 100%; height: 100%;">
             <aside class="sidebar">
-            <div class="logo-container">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 13V6a2 2 0 00-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2h9"></path>
-                    <path d="M2 8l10 7 10-7"></path>
-                    <path d="M16 19h6"></path>
-                    <path d="M19 16l3 3-3 3"></path>
-                </svg>
-                <span>Thai Post Manifest</span>
-            </div>
+
 
             <!-- Consolidated Entry Form -->
             <div class="sidebar-form-container">
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
                     <div style="flex: 1;">
                         <label for="prefix" style="font-size: 0.8rem; margin-bottom: 2px;">หมวดเลขที่ / บริการ</label>
-                        <input type="text" id="prefix" placeholder="EJ" maxlength="20" value="EJ" style="font-size: 1.25rem; font-weight: bold; padding: 10px; width: 100%;">
+                        <div style="display: flex; gap: 5px;">
+                            <input type="text" id="prefix" placeholder="EJ" maxlength="20" value="EJ" style="font-size: 1.25rem; font-weight: bold; padding: 10px; width: 100%;">
+                            <button id="save-prefix-btn" class="btn-icon" title="บันทึกเป็นค่าเริ่มต้นของหมวดนี้" style="background: #e2e8f0; color: #1e293b; border-radius: 6px; padding: 0 10px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">💾</button>
+                        </div>
+                        <div id="prefix-help-text" style="display: none; font-size: 0.75rem; color: #0369a1; margin-top: 6px; background: #e0f2fe; padding: 8px; border-radius: 6px; line-height: 1.4;">
+                            💡 <b>คำแนะนำ:</b> โปรดเปลี่ยน 2 ตัวหน้าให้ตรงกับการใช้งาน แล้วกดปุ่ม 💾 ค่านั้นจะถูกใช้เป็นค่าเริ่มต้นตลอดไป รวมถึงค่าตั้งต้นนี้ที่อาจจะเวียนมาให้ได้ใช้งานจริง
+                        </div>
                     </div>
                     <div id="tracking-preview" style="display: none;">-</div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                    <label class="bulk-toggle-label" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 8px; width: 100%; display: flex; align-items: center; cursor: pointer; transition: all 0.2s;">
+                        <input type="checkbox" id="bulk-mode-toggle" style="width: 18px; height: 18px; margin-right: 8px;"> 📋 เพิ่มแบบชุด (Bulk Entry)
+                    </label>
+                </div>
+
+                <div id="single-tracking-group">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                         <label for="digits" id="digits-label">ตัวเลข (8 หลัก)</label>
-                        <label class="bulk-toggle-label">
-                            <input type="checkbox" id="bulk-mode-toggle"> 📋 เพิ่มแบบชุด (Bulk)
-                        </label>
                     </div>
                     <div style="display:flex; gap:5px;">
                         <input type="text" id="digits" placeholder="12345678" maxlength="8" style="flex:1;">
@@ -74,12 +75,13 @@
 
                 <div class="form-group single-only">
                     <label for="recipient">ชื่อผู้รับ</label>
-                    <input type="text" id="recipient" placeholder="สมชาย ใจดี">
+                    <input type="text" id="recipient" placeholder="โปรดระบุ">
                 </div>
 
                 <div class="form-group single-only">
                     <label for="destination">ปลายทาง (จังหวัด/รหัสไปรษณีย์)</label>
                     <input type="text" id="destination" placeholder="กรุงเทพฯ 10500">
+                    <div id="remote-missing-warn" style="display: none; color: #ef4444; font-size: 0.75rem; margin-top: 4px; font-weight: 600;">⚠️ ไม่พบข้อมูลพื้นที่ห่างไกลสำหรับรหัสนี้</div>
                 </div>
 
                 <!-- NEW: Registered Sub-types -->
@@ -99,12 +101,25 @@
                         <input type="number" id="dim-l" placeholder="ยาว" value="0" style="width: 100%; padding: 5px; font-size: 0.8rem;">
                         <input type="number" id="dim-h" placeholder="สูง" value="0" style="width: 100%; padding: 5px; font-size: 0.8rem;">
                     </div>
-                    <div id="jumbo-badge" style="display: none; color: #be123c; font-weight: bold; font-size: 0.75rem; margin-top: 5px;">⚡ ตรวจพบเป็น EMS ขนาดใหญ่ (Jumbo)</div>
+                    <div id="jumbo-badge" style="display: none; color: #be123c; font-weight: bold; font-size: 0.75rem; margin-top: 5px;">⚡ ตรวจพบเป็น EMS ขนาดใหญ่</div>
+                    <div id="vol-warn-badge" style="display: none; color: #ef4444; font-weight: bold; font-size: 0.75rem; margin-top: 5px;">⚠️ ค่าน้ำหนักปริมาตรที่ใส่ เกินมาตรฐาน EMS คือ เมื่อเกิน 30 กิโล</div>
                 </div>
 
                 <div id="custom-service-group" class="form-group" style="display: none; margin-top: 0.5rem; background: #f0fdf4; padding: 10px; border-radius: 8px; border: 1px solid #bbf7d0;">
-                    <label for="custom-service-name" style="color: #166534;">ชื่อบริการ (กำหนดเอง)</label>
-                    <input type="text" id="custom-service-name" placeholder="เช่น Shopee Drop-off, ฯลฯ" style="border-color: #86efac;">
+                    <label for="custom-service-name" style="color: #166534;">ชื่อบริการ</label>
+                    <select id="custom-service-name" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #86efac;">
+                        <option value="จดหมาย ในประเทศ">✉️ จดหมาย ในประเทศ</option>
+                        <option value="สิ่งพิมพ์ ในประเทศ">📑 สิ่งพิมพ์ ในประเทศ</option>
+                        <option value="EMS World">🌍 EMS World</option>
+                        <option value="จดหมาย ทางอากาศ">✈️ จดหมาย ทางอากาศ</option>
+                        <option value="จดหมายลงทะเบียนทางอากาศ">📦 จดหมายลงทะเบียนทางอากาศ</option>
+                        <option value="ePacket">📧 ePacket</option>
+                        <option value="ePacket Plus">📧 ePacket Plus</option>
+                        <option value="พัสดุทางอากาศ">✈️ พัสดุทางอากาศ</option>
+                        <option value="พัสดุทางภาคพื้น">🚚 พัสดุทางภาคพื้น</option>
+                        <option value="">-- อื่นๆ (กำหนดเอง) --</option>
+                    </select>
+                    <input type="text" id="custom-service-manual" placeholder="ระบุชื่อบริการอื่นๆ..." style="margin-top: 8px; display: none; border-color: #86efac;">
                 </div>
 
                 <div class="form-group">
@@ -115,7 +130,7 @@
                 <div class="options-group">
                     <label style="color: var(--primary-color); display: block; margin-bottom: 5px;">บริการเสริม:</label>
                     <label class="option-item" id="opt-ar-row"><input type="checkbox" id="opt-ar"> ตอบรับ (AR)</label>
-                    <label class="option-item" id="opt-ar-tracking-row" style="display: none; background: #f0f9ff; padding: 4px 8px; border-radius: 6px; border: 1px solid #bae6fd; margin: 5px 0;"><input type="checkbox" id="opt-ar-tracking"> ตอบรับแบบ Tracking (8 ฿)</label>
+                    <label class="option-item" id="opt-ar-tracking-row" style="display: none; background: #f0f9ff; padding: 4px 8px; border-radius: 6px; border: 1px solid #bae6fd; margin: 5px 0;"><input type="checkbox" id="opt-ar-tracking"> ตอบรับแบบ Tracking (8 บาท)</label>
                     <label class="option-item" id="opt-insurance-row"><input type="checkbox" id="opt-insurance"> รับประกัน (EMS)</label>
                     <div id="insurance-detail" style="display: none; padding: 5px 0 5px 25px; gap: 5px; flex-direction: column;">
                         <label style="font-size: 0.75rem;">วงเงิน (สูงสุด 50,000.-)</label>
@@ -124,7 +139,7 @@
                     </div>
                     <div id="remote-status-badge" class="hidden" style="margin-bottom: 10px; cursor: pointer; border: 1px solid #fee2e2; background: #fff1f2; padding: 5px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px;" onclick="toggleRemoteSurcharge()" title="คลิกเพื่อยกเลิกการบวกเพิ่มพื้นที่ห่างไกล">
                         <span style="font-size: 1.1rem;">🏝️</span>
-                        <span class="badge-text">บวกพื้นที่ห่างไกล/เกาะ (+20 ฿)</span>
+                        <span class="badge-text">บวกพื้นที่ห่างไกล/เกาะ (+20 บาท)</span>
                         <span style="font-size: 0.7rem; color: #ef4444; margin-left: 5px;">[ยกเลิก]</span>
                     </div>
                     <div id="fuel-surcharge-badge" class="hidden" style="margin-bottom: 10px; color: #be123c; font-size: 0.85rem; font-weight: 600;">
@@ -177,7 +192,7 @@
                 <div style="flex: 1; overflow-y: auto; border-top: 1px solid #e2e8f0;">
                     <table id="shipment-table" style="font-size: 0.9rem;">
                         <thead style="position: sticky; top: 0; z-index: 10; background: #f1f3f5;">
-                            <tr><th>ลำดับ</th><th>นามผู้รับ</th><th>ปลายทาง</th><th>เลขที่ TRACKING</th><th>น้ำหนัก</th><th>ค่าบริการ</th><th>ลบ</th></tr>
+                            <tr><th>ลำดับ</th><th>นามผู้รับ</th><th>ปลายทาง</th><th>เลขที่ TRACKING</th><th>บริการเสริม</th><th>น้ำหนัก</th><th>ค่าบริการ</th><th>ลบ</th></tr>
                         </thead>
                         <tbody id="shipment-list"></tbody>
                     </table>
@@ -211,9 +226,9 @@
                         </tr>
                         <tr>
                             <th style="text-align: right; background: #fff1f2; color: #be123c; padding: 8px;">จำนวนชิ้น</th>
-                            <th style="text-align: right; border-right: 1px solid #e2e8f0; background: #fff1f2; color: #be123c; padding: 8px;">ค่าบริการ (฿)</th>
+                            <th style="text-align: right; border-right: 1px solid #e2e8f0; background: #fff1f2; color: #be123c; padding: 8px;">ค่าบริการ (บาท)</th>
                             <th style="text-align: right; background: #f0f9ff; color: #0369a1; padding: 8px;">จำนวนชิ้น</th>
-                            <th style="text-align: right; border-right: 1px solid #e2e8f0; background: #f0f9ff; color: #0369a1; padding: 8px;">ค่าบริการ (฿)</th>
+                            <th style="text-align: right; border-right: 1px solid #e2e8f0; background: #f0f9ff; color: #0369a1; padding: 8px;">ค่าบริการ (บาท)</th>
                         </tr>
                     </thead>
                     <tbody id="archive-list">
@@ -245,8 +260,8 @@
         <div style="background: white; padding: 2rem; border-radius: var(--radius); width: 400px; max-width: 90%;">
             <h2 style="margin-bottom: 1.5rem; color: var(--primary-color);">ตั้งค่าข้อมูลหัวกระดาษ</h2>
             <div class="form-group" style="margin-bottom: 1rem;">
-                <label>ชื่อบริษัท/หน่วยงาน</label>
-                <input type="text" id="set-company" placeholder="บริษัท ตัวอย่าง จำกัด">
+                <label>ชื่อผู้ฝาก / บริษัท</label>
+                <input type="text" id="set-company" placeholder="โปรดระบุ">
             </div>
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label>ที่อยู่</label>
@@ -259,6 +274,14 @@
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label>ใบอนุญาตพิเศษที่</label>
                 <input type="text" id="set-license" placeholder="พ. 123 / 2563">
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label>ประเภทการชำระเงิน (หัวใบนำส่ง)</label>
+                <select id="set-payment-type" style="padding: 10px; border-radius: 6px; border: 1px solid #dee2e6;">
+                    <option value="เงินสด">💵 เงินสด</option>
+                    <option value="เงินเชื่อ">💳 เงินเชื่อ</option>
+                    <option value="เครื่องประทับไปรษณียากร">📠 เครื่องประทับไปรษณียากร</option>
+                </select>
             </div>
             <div class="form-group" style="margin-bottom: 1rem; flex-direction: row; align-items: center; gap: 10px; background: #fff1f2; padding: 10px; border-radius: 8px;">
                 <input type="checkbox" id="set-fuel-surcharge" style="width: 20px; height: 20px;">

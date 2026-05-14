@@ -100,12 +100,14 @@ let shipments = [];
 let history = [];
 let historyIndex = 0;
 let currentServiceTab = 'EMS';
-let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: false };
+let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: false, paymentType: 'เงินเชื่อ', defaultPrefixes: {} };
 let editingArchiveId = null;
 let currentView = 'dashboard';
 
 // --- DOM ELEMENTS ---
 const prefixInput = document.getElementById('prefix');
+const savePrefixBtn = document.getElementById('save-prefix-btn');
+const prefixHelpText = document.getElementById('prefix-help-text');
 const digitsInput = document.getElementById('digits');
 const digitsEndInput = document.getElementById('digits-end');
 const batchCountInput = document.getElementById('batch-count');
@@ -114,11 +116,13 @@ const bulkInputsGroup = document.getElementById('bulk-inputs');
 const num8StartInput = document.getElementById('num8-start');
 const num8Counter = document.getElementById('num8-counter');
 const num8Warn = document.getElementById('num8-warn');
+const singleTrackingGroup = document.getElementById('single-tracking-group');
 
 const recipientInput = document.getElementById('recipient');
 const destInput = document.getElementById('destination');
 const customServiceGroup = document.getElementById('custom-service-group');
 const customServiceNameInput = document.getElementById('custom-service-name');
+const customServiceManualInput = document.getElementById('custom-service-manual');
 const weightInput = document.getElementById('weight');
 const feeInput = document.getElementById('fee');
 const feeUnitLabel = document.getElementById('fee-unit-label');
@@ -276,7 +280,7 @@ function updateSummary() {
   const totalFee = filtered.reduce((s, x) => s + parseFloat(x.fee || 0), 0);
   
   document.getElementById('total-items').textContent = totalItems.toLocaleString();
-  document.getElementById('total-fee').textContent = totalFee.toLocaleString();
+  document.getElementById('total-fee').textContent = totalFee.toLocaleString() + ' บาท';
 
   ['EMS', 'REG', 'ECO', 'PARCEL', 'CUSTOM'].forEach(svc => {
       const count = shipments.filter(s => s.serviceType === svc).length;
@@ -319,8 +323,15 @@ function renderShipments() {
         <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 2px;">${svcDisplay}</div>
         <div style="font-weight: 600;">${s.trackingFormatted}</div>
       </td>
-      <td>${s.weight} กรัม</td>
-      <td class="editable-cell ${priceClass}" contenteditable="true" data-field="fee" data-index="${i}" title="${priceClass ? 'พื้นที่ปกติ แต่มีการบวกเพิ่ม 20 บาท?' : ''}">${s.fee} ฿</td>
+      <td class="services-cell">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+            <label class="svc-mini" title="ตอบรับ (AR)"><input type="checkbox" ${s.options?.ar ? 'checked' : ''} onchange="toggleRowService(${i}, 'ar', this.checked)"> AR</label>
+            ${s.serviceType === 'EMS' ? `<label class="svc-mini" title="ประกัน"><input type="checkbox" ${s.options?.insurance ? 'checked' : ''} onchange="toggleRowService(${i}, 'insurance', this.checked)"> 🛡️</label>` : ''}
+            ${(s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && s.destination.includes('เกาะ')) ? `<label class="svc-mini" title="พื้นที่ห่างไกล"><input type="checkbox" ${s.options?.isRemote ? 'checked' : ''} onchange="toggleRowService(${i}, 'isRemote', this.checked)"> 🏝️</label>` : ''}
+        </div>
+      </td>
+      <td style="${s.options?.useVolWeight ? 'font-weight: 800;' : ''}">${s.weight} กรัม</td>
+      <td class="editable-cell ${priceClass}" contenteditable="true" data-field="fee" data-index="${i}" title="${priceClass ? 'พื้นที่ปกติ แต่มีการบวกเพิ่ม 20 บาท?' : ''}">${s.fee} บาท</td>
       <td><button class="btn-icon delete-btn" data-index="${i}">ลบ</button></td>
     `;
     shipmentList.appendChild(tr);
@@ -340,7 +351,7 @@ function renderShipments() {
     cell.oninput = async (e) => {
         const field = e.target.dataset.field;
         const idx = e.target.dataset.index;
-        const val = e.target.innerText.replace(' ฿', '').trim();
+        const val = e.target.innerText.replace(' บาท', '').trim();
         shipments[idx][field] = val;
     };
     
@@ -388,14 +399,41 @@ window.toggleIsland = async (i, checked) => {
     await updateHistory();
 };
 
+window.toggleRowService = async (i, serviceType, checked) => {
+    const s = shipments[i];
+    if (!s.options) s.options = {};
+    
+    if (serviceType === 'ar') {
+        s.options.ar = checked;
+    } else if (serviceType === 'insurance') {
+        s.options.insurance = checked;
+        if (checked && !s.options.insuranceVal) s.options.insuranceVal = 2000;
+    } else if (serviceType === 'isRemote') {
+        s.options.isRemote = checked;
+    }
+    
+    // Recalculate fee
+    const base = calculateBaseFee(s.serviceType, s.weight, s.options);
+    let total = base;
+    if (s.options.isRemote) total += 20;
+    if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
+    
+    s.fee = total;
+    
+    renderShipments();
+    updateSummary();
+    await updateHistory();
+};
+
 function applySmartPricing(i) {
     const s = shipments[i];
     if(s.serviceType === 'CUSTOM') return;
     
     const zipMatch = s.destination.match(/\d{5}/);
     const zip = zipMatch ? zipMatch[0] : null;
+    const hasIslandText = s.destination.includes('เกาะ');
     const canHaveRemote = (s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && s.serviceType !== 'CUSTOM');
-    const isActuallyRemote = zip && isRemoteArea(zip, s.isIsland) && canHaveRemote;
+    const isActuallyRemote = zip && isRemoteArea(zip, s.isIsland || hasIslandText) && canHaveRemote && hasIslandText;
     const base = calculateBaseFee(s.serviceType, s.weight, s.options || {});
     const currentFee = parseFloat(s.fee);
 
@@ -434,21 +472,27 @@ function updatePreview() {
 
   const isAlwaysRemote = zip && REMOTE_ALWAYS_ZIPCODES.has(zip) && canHaveRemote;
   const isIslandPotential = zip && REMOTE_ISLAND_ZIPCODES.has(zip) && canHaveRemote;
+  const hasIslandText = destInput.value.includes('เกาะ');
+  const remoteMissingWarn = document.getElementById('remote-missing-warn');
+
+  // Logic for warning when "เกาะ" is in text but postcode is not in list
+  if (hasIslandText && zip && !isRemoteArea(zip, true)) {
+      remoteMissingWarn.style.display = 'block';
+  } else {
+      remoteMissingWarn.style.display = 'none';
+  }
   
   if (!window.isManualRemoteOverride) {
-      if (isAlwaysRemote || isIslandPotential) {
+      if ((isAlwaysRemote || isIslandPotential) && hasIslandText) {
           optRemote.checked = true;
           badge.classList.remove('hidden');
-          badge.querySelector('.badge-text').textContent = isAlwaysRemote ? 'บวกพื้นที่ห่างไกล (+20 ฿)' : 'พบรหัสพื้นที่เกาะ (+20 ฿)';
+          badge.querySelector('.badge-text').textContent = isAlwaysRemote ? 'บวกพื้นที่ห่างไกล (+20 บาท)' : 'พบรหัสพื้นที่เกาะ (+20 บาท)';
       } else {
           optRemote.checked = false;
           badge.classList.add('hidden');
       }
   } else {
-      // If override is on, respect optRemote.checked but still show badge if it was auto-detected
-      // so user can re-enable it. But usually, if they cancel, we hide it or show it as "disabled".
-      // Let's just hide it if optRemote is false, and show it if optRemote is true.
-      if (optRemote.checked) {
+      if (optRemote.checked && hasIslandText) {
           badge.classList.remove('hidden');
       } else {
           badge.classList.add('hidden');
@@ -466,22 +510,37 @@ function updatePreview() {
   // Insurance detail depends on both EMS tab and checkbox
   document.getElementById('insurance-detail').style.display = (optInsurance.checked && activeSvc === 'EMS') ? 'flex' : 'none';
 
-  // EMS Jumbo Detection (Only on EMS tab)
   let isJumbo = false;
+  let volWeight = 0;
+  let useVolWeight = false;
+  let calcWeight = w;
+
   if (activeSvc === 'EMS') {
-      const w = parseFloat(dimW.value) || 0;
-      const l = parseFloat(dimL.value) || 0;
-      const h = parseFloat(dimH.value) || 0;
-      const total = w + l + h;
-      const maxSide = Math.max(w, l, h);
+      const wDim = parseFloat(dimW.value) || 0;
+      const lDim = parseFloat(dimL.value) || 0;
+      const hDim = parseFloat(dimH.value) || 0;
+      const total = wDim + lDim + hDim;
+      const maxSide = Math.max(wDim, lDim, hDim);
       
       if (maxSide > 60 && total <= 120) isJumbo = true;
       if (maxSide > 60 && maxSide <= 120 && total <= 240) isJumbo = true;
       jumboBadge.style.display = isJumbo ? 'block' : 'none';
+
+      // Volumetric weight calculation (W * L * H / 5 in grams)
+      volWeight = Math.ceil((wDim * lDim * hDim) / 5);
+      if (volWeight > w) {
+          useVolWeight = true;
+          calcWeight = volWeight;
+      }
+      
+      const volWarnBadge = document.getElementById('vol-warn-badge');
+      if (volWarnBadge) {
+          volWarnBadge.style.display = (volWeight > 30000) ? 'block' : 'none';
+      }
   }
 
   if (activeSvc !== 'CUSTOM') {
-      const base = calculateBaseFee(activeSvc, w, { 
+      const base = calculateBaseFee(activeSvc, calcWeight, { 
         ar: optAR.checked, 
         arTracking: optArTracking.checked,
         insurance: optInsurance.checked, 
@@ -548,19 +607,17 @@ function syncBatchInputs(source) {
 function generateShipmentNote(s) {
     const notes = [];
     if (s.options.ar) notes.push("AR");
-    if (s.options.arTracking) notes.push("Track");
-    if (s.options.isRemote) notes.push("ห่างไกล");
-    if (s.options.hasFuelSurcharge) notes.push("Fuel");
-    if (s.options.isJumbo) notes.push("ขนาดใหญ่");
+    if (s.options.arTracking) notes.push("AR Track");
+    if (s.options.useVolWeight) notes.push("ขนาดใหญ่");
     if (s.serviceType === 'REG') {
-        notes.push(s.options.regType === 'BOX' ? "กล่อง" : "ซอง");
+        if (s.options.regType === 'BOX') notes.push("หีบห่อ");
     }
     return notes.join(", ");
 }
 
 // --- PRINTING LOGIC ---
 function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
-    const ITEMS_PER_PAGE = 30;
+    const ITEMS_PER_PAGE = 25;
     const totalPages = Math.ceil(itemsToPrint.length / ITEMS_PER_PAGE) || 1;
     
     const company = settings.company || '......................................';
@@ -575,15 +632,22 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
         for (let i = 0; i < ITEMS_PER_PAGE; i++) {
             if (i < pageItems.length) {
                 const s = pageItems[i];
+                
+                const isWeightEmpty = !s.weight || s.weight == 0;
+                const displayRecipient = isWeightEmpty ? '' : (s.recipient || '');
+                const displayDestination = isWeightEmpty ? '' : highlightPostcode(s.destination, s.options?.isRemote);
+                const displayWeight = isWeightEmpty ? '' : s.weight;
+                const displayFee = isWeightEmpty ? '' : s.fee;
+                
                 rowsHtml += `
                     <tr>
                         <td style="padding: 3px 4px;">${p * ITEMS_PER_PAGE + i + 1}</td>
-                        <td style="text-align: left; padding: 3px 4px;">${s.recipient || ''}</td>
-                        <td style="text-align: left; padding: 3px 4px;">${s.destination || ''}</td>
+                        <td style="text-align: left; padding: 3px 4px;">${displayRecipient}</td>
+                        <td style="text-align: left; padding: 3px 4px;">${displayDestination}</td>
                         <td style="font-family: monospace; font-size: 11pt; padding: 3px 4px;">${s.trackingFormatted}</td>
                         <td style="padding: 3px 4px;">${s.options?.insurance ? s.options.insuranceVal : ''}</td>
-                        <td style="padding: 3px 4px;">${s.weight}</td>
-                        <td style="padding: 3px 4px;">${s.fee}</td>
+                        <td style="padding: 3px 4px; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight}</td>
+                        <td style="padding: 3px 4px;">${displayFee}</td>
                         <td style="padding: 3px 4px; font-size: 8pt; text-align: left;">${generateShipmentNote(s)}</td>
                     </tr>
                 `;
@@ -592,6 +656,10 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
             }
         }
         
+        const pageTotalFee = pageItems.reduce((sum, item) => sum + ((!item.weight || item.weight == 0) ? 0 : (parseFloat(item.fee) || 0)), 0);
+        const grandTotalItems = itemsToPrint.length;
+        const grandTotalFee = itemsToPrint.reduce((sum, item) => sum + ((!item.weight || item.weight == 0) ? 0 : (parseFloat(item.fee) || 0)), 0);
+
         const pageHtml = `
             <div class="print-page">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
@@ -601,14 +669,14 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
                         <div style="font-size: 11pt;">โทรศัพท์ <b>${phone}</b></div>
                     </div>
                     <div style="text-align: right;">
-                        <h2 style="margin: 0; font-size: 14pt;">ใบนำส่งสิ่งของทางไปรษณีย์ โดยชำระค่าบริการเป็นเงินเชื่อ</h2>
+                        <h2 style="margin: 0; font-size: 14pt;">ใบนำส่งสิ่งของทางไปรษณีย์ โดยชำระค่าบริการเป็น${settings.paymentType || 'เงินเชื่อ'}</h2>
                         ${titleSuffix ? `<div style="font-size: 12pt; font-weight: bold;">(${titleSuffix})</div>` : ''}
                         <div style="font-size: 11pt; margin-top: 5px;">ใบอนุญาตพิเศษที่ <b>${license}</b></div>
                         <div style="font-size: 11pt;">วันที่ ........................................ ฝากส่งครั้งที่ ........... ใบที่ <b>${p + 1} / ${totalPages}</b></div>
                     </div>
                 </div>
                 <div style="margin-bottom: 5px; font-size: 11pt;">
-                    เรียน หัวหน้าทำการไปรษณีย์กลาง ขอนำส่งไปรษณียภัณฑ์ตามรายการดังนี้
+                    &nbsp;
                 </div>
                 <div style="flex: 1;">
                     <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11pt;" border="1">
@@ -629,17 +697,33 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
                         </thead>
                         <tbody>
                             ${rowsHtml}
+                            <tr style="background: #fafafa; font-weight: bold;">
+                                <td colspan="3" style="padding: 6px; text-align: right;">รวมหน้านี้</td>
+                                <td style="padding: 6px;">${pageItems.length} ชิ้น</td>
+                                <td colspan="2"></td>
+                                <td style="padding: 6px;">${pageTotalFee.toLocaleString()} บาท</td>
+                                <td></td>
+                            </tr>
+                            ${(p === totalPages - 1) ? `
+                            <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #000; font-size: 12pt;">
+                                <td colspan="3" style="padding: 6px; text-align: right;">รวมทั้งสิ้น</td>
+                                <td style="padding: 6px;">${grandTotalItems} ชิ้น</td>
+                                <td colspan="2"></td>
+                                <td style="padding: 6px; border-bottom: 3px double #000;">${grandTotalFee.toLocaleString()} บาท</td>
+                                <td></td>
+                            </tr>
+                            ` : ''}
                         </tbody>
                     </table>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 11pt; border-top: 1px dashed #ccc; padding-top: 10px;">
                     <div style="width: 50%;">
-                        <div style="margin-bottom: 8px;">ลงชื่อ ........................................................ ผู้รับผิดชอบฝากส่ง</div>
+                        <div style="margin-bottom: 8px;">ลงชื่อ ...................................... รับผิดชอบฝากส่ง</div>
                         <div style="margin-bottom: 8px;">(........................................................)</div>
                         <div style="margin-bottom: 0;">ลงชื่อ ........................................................ ผู้จัดส่ง</div>
                     </div>
                     <div style="width: 45%; text-align: right;">
-                        <div style="margin-bottom: 5px;">ผู้ตรวจสอบและรับฝากไว้แล้ว</div>
+                        <div style="margin-bottom: 5px;">ตรวจสอบและรับฝากไว้แล้ว</div>
                         <div style="margin-bottom: 5px;">ลงชื่อ ........................................................</div>
                         <div style="margin-bottom: 5px;">เจ้าหน้าที่รับฝาก</div>
                         <div style="margin-top: 5px; font-size: 10pt;">ไปรษณีย์กลาง 10501</div>
@@ -680,17 +764,18 @@ function generateSummarySheet(items, titleSuffix) {
         `;
         
         svcItems.forEach(item => {
+            if (!item.weight || item.weight == 0) return;
             const fee = parseFloat(item.fee) || 0;
             if (!priceMap[fee]) priceMap[fee] = 0;
             priceMap[fee]++;
         });
     }
     
-    const totalFee = items.reduce((sum, item) => sum + (parseFloat(item.fee) || 0), 0);
+    const totalFee = items.reduce((sum, item) => sum + ((!item.weight || item.weight == 0) ? 0 : (parseFloat(item.fee) || 0)), 0);
     
     let priceBreakdownHtml = Object.entries(priceMap)
         .sort((a,b) => parseFloat(a[0]) - parseFloat(b[0]))
-        .map(([price, count]) => `<span style="display:inline-block; margin-right: 15px;">เรท <b>${price}฿</b> = ${count} ชิ้น</span>`)
+        .map(([price, count]) => `<span style="display:inline-block; margin-right: 15px;">เรท <b>${price} บาท</b> = ${count} ชิ้น</span>`)
         .join('');
         
     const company = settings.company || '......................................';
@@ -698,7 +783,7 @@ function generateSummarySheet(items, titleSuffix) {
     
     return `
         <div class="print-page">
-            <center><h2 style="font-size: 18pt;">ใบสรุปการฝากส่งไปรษณียภัณฑ์ชำระค่าฝากส่งเป็นเงินเชื่อ<br><span style="color: #444; font-size: 16pt;">หมวด: ${titleSuffix}</span></h2></center>
+            <center><h2 style="font-size: 18pt;">ใบสรุปการฝากส่งไปรษณียภัณฑ์ชำระค่าฝากส่งเป็น${settings.paymentType || 'เงินเชื่อ'}<br><span style="color: #444; font-size: 16pt;">หมวด: ${titleSuffix}</span></h2></center>
             <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 12pt;">
                 <div>
                     <div>บริษัท <b>${company}</b></div>
@@ -733,7 +818,7 @@ function generateSummarySheet(items, titleSuffix) {
                     <table style="width: 100%; border-collapse: collapse; text-align: center;" border="1">
                         <tr><th colspan="2" style="background: #f0f0f0; padding: 8px;">รวมค่าบริการ (บาท)</th></tr>
                         <tr><td style="text-align: left; padding: 8px 15px;">ยอดยกมา</td><td style="padding: 8px;"></td></tr>
-                        <tr><td style="text-align: left; padding: 8px 15px;">ยอดครั้งนี้</td><td style="padding: 8px;"><b>${totalFee.toLocaleString()}</b></td></tr>
+                        <tr><td style="text-align: left; padding: 8px 15px;">ยอดครั้งนี้</td><td style="padding: 8px;"><b>${totalFee.toLocaleString()} บาท</b></td></tr>
                         <tr><td style="text-align: left; padding: 8px 15px;">ยอดยกไป</td><td style="padding: 8px;"></td></tr>
                     </table>
                 </div>
@@ -749,7 +834,7 @@ function generateSummarySheet(items, titleSuffix) {
                 <div style="width: 50%; text-align: center;">
                     <div style="margin-bottom: 10px;">ลงชื่อ ........................................................</div>
                     <div style="margin-bottom: 10px;">(........................................................)</div>
-                    <div>ผู้รับผิดชอบในการฝากส่ง</div>
+                    <div>รับผิดชอบในการฝากส่ง</div>
                 </div>
                 <div style="width: 45%; text-align: center;">
                     <div style="margin-bottom: 10px;">ลงชื่อ ........................................................</div>
@@ -812,6 +897,12 @@ dimL.oninput = updatePreview;
 dimH.oninput = updatePreview;
 regTypeInput.onchange = updatePreview;
 
+customServiceNameInput.onchange = () => {
+    customServiceManualInput.style.display = (customServiceNameInput.value === '') ? 'block' : 'none';
+    updatePreview();
+};
+customServiceManualInput.oninput = updatePreview;
+
 addBtn.onclick = async (e) => {
   e.preventDefault();
   const p = prefixInput.value.trim().toUpperCase();
@@ -848,26 +939,46 @@ addBtn.onclick = async (e) => {
               trackingFormatted = formatTrackingNumber(p, d, cd);
           }
           
+          let isJumbo = false;
+          let useVolWeight = false;
+          let finalWeight = w;
+          if (type === 'EMS') {
+              const wDim = parseFloat(dimW.value) || 0;
+              const lDim = parseFloat(dimL.value) || 0;
+              const hDim = parseFloat(dimH.value) || 0;
+              const total = wDim + lDim + hDim;
+              const maxSide = Math.max(wDim, lDim, hDim);
+              if (maxSide > 60 && total <= 120) isJumbo = true;
+              if (maxSide > 60 && maxSide <= 120 && total <= 240) isJumbo = true;
+              
+              const volWeight = Math.ceil((wDim * lDim * hDim) / 5);
+              if (volWeight > w) {
+                  useVolWeight = true;
+                  finalWeight = volWeight;
+              }
+          }
+
           shipments.push({
               recipient: '',
               destination: '',
               serviceType: type,
-              customServiceName: type === 'CUSTOM' ? (customServiceNameInput.value || 'กำหนดเอง') : null,
-              weight: w,
+              customServiceName: type === 'CUSTOM' ? (customServiceNameInput.value || customServiceManualInput.value || 'กำหนดเอง') : null,
+              weight: finalWeight,
               options: { 
                 ar: optAR.checked, 
                 arTracking: optArTracking.checked,
                 insurance: optInsurance.checked, 
                 insuranceVal: parseFloat(insuranceVal.value),
                 regType: regTypeInput.value,
-                isJumbo: jumboBadge.style.display === 'block',
+                isJumbo: isJumbo,
+                useVolWeight: useVolWeight,
                 dimensions: { w: parseFloat(dimW.value), l: parseFloat(dimL.value), h: parseFloat(dimH.value) },
                 isRemote: optRemote.checked,
                 hasFuelSurcharge: settings.fuelSurcharge && (type === 'EMS' || type === 'ECO')
               },
               isIsland: false,
               trackingFormatted: trackingFormatted,
-              fee: feeInput.value || 0
+              fee: (feeInput.value || '0').toString().replace('เริ่มต้น ', '')
           });
       }
       
@@ -886,26 +997,46 @@ addBtn.onclick = async (e) => {
           trackingFormatted = formatTrackingNumber(p, startD, cd);
       }
       
+      let isJumbo = false;
+      let useVolWeight = false;
+      let finalWeight = w;
+      if (type === 'EMS') {
+          const wDim = parseFloat(dimW.value) || 0;
+          const lDim = parseFloat(dimL.value) || 0;
+          const hDim = parseFloat(dimH.value) || 0;
+          const total = wDim + lDim + hDim;
+          const maxSide = Math.max(wDim, lDim, hDim);
+          if (maxSide > 60 && total <= 120) isJumbo = true;
+          if (maxSide > 60 && maxSide <= 120 && total <= 240) isJumbo = true;
+          
+          const volWeight = Math.ceil((wDim * lDim * hDim) / 5);
+          if (volWeight > w) {
+              useVolWeight = true;
+              finalWeight = volWeight;
+          }
+      }
+
           shipments.push({
               recipient: recipientInput.value || '',
               destination: destInput.value || '',
               serviceType: type,
-              customServiceName: type === 'CUSTOM' ? (customServiceNameInput.value || 'กำหนดเอง') : null,
-              weight: w,
+              customServiceName: type === 'CUSTOM' ? (customServiceNameInput.value || customServiceManualInput.value || 'กำหนดเอง') : null,
+              weight: finalWeight,
               options: { 
                 ar: optAR.checked, 
                 arTracking: optArTracking.checked,
                 insurance: optInsurance.checked, 
                 insuranceVal: parseFloat(insuranceVal.value),
                 regType: regTypeInput.value,
-                isJumbo: jumboBadge.style.display === 'block',
+                isJumbo: isJumbo,
+                useVolWeight: useVolWeight,
                 dimensions: { w: parseFloat(dimW.value), l: parseFloat(dimL.value), h: parseFloat(dimH.value) },
                 isRemote: optRemote.checked,
                 hasFuelSurcharge: settings.fuelSurcharge && (type === 'EMS' || type === 'ECO')
               },
               isIsland: optRemote.checked && REMOTE_ISLAND_ZIPCODES.has(destInput.value.match(/\d{5}/)?.[0]),
               trackingFormatted: trackingFormatted,
-              fee: feeInput.value || 0
+              fee: (feeInput.value || '0').toString().replace('เริ่มต้น ', '')
           });
       
       if (type !== 'CUSTOM') {
@@ -1069,10 +1200,17 @@ if (num8StartInput) {
 bulkToggle.onchange = () => {
     const isBulk = bulkToggle.checked;
     bulkInputsGroup.style.display = isBulk ? 'block' : 'none';
+    singleTrackingGroup.style.display = isBulk ? 'none' : 'block';
     document.querySelectorAll('.single-only').forEach(el => el.style.display = isBulk ? 'none' : 'block');
     
     if (isBulk) {
-        // If switching to bulk, sync if 8 digits already there
+        // อนุมัติ: ถ้ามีการพิมพ์ เลข 8 หลักไว้ก่อนแล้ว ดึง ค่านั้นลงมาให้ด้วย
+        if (digitsInput.value.length === 8) {
+            num8StartInput.value = digitsInput.value;
+            // Trigger input event to update validation UI
+            num8StartInput.dispatchEvent(new Event('input'));
+        }
+        
         if (num8StartInput.value.length === 8) syncBatchInputs('count');
     }
     updatePreview();
@@ -1086,13 +1224,39 @@ document.querySelectorAll('.service-tab').forEach(tab => {
         tab.classList.add('active');
         serviceTitle.textContent = `จัดการรายการ: ${currentServiceTab === 'CUSTOM' ? 'อื่นๆ' : currentServiceTab}`;
         
+        if (settings.defaultPrefixes && settings.defaultPrefixes[currentServiceTab]) {
+            prefixInput.value = settings.defaultPrefixes[currentServiceTab];
+            prefixHelpText.style.display = 'none';
+        } else {
+            const fallbacks = { 'EMS': 'EX', 'REG': 'RX', 'PARCEL': 'PX', 'ECO': 'OX', 'CUSTOM': 'XX' };
+            prefixInput.value = fallbacks[currentServiceTab] || '';
+            prefixHelpText.style.display = 'block';
+        }
+        
         customServiceGroup.style.display = (currentServiceTab === 'CUSTOM') ? 'block' : 'none';
+        if (currentServiceTab === 'CUSTOM') {
+            feeInput.placeholder = "ระบุค่าบริการ...";
+            if (feeInput.value.startsWith('เริ่มต้น')) feeInput.value = '';
+            feeInput.style.color = 'inherit';
+        }
         
         renderShipments();
         updateSummary();
         updatePreview(); // Fix: Ensure UI fields hide/show immediately on tab change
     };
 });
+
+savePrefixBtn.onclick = async () => {
+    if (!settings.defaultPrefixes) settings.defaultPrefixes = {};
+    settings.defaultPrefixes[currentServiceTab] = prefixInput.value.trim().toUpperCase();
+    await saveToDB('settings', settings);
+    
+    prefixHelpText.style.display = 'none';
+    
+    const oldBg = savePrefixBtn.style.background;
+    savePrefixBtn.style.background = '#86efac';
+    setTimeout(() => savePrefixBtn.style.background = oldBg, 500);
+};
 
 // Settings Modal
 settingsBtn.onclick = () => settingsModal.style.display = 'flex';
@@ -1102,6 +1266,7 @@ saveSettingsBtn.onclick = async () => {
     settings.address = document.getElementById('set-address').value;
     settings.phone = document.getElementById('set-phone').value;
     settings.license = document.getElementById('set-license').value;
+    settings.paymentType = document.getElementById('set-payment-type').value;
     settings.fuelSurcharge = setFuelSurcharge.checked;
     await saveToDB('settings', settings);
     settingsModal.style.display = 'none';
@@ -1238,11 +1403,21 @@ async function renderArchiveView() {
             await saveToDB('historyIndex', historyIndex);
             await saveToDB('editingArchiveId', editingArchiveId);
             
-            navDashboard.click(); // switch tab
+            // Auto-switch to the first item's service tab
+            if (shipments.length > 0) {
+                currentServiceTab = shipments[0].serviceType;
+                document.querySelectorAll('.service-tab').forEach(t => {
+                    t.classList.toggle('active', t.dataset.service === currentServiceTab);
+                });
+                serviceTitle.textContent = `จัดการรายการ: ${currentServiceTab === 'CUSTOM' ? 'อื่นๆ' : currentServiceTab}`;
+            }
+
+            navDashboard.click(); // switch to dashboard view
             
             renderShipments();
             updateSummary();
             updateHistoryButtons();
+            updatePreview();
         };
         
         archiveList.appendChild(tr);
@@ -1292,9 +1467,22 @@ async function initApp() {
     editingArchiveId = await loadFromDB('editingArchiveId') || null;
     
     const savedSettings = await loadFromDB('settings');
-    if (savedSettings) settings = savedSettings;
+    if (savedSettings) {
+        settings = { ...settings, ...savedSettings };
+        if (!settings.defaultPrefixes) settings.defaultPrefixes = {};
+    }
+    
+    if (settings.defaultPrefixes && settings.defaultPrefixes[currentServiceTab]) {
+        prefixInput.value = settings.defaultPrefixes[currentServiceTab];
+        prefixHelpText.style.display = 'none';
+    } else {
+        const fallbacks = { 'EMS': 'EX', 'REG': 'RX', 'PARCEL': 'PX', 'ECO': 'OX', 'CUSTOM': 'XX' };
+        prefixInput.value = fallbacks[currentServiceTab] || '';
+        prefixHelpText.style.display = 'block';
+    }
     
     document.getElementById('set-license').value = settings.license || '';
+    document.getElementById('set-payment-type').value = settings.paymentType || 'เงินเชื่อ';
     setFuelSurcharge.checked = settings.fuelSurcharge || false;
 
     updatePreview();
@@ -1302,11 +1490,79 @@ async function initApp() {
     updateSummary();
     updateHistoryButtons();
     
+    // Setup Fluent Navigation (Enter Key)
+    setupFluentNavigation();
+    
     // set dispatch btn state if editing
     if (editingArchiveId) {
         dispatchBtn.innerHTML = '💾 บันทึกการแก้ไข (Update)';
         dispatchBtn.style.background = '#0ea5e9';
     }
+}
+
+function setupFluentNavigation() {
+    const fields = [
+        prefixInput,
+        digitsInput,
+        num8StartInput,
+        digitsEndInput,
+        batchCountInput,
+        recipientInput,
+        destInput,
+        dimW,
+        dimL,
+        dimH,
+        weightInput
+    ];
+
+    fields.forEach(f => {
+        if (!f) return;
+        f.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                
+                // If it's the weight field, trigger ADD
+                if (f === weightInput) {
+                    addBtn.click();
+                    // Return focus to digits/num8-start for next entry
+                    setTimeout(() => {
+                        if (bulkToggle.checked) num8StartInput.focus();
+                        else digitsInput.focus();
+                    }, 100);
+                    return;
+                }
+
+                // Normal navigation
+                let nextIdx = fields.indexOf(f) + 1;
+                
+                // Skip hidden or irrelevant fields
+                while (nextIdx < fields.length) {
+                    const nextField = fields[nextIdx];
+                    const isBulk = bulkToggle.checked;
+                    
+                    // Logic to skip fields based on bulk mode
+                    if (isBulk) {
+                        if (nextField === digitsInput || nextField === recipientInput || nextField === destInput) {
+                            nextIdx++;
+                            continue;
+                        }
+                    } else {
+                        if (nextField === num8StartInput || nextField === digitsEndInput || nextField === batchCountInput) {
+                            nextIdx++;
+                            continue;
+                        }
+                    }
+                    
+                    if (nextField && nextField.offsetParent !== null) {
+                        nextField.focus();
+                        if (nextField.select) nextField.select();
+                        break;
+                    }
+                    nextIdx++;
+                }
+            }
+        });
+    });
 }
 
 window.onload = initApp;
