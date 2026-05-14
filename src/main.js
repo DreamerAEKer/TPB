@@ -100,7 +100,7 @@ let shipments = [];
 let history = [];
 let historyIndex = 0;
 let currentServiceTab = 'EMS';
-let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: false, paymentType: 'เงินเชื่อ', defaultPrefixes: {} };
+let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: false, paymentType: 'เงินเชื่อ', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left' };
 let editingArchiveId = null;
 let currentView = 'dashboard';
 
@@ -615,6 +615,19 @@ function generateShipmentNote(s) {
     return notes.join(", ");
 }
 
+function generateLogoHtml() {
+    if (!settings.logo) return '';
+    let align = 'flex-start';
+    if (settings.logoAlign === 'center') align = 'center';
+    if (settings.logoAlign === 'right') align = 'flex-end';
+    
+    return `
+        <div style="position: absolute; top: 6mm; left: 10mm; right: 10mm; display: flex; justify-content: ${align}; z-index: 100;">
+            <img src="${settings.logo}" style="width: ${settings.logoWidth}px; max-height: 14mm; object-fit: contain;">
+        </div>
+    `;
+}
+
 // --- PRINTING LOGIC ---
 function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
     const ITEMS_PER_PAGE = 25;
@@ -662,6 +675,7 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
 
         const pageHtml = `
             <div class="print-page">
+                ${generateLogoHtml()}
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
                     <div>
                         <div style="font-size: 11pt;">บริษัท <b>${company}</b></div>
@@ -701,7 +715,7 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
                                 <td colspan="3" style="padding: 6px; text-align: right;">รวมหน้านี้</td>
                                 <td style="padding: 6px;">${pageItems.length} ชิ้น</td>
                                 <td colspan="2"></td>
-                                <td style="padding: 6px;">${pageTotalFee.toLocaleString()} บาท</td>
+                                <td style="padding: 6px;">${pageTotalFee > 0 ? pageTotalFee.toLocaleString() + ' บาท' : ''}</td>
                                 <td></td>
                             </tr>
                             ${(p === totalPages - 1) ? `
@@ -709,22 +723,30 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
                                 <td colspan="3" style="padding: 6px; text-align: right;">รวมทั้งสิ้น</td>
                                 <td style="padding: 6px;">${grandTotalItems} ชิ้น</td>
                                 <td colspan="2"></td>
-                                <td style="padding: 6px; border-bottom: 3px double #000;">${grandTotalFee.toLocaleString()} บาท</td>
+                                <td style="padding: 6px; border-bottom: 3px double #000;">${grandTotalFee > 0 ? grandTotalFee.toLocaleString() + ' บาท' : ''}</td>
                                 <td></td>
                             </tr>
                             ` : ''}
                         </tbody>
                     </table>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 11pt; border-top: 1px dashed #ccc; padding-top: 10px;">
-                    <div style="width: 50%;">
-                        <div style="margin-bottom: 8px;">ลงชื่อ ...................................... รับผิดชอบฝากส่ง</div>
-                        <div style="margin-bottom: 8px;">(........................................................)</div>
-                        <div style="margin-bottom: 0;">ลงชื่อ ........................................................ ผู้จัดส่ง</div>
+                <div style="display: flex; justify-content: space-between; margin-top: 35px; font-size: 11pt; border-top: 1px dashed #ccc; padding-top: 20px;">
+                    <div style="width: 45%; text-align: center;">
+                        <div style="margin-bottom: 15px;">
+                            <div style="margin-bottom: 5px;">รับผิดชอบฝากส่ง</div>
+                            <div style="margin-bottom: 8px;">ลงชื่อ ........................................................</div>
+                            <div style="margin-bottom: 8px;">( ${settings.showSignatureNames ? (settings.responsibleName || '........................................................') : '........................................................'} )</div>
+                        </div>
+                        ${settings.senderName ? `
+                            <div style="margin-top: 10px; font-size: 10pt;">
+                                <div style="margin-bottom: 4px;">ผู้นำส่ง</div>
+                                <div>( ${settings.senderName} )</div>
+                            </div>
+                        ` : ''}
                     </div>
-                    <div style="width: 45%; text-align: right;">
-                        <div style="margin-bottom: 5px;">ตรวจสอบและรับฝากไว้แล้ว</div>
-                        <div style="margin-bottom: 5px;">ลงชื่อ ........................................................</div>
+                    <div style="width: 45%; text-align: center;">
+                        <div style="margin-bottom: 5px;">รับฝากไว้แล้ว</div>
+                        <div style="margin-bottom: 8px;">ลงชื่อ ........................................................</div>
                         <div style="margin-bottom: 5px;">เจ้าหน้าที่รับฝาก</div>
                         <div style="margin-top: 5px; font-size: 10pt;">ไปรษณีย์กลาง 10501</div>
                     </div>
@@ -783,6 +805,7 @@ function generateSummarySheet(items, titleSuffix) {
     
     return `
         <div class="print-page">
+            ${generateLogoHtml()}
             <center><h2 style="font-size: 18pt;">ใบสรุปการฝากส่งไปรษณียภัณฑ์ชำระค่าฝากส่งเป็น${settings.paymentType || 'เงินเชื่อ'}<br><span style="color: #444; font-size: 16pt;">หมวด: ${titleSuffix}</span></h2></center>
             <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 12pt;">
                 <div>
@@ -818,7 +841,7 @@ function generateSummarySheet(items, titleSuffix) {
                     <table style="width: 100%; border-collapse: collapse; text-align: center;" border="1">
                         <tr><th colspan="2" style="background: #f0f0f0; padding: 8px;">รวมค่าบริการ (บาท)</th></tr>
                         <tr><td style="text-align: left; padding: 8px 15px;">ยอดยกมา</td><td style="padding: 8px;"></td></tr>
-                        <tr><td style="text-align: left; padding: 8px 15px;">ยอดครั้งนี้</td><td style="padding: 8px;"><b>${totalFee.toLocaleString()} บาท</b></td></tr>
+                        <tr><td style="text-align: left; padding: 8px 15px;">ยอดครั้งนี้</td><td style="padding: 8px;"><b>${totalFee > 0 ? totalFee.toLocaleString() + ' บาท' : ''}</b></td></tr>
                         <tr><td style="text-align: left; padding: 8px 15px;">ยอดยกไป</td><td style="padding: 8px;"></td></tr>
                     </table>
                 </div>
@@ -830,11 +853,19 @@ function generateSummarySheet(items, titleSuffix) {
                 </div>
             </div>
             
-            <div style="display: flex; justify-content: space-between; margin-top: 30px; font-size: 11pt; border-top: 1px dashed #ccc; padding-top: 15px;">
-                <div style="width: 50%; text-align: center;">
-                    <div style="margin-bottom: 10px;">ลงชื่อ ........................................................</div>
-                    <div style="margin-bottom: 10px;">(........................................................)</div>
-                    <div>รับผิดชอบในการฝากส่ง</div>
+            <div style="display: flex; justify-content: space-between; margin-top: 40px; font-size: 11pt; border-top: 1px dashed #ccc; padding-top: 20px;">
+                <div style="width: 45%; text-align: center;">
+                    <div style="margin-bottom: 15px;">
+                        <div style="margin-bottom: 5px;">รับผิดชอบฝากส่ง</div>
+                        <div style="margin-bottom: 8px;">ลงชื่อ ........................................................</div>
+                        <div style="margin-bottom: 8px;">( ${settings.showSignatureNames ? (settings.responsibleName || '........................................................') : '........................................................'} )</div>
+                    </div>
+                    ${settings.senderName ? `
+                        <div style="margin-top: 10px; font-size: 10pt;">
+                            <div style="margin-bottom: 4px;">ผู้นำส่ง</div>
+                            <div>( ${settings.senderName} )</div>
+                        </div>
+                    ` : ''}
                 </div>
                 <div style="width: 45%; text-align: center;">
                     <div style="margin-bottom: 10px;">ลงชื่อ ........................................................</div>
@@ -1268,11 +1299,82 @@ saveSettingsBtn.onclick = async () => {
     settings.license = document.getElementById('set-license').value;
     settings.paymentType = document.getElementById('set-payment-type').value;
     settings.fuelSurcharge = setFuelSurcharge.checked;
+    
+    settings.showSignatureNames = document.getElementById('set-show-sig-names').checked;
+    settings.responsibleName = document.getElementById('set-res-name').value;
+    settings.senderName = document.getElementById('set-sender-name').value;
+
+    settings.logoWidth = parseInt(document.getElementById('set-logo-width').value) || 150;
+    settings.logoAlign = document.getElementById('set-logo-align').value;
+    // Note: settings.logo is updated directly on file select
+
     await saveToDB('settings', settings);
     settingsModal.style.display = 'none';
     updatePreview();
     alert('บันทึกการตั้งค่าสำเร็จ');
 };
+
+document.getElementById('set-show-sig-names').onchange = (e) => {
+    document.getElementById('sig-names-fields').style.display = e.target.checked ? 'block' : 'none';
+};
+
+// Logo Upload Logic
+document.getElementById('set-logo-file').onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        settings.logo = event.target.result;
+        updateLogoPreview();
+    };
+    reader.readAsDataURL(file);
+};
+
+document.getElementById('set-logo-clear').onclick = () => {
+    settings.logo = null;
+    document.getElementById('set-logo-file').value = '';
+    updateLogoPreview();
+};
+
+document.getElementById('set-logo-width').oninput = (e) => {
+    const val = e.target.value;
+    document.getElementById('logo-width-val').textContent = val + 'px';
+    document.getElementById('logo-preview-img').style.width = val + 'px';
+};
+
+document.getElementById('set-logo-align').onchange = (e) => {
+    const val = e.target.value;
+    const container = document.getElementById('logo-preview-container');
+    if (val === 'left') container.style.textAlign = 'left';
+    else if (val === 'center') container.style.textAlign = 'center';
+    else if (val === 'right') container.style.textAlign = 'right';
+};
+
+function updateLogoPreview() {
+    const container = document.getElementById('logo-preview-container');
+    const img = document.getElementById('logo-preview-img');
+    const controls = document.getElementById('logo-controls');
+    const clearBtn = document.getElementById('set-logo-clear');
+    
+    if (settings.logo) {
+        img.src = settings.logo;
+        img.style.width = settings.logoWidth + 'px';
+        container.style.display = 'block';
+        controls.style.display = 'block';
+        clearBtn.style.display = 'inline-block';
+        
+        // Match align preview
+        const val = settings.logoAlign;
+        if (val === 'left') container.style.textAlign = 'left';
+        else if (val === 'center') container.style.textAlign = 'center';
+        else if (val === 'right') container.style.textAlign = 'right';
+    } else {
+        container.style.display = 'none';
+        controls.style.display = 'none';
+        clearBtn.style.display = 'none';
+    }
+}
 
 // --- NAVIGATION & ARCHIVE VIEW ---
 navDashboard.onclick = () => {
@@ -1484,6 +1586,17 @@ async function initApp() {
     document.getElementById('set-license').value = settings.license || '';
     document.getElementById('set-payment-type').value = settings.paymentType || 'เงินเชื่อ';
     setFuelSurcharge.checked = settings.fuelSurcharge || false;
+    
+    document.getElementById('set-show-sig-names').checked = settings.showSignatureNames || false;
+    document.getElementById('set-res-name').value = settings.responsibleName || '';
+    document.getElementById('set-sender-name').value = settings.senderName || '';
+    document.getElementById('sig-names-fields').style.display = settings.showSignatureNames ? 'block' : 'none';
+
+    // Logo setup
+    document.getElementById('set-logo-width').value = settings.logoWidth || 150;
+    document.getElementById('logo-width-val').textContent = (settings.logoWidth || 150) + 'px';
+    document.getElementById('set-logo-align').value = settings.logoAlign || 'left';
+    updateLogoPreview();
 
     updatePreview();
     renderShipments();

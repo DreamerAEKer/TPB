@@ -403,7 +403,7 @@ th {
     background: white;
     display: flex;
     flex-direction: column;
-    padding: 8mm 10mm; /* Reduced from 10mm 15mm */
+    padding: 22mm 10mm 8mm 10mm; /* Increased top padding to 22mm to allow room for logo/sticker */
     position: relative;
     overflow: hidden; /* Ensure no accidental extra pages */
   }

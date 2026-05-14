@@ -37,7 +37,7 @@
                             <button id="save-prefix-btn" class="btn-icon" title="บันทึกเป็นค่าเริ่มต้นของหมวดนี้" style="background: #e2e8f0; color: #1e293b; border-radius: 6px; padding: 0 10px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">💾</button>
                         </div>
                         <div id="prefix-help-text" style="display: none; font-size: 0.75rem; color: #0369a1; margin-top: 6px; background: #e0f2fe; padding: 8px; border-radius: 6px; line-height: 1.4;">
-                            💡 <b>คำแนะนำ:</b> โปรดเปลี่ยน 2 ตัวหน้าให้ตรงกับการใช้งาน แล้วกดปุ่ม 💾 ค่านั้นจะถูกใช้เป็นค่าเริ่มต้นตลอดไป รวมถึงค่าตั้งต้นนี้ที่อาจจะเวียนมาให้ได้ใช้งานจริง
+                            💡 <b>คำแนะนำ:</b> โปรดเปลี่ยน 2 ตัวหน้าให้ตรงกับการใช้งาน แล้วกดปุ่ม 💾
                         </div>
                     </div>
                     <div id="tracking-preview" style="display: none;">-</div>
@@ -257,7 +257,7 @@
 
     <!-- Settings Modal -->
     <div id="settings-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-        <div style="background: white; padding: 2rem; border-radius: var(--radius); width: 400px; max-width: 90%;">
+        <div style="background: white; padding: 2rem; border-radius: var(--radius); width: 420px; max-width: 95%; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
             <h2 style="margin-bottom: 1.5rem; color: var(--primary-color);">ตั้งค่าข้อมูลหัวกระดาษ</h2>
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label>ชื่อผู้ฝาก / บริษัท</label>
@@ -286,6 +286,48 @@
             <div class="form-group" style="margin-bottom: 1rem; flex-direction: row; align-items: center; gap: 10px; background: #fff1f2; padding: 10px; border-radius: 8px;">
                 <input type="checkbox" id="set-fuel-surcharge" style="width: 20px; height: 20px;">
                 <label for="set-fuel-surcharge" style="color: #be123c; margin: 0; cursor: pointer;">⛽ เปิดใช้งาน Fuel Charge (+3บาท)</label>
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem; flex-direction: row; align-items: center; gap: 10px; background: #f0fdf4; padding: 10px; border-radius: 8px;">
+                <input type="checkbox" id="set-show-sig-names" style="width: 20px; height: 20px;">
+                <label for="set-show-sig-names" style="color: #166534; margin: 0; cursor: pointer;">🖋️ พิมพ์ชื่อในช่องลายเซ็น</label>
+            </div>
+            <div id="sig-names-fields" style="display: none; border: 1px solid #bbf7d0; padding: 10px; border-radius: 8px; margin-bottom: 1rem; background: #f0fdf4;">
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                    <label style="font-size: 0.8rem;">ชื่อผู้รับผิดชอบฝากส่ง</label>
+                    <input type="text" id="set-res-name" placeholder="ระบุชื่อ...">
+                </div>
+                <div class="form-group">
+                    <label style="font-size: 0.8rem;">ชื่อผู้จัดส่ง</label>
+                    <input type="text" id="set-sender-name" placeholder="ระบุชื่อ...">
+                </div>
+            </div>
+            
+            <!-- Logo Settings Section -->
+            <div class="form-group" style="margin-bottom: 1rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                <label>โลโก้บริษัท (Logo)</label>
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+                    <input type="file" id="set-logo-file" accept="image/*" style="display: none;">
+                    <button type="button" onclick="document.getElementById('set-logo-file').click()" style="background: #f1f5f9; color: #475569; padding: 6px 12px; font-size: 0.8rem; border: 1px solid #cbd5e1;">📷 เลือกรูปภาพ</button>
+                    <button type="button" id="set-logo-clear" style="background: #fff1f2; color: #ef4444; padding: 6px 12px; font-size: 0.8rem; border: 1px solid #fecaca; display: none;">🗑️ ลบออก</button>
+                </div>
+                <div id="logo-preview-container" style="display: none; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px dashed #cbd5e1; text-align: center; margin-bottom: 10px;">
+                    <img id="logo-preview-img" style="max-height: 80px; max-width: 100%; object-fit: contain;">
+                </div>
+                <div id="logo-controls" style="display: none;">
+                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+                        <label style="font-size: 0.75rem; white-space: nowrap;">ขนาด (กว้าง):</label>
+                        <input type="range" id="set-logo-width" min="50" max="300" value="150" style="flex: 1; padding: 0;">
+                        <span id="logo-width-val" style="font-size: 0.75rem; width: 45px;">150px</span>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label style="font-size: 0.75rem;">การจัดวาง:</label>
+                        <select id="set-logo-align" style="padding: 4px; font-size: 0.8rem; border-radius: 4px; border: 1px solid #cbd5e1; flex: 1;">
+                            <option value="left">⬅️ ซ้าย</option>
+                            <option value="center">↔️ กลาง</option>
+                            <option value="right">➡️ ขวา</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
                 <button id="save-settings-btn" class="btn-primary" style="flex: 1;">บันทึก</button>
