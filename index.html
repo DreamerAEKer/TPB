@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="src/style.css?v=4.8.5">
+    <link rel="stylesheet" href="src/style.css?v=4.8.6">
     <style>
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -24,7 +24,7 @@
         </div>
         <div style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
             <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v4.8.5</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v4.8.6</div>
         </div>
     </div>
 
@@ -88,7 +88,7 @@
 
                 <div class="form-group single-only">
                     <label for="destination">ปลายทาง (รหัสไปรษณีย์)</label>
-                    <input type="text" id="destination" placeholder="ระบุรหัสไปรษณีย์ เช่น 10500">
+                    <input type="text" id="destination" placeholder="ระบุรหัสไปรษณีย์">
                     <div id="remote-missing-warn" style="display: none; color: #ef4444; font-size: 0.75rem; margin-top: 4px; font-weight: 600;">⚠️ ไม่พบข้อมูลพื้นที่ห่างไกลสำหรับรหัสนี้</div>
                 </div>
 
@@ -208,7 +208,7 @@
                 <div style="flex: 1; overflow-y: auto; border-top: 1px solid #e2e8f0;">
                     <table id="shipment-table" style="font-size: 0.9rem;">
                         <thead style="position: sticky; top: 0; z-index: 10; background: #f1f3f5;">
-                            <tr><th>ลำดับ</th><th>ผู้รับ</th><th>ปลายทาง</th><th>เลขที่ TRACKING</th><th>บริการเสริม</th><th>น้ำหนัก</th><th>ค่าบริการ</th><th>ลบ</th></tr>
+                            <tr><th>ลำดับ</th><th>ผู้รับ</th><th>ปลายทาง</th><th>เลขที่สิ่งของ</th><th>บริการเสริม</th><th>น้ำหนัก</th><th>ค่าบริการ</th><th>ลบ</th></tr>
                         </thead>
                         <tbody id="shipment-list"></tbody>
                     </table>
@@ -411,6 +411,6 @@
         <div style="color: #64748b; margin-top: 0.5rem;">กรุณารอสักครู่ (อาจใช้เวลา 1-5 วินาที สำหรับรายการจำนวนมาก)</div>
     </div>
 
-    <script src="src/main.js?v=4.8.5"></script>
+    <script src="src/main.js?v=4.8.6"></script>
 </body>
 </html>

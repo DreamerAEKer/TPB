@@ -384,7 +384,7 @@ function renderShipments() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${displayIdx + 1}</td>
-      <td class="editable-cell" contenteditable="true" data-field="recipient" data-index="${i}" data-placeholder="ระบุนามผู้รับ...">${s.recipient || ''}</td>
+      <td class="editable-cell" contenteditable="true" data-field="recipient" data-index="${i}" data-placeholder="ระบุผู้รับ...">${s.recipient || ''}</td>
       <td class="editable-cell" data-index="${i}">
         <div contenteditable="true" data-field="destination" data-index="${i}" data-placeholder="ระบุปลายทาง..." style="outline:none; width: 100%;">
             ${highlightPostcode(s.destination, isRemoteActive)}
@@ -817,17 +817,18 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                     <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11pt; table-layout: fixed;" border="1">
                         <thead style="background: #f0f0f0;">
                             <tr>
-                                <th style="padding: 6px; width: 45px; text-align: center;">ลำดับ</th>
+                                <th style="padding: 6px; width: 40px; text-align: center;">ลำดับ</th>
                                 <th style="padding: 6px; width: auto; text-align: center;">ผู้รับ</th>
-                                <th style="padding: 6px; width: 110px; text-align: center;">ปลายทาง</th>
-                                <th style="padding: 6px; width: 155px; text-align: center;">เลขที่สิ่งของ 13 หลัก</th>
-                                <th style="padding: 6px; width: 75px; text-align: center;">น้ำหนัก<br>(กรัม)</th>
-                                <th style="padding: 6px; width: 85px; text-align: center;">ค่าบริการ<br>(บาท)</th>
-                                <th style="padding: 6px; width: 90px; text-align: center;">หมายเหตุ</th>
+                                <th style="padding: 6px; width: 100px; text-align: center;">ปลายทาง</th>
+                                <th style="padding: 6px; width: 160px; text-align: center;">เลขที่สิ่งของ 13 หลัก</th>
+                                <th style="padding: 6px; width: 70px; text-align: center;">น้ำหนัก<br>(กรัม)</th>
+                                <th style="padding: 6px; width: 80px; text-align: center;">ค่าบริการ<br>(บาท)</th>
+                                <th style="padding: 6px; width: 100px; text-align: center;">หมายเหตุ</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${rowsHtml}
+                            ${totalPages > 1 ? `
                             <tr style="background: #fafafa; font-weight: bold;">
                                 <td colspan="3" style="padding: 6px; text-align: right;">รวมหน้านี้</td>
                                 <td style="padding: 6px;">${pageItems.length} ชิ้น</td>
@@ -835,6 +836,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                                 <td style="padding: 6px;">${pageTotalFee > 0 ? pageTotalFee.toLocaleString() + ' บาท' : ''}</td>
                                 <td></td>
                             </tr>
+                            ` : ''}
                             ${(p === totalPages - 1) ? `
                             <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #000; font-size: 12pt;">
                                 <td colspan="3" style="padding: 6px; text-align: right;">รวมทั้งสิ้น</td>

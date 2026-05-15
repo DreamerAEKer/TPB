@@ -249,7 +249,28 @@ th {
   font-size: 0.875rem;
   text-transform: uppercase;
   color: #666;
+  text-align: center; /* Center all headers */
 }
+
+/* Specific alignments for Dashboard Table */
+#shipment-table td {
+    text-align: center; /* Default cells to center */
+}
+
+#shipment-table td:nth-child(2),
+#shipment-table td:nth-child(3) {
+    text-align: left; /* Recipient and Destination left-aligned */
+}
+
+/* Proportions */
+#shipment-table th:nth-child(1) { width: 60px; }
+#shipment-table th:nth-child(2) { width: auto; }
+#shipment-table th:nth-child(3) { width: 140px; } /* Reduced Destination width */
+#shipment-table th:nth-child(4) { width: 180px; }
+#shipment-table th:nth-child(5) { width: 120px; }
+#shipment-table th:nth-child(6) { width: 100px; }
+#shipment-table th:nth-child(7) { width: 110px; }
+#shipment-table th:nth-child(8) { width: 60px; }
 
 .tracking-cell {
   font-family: 'Courier New', Courier, monospace;
