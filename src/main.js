@@ -885,8 +885,9 @@ function generateSummarySheet(items, titleSuffix) {
                     ` : ''}
                 </div>
                 <div style="width: 45%; text-align: center;">
-                    <div style="margin-bottom: 10px;">ลงชื่อ ........................................................</div>
-                    <div style="margin-bottom: 10px;">เจ้าหน้าที่รับฝาก</div>
+                    <div style="margin-bottom: 5px;">รับฝากไว้แล้ว</div>
+                    <div style="margin-bottom: 8px;">ลงชื่อ ........................................................</div>
+                    <div style="margin-bottom: 5px;">เจ้าหน้าที่รับฝาก</div>
                     <div style="margin-top: 5px; font-size: 10pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</div>
                 </div>
             </div>
