@@ -763,9 +763,8 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
             <div class="print-page">
                 ${generateLogoHtml()}
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
-                    <div>
+                    <div style="line-height: 1.5;">
                         <div style="font-size: 11pt;">บริษัท <b>${company}</b></div>
-                        <div style="font-size: 11pt;">ที่อยู่ <b>${address}</b></div>
                         <div style="font-size: 11pt;">โทรศัพท์ <b>${phone}</b></div>
                     </div>
                     <div style="text-align: right;">
@@ -901,8 +900,10 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
             ${generateLogoHtml()}
             <center><h2 style="font-size: 18pt;">ใบสรุปการฝากส่งไปรษณียภัณฑ์ชำระค่าฝากส่งเป็น${settings.paymentType || 'เงินเชื่อ'}<br><span style="color: #444; font-size: 16pt;">หมวด: ${titleSuffix}</span></h2></center>
             <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 12pt;">
-                <div>
-                    <div>บริษัท <b>${company}</b></div>
+                <div style="line-height: 1.5;">
+                    <div style="font-size: 11pt;">บริษัท <b>${company}</b></div>
+                    <div style="font-size: 11pt;">ที่อยู่ <b>${address}</b></div>
+                    <div style="font-size: 11pt;">โทรศัพท์ <b>${phone}</b></div>
                 </div>
                 <div style="text-align: right;">
                     <div>วันที่ ........................................</div>
