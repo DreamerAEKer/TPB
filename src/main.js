@@ -465,11 +465,13 @@ window.toggleRowService = async (i, serviceType, checked) => {
             let v = parseFloat(s.options.insuranceVal) || 0;
             if (v <= 0) {
                 const inputVal = prompt("ระบุจำนวนเงินรับประกัน (2,000 - 50,000 บาท):", "2000");
-                v = parseFloat(inputVal) || 0;
-                if (v <= 0) {
-                    alert("จำเป็นต้องระบุจำนวนเงินรับประกัน");
-                    return; // Don't check it if no value
+                const parsed = parseFloat(inputVal);
+                if (!inputVal || isNaN(parsed) || parsed <= 0) {
+                    alert("จำเป็นต้องระบุจำนวนเงินรับประกันเพื่อใช้บริการนี้");
+                    renderShipments(); // Force UI sync
+                    return;
                 }
+                v = parsed;
             }
             s.options.insurance = true;
             s.options.insuranceVal = v;
@@ -527,8 +529,15 @@ function updatePreview() {
   const activeSvc = currentServiceTab;
   regTypeGroup.style.display = (activeSvc === 'REG') ? 'block' : 'none';
   emsDimGroup.style.display = (activeSvc === 'EMS') ? 'block' : 'none';
-  optInsuranceRow.style.display = (activeSvc === 'EMS') ? 'flex' : 'none';
-  optArTrackingRow.style.display = (activeSvc === 'REG') ? 'flex' : 'none';
+  
+  // Insurance row MUST show for EMS always
+  if (optInsuranceRow) {
+      optInsuranceRow.style.display = (activeSvc === 'EMS') ? 'flex' : 'none';
+  }
+  
+  if (optArTrackingRow) {
+      optArTrackingRow.style.display = (activeSvc === 'REG') ? 'flex' : 'none';
+  }
   
   // Rule: Parcel and REG do not have remote surcharge
   const canHaveRemote = (activeSvc !== 'PARCEL' && activeSvc !== 'REG' && activeSvc !== 'CUSTOM');
