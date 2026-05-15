@@ -403,7 +403,7 @@ th {
     background: white;
     display: flex;
     flex-direction: column;
-    padding: 22mm 10mm 8mm 10mm; /* Increased top padding to 22mm to allow room for logo/sticker */
+    padding: 18mm 10mm 8mm 10mm; /* Reduced top padding to save space */
     position: relative;
     overflow: hidden; /* Ensure no accidental extra pages */
     line-height: 1.5; /* Ensure Thai vowels don't overlap */

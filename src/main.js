@@ -725,15 +725,15 @@ function generateShipmentNote(s) {
     }
     return notes.join(", ");
 }
-function generateLogoHtml() {
-    if (!settings.logo) return '';
+function generateLogoHtml(show = true) {
+    if (!settings.logo || !show) return '';
     let align = 'flex-start';
     if (settings.logoAlign === 'center') align = 'center';
     if (settings.logoAlign === 'right') align = 'flex-end';
     
     return `
-        <div style="position: absolute; top: 6mm; left: 10mm; right: 10mm; display: flex; justify-content: ${align}; z-index: 100;">
-            <img src="${settings.logo}" style="width: ${settings.logoWidth}px; max-height: 14mm; object-fit: contain;">
+        <div style="position: absolute; top: 4mm; left: 10mm; right: 10mm; display: flex; justify-content: ${align}; z-index: 100;">
+            <img src="${settings.logo}" style="width: ${settings.logoWidth}px; max-height: 10mm; object-fit: contain;">
         </div>
     `;
 }
@@ -800,7 +800,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
 
         const pageHtml = `
             <div class="print-page">
-                ${generateLogoHtml()}
+                ${generateLogoHtml(p < totalPages - 1)}
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
                     <div style="line-height: 1.5;">
                         <div style="font-size: 11pt;">บริษัท <b>${company}</b></div>
@@ -943,9 +943,12 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     <div style="font-size: 11pt;">ที่อยู่ <b>${address}</b></div>
                     <div style="font-size: 11pt;">โทรศัพท์ <b>${phone}</b></div>
                 </div>
-                <div style="text-align: right;">
-                    <div>วันที่ ........................................</div>
-                    <div style="margin-top: 5px;"><span style="font-weight: bold; font-size: 13pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</span> ใบอนุญาตพิเศษที่ <b>${license}</b></div>
+                <div style="text-align: right; font-size: 11pt;">
+                    <div style="margin-bottom: 4px;">วันที่ ........................................</div>
+                    <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                        <span style="font-weight: bold; font-size: 12pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</span>
+                        <span>ใบอนุญาตพิเศษที่ <b>${license}</b></span>
+                    </div>
                 </div>
             </div>
             
