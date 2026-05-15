@@ -406,6 +406,7 @@ th {
     padding: 22mm 10mm 8mm 10mm; /* Increased top padding to 22mm to allow room for logo/sticker */
     position: relative;
     overflow: hidden; /* Ensure no accidental extra pages */
+    line-height: 1.5; /* Ensure Thai vowels don't overlap */
   }
 
   table {

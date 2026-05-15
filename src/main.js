@@ -380,7 +380,6 @@ function renderShipments() {
         <div contenteditable="true" data-field="destination" data-index="${i}" data-placeholder="ระบุปลายทาง..." style="outline:none; width: 100%;">
             ${highlightPostcode(s.destination, isRemoteActive)}
         </div>
-        ${isIslandPotential ? `<label class="island-check"><input type="checkbox" ${s.isIsland ? 'checked' : ''} onchange="toggleIsland(${i}, this.checked)"> เป็นเกาะ</label>` : ''}
       </td>
       <td class="tracking-cell">
         <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 2px;">${svcDisplay}</div>
@@ -454,13 +453,6 @@ function highlightPostcode(text, isRemote) {
     });
 }
 
-window.toggleIsland = async (i, checked) => {
-    shipments[i].isIsland = checked;
-    applySmartPricing(i);
-    renderShipments();
-    updateSummary();
-    await updateHistory();
-};
 
 window.toggleRowService = async (i, serviceType, checked) => {
     const s = shipments[i];
@@ -469,8 +461,21 @@ window.toggleRowService = async (i, serviceType, checked) => {
     if (serviceType === 'ar') {
         s.options.ar = checked;
     } else if (serviceType === 'insurance') {
-        s.options.insurance = checked;
-        if (checked && !s.options.insuranceVal) s.options.insuranceVal = 2000;
+        if (checked) {
+            let v = parseFloat(s.options.insuranceVal) || 0;
+            if (v <= 0) {
+                const inputVal = prompt("ระบุจำนวนเงินรับประกัน (2,000 - 50,000 บาท):", "2000");
+                v = parseFloat(inputVal) || 0;
+                if (v <= 0) {
+                    alert("จำเป็นต้องระบุจำนวนเงินรับประกัน");
+                    return; // Don't check it if no value
+                }
+            }
+            s.options.insurance = true;
+            s.options.insuranceVal = v;
+        } else {
+            s.options.insurance = false;
+        }
     } else if (serviceType === 'isRemote') {
         s.options.isRemote = checked;
     }
@@ -575,7 +580,20 @@ function updatePreview() {
   }
 
   // Insurance detail depends on both EMS tab and checkbox
-  document.getElementById('insurance-detail').style.display = (optInsurance.checked && activeSvc === 'EMS') ? 'flex' : 'none';
+  const isInsActive = optInsurance.checked && activeSvc === 'EMS';
+  const insDetail = document.getElementById('insurance-detail');
+  insDetail.style.display = isInsActive ? 'flex' : 'none';
+  
+  if (isInsActive) {
+      const insV = parseFloat(insuranceVal.value) || 0;
+      if (insV <= 0) {
+          insuranceVal.style.borderColor = '#ef4444';
+          insuranceVal.style.backgroundColor = '#fef2f2';
+      } else {
+          insuranceVal.style.borderColor = '#86efac';
+          insuranceVal.style.backgroundColor = 'white';
+      }
+  }
 
   let isLarge = false;
   let volWeight = 0;
@@ -720,8 +738,8 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     let combinedHtml = '';
     
     const company = settings.company || '......................................';
-    const address = settings.address || '........................................';
-    const phone = settings.phone || '..................';
+    const phone = settings.phone || '......................................';
+    const address = settings.address || '............................................................................';
     const license = settings.license || 'พ. ...... / 2569';
     
     for (let p = 0; p < totalPages; p++) {
@@ -856,46 +874,46 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     
     let rangeRows = '';
     let totalItemsAll = 0;
+    let totalFee = 0;
     const priceMap = {};
     
     for (const [svc, svcItems] of Object.entries(groups)) {
         totalItemsAll += svcItems.length;
         
-        let start = svcItems[0].trackingFormatted;
-        let end = svcItems[svcItems.length - 1].trackingFormatted;
+        // Sort and get range
+        const sorted = [...svcItems].sort((a, b) => a.trackingFormatted.localeCompare(b.trackingFormatted));
+        const start = sorted[0].trackingFormatted;
+        const end = sorted[sorted.length - 1].trackingFormatted;
         
         rangeRows += `
             <tr>
                 <td style="padding: 8px;">${svc}</td>
-                <td style="font-family: monospace; padding: 8px;">${start}</td>
-                <td style="font-family: monospace; padding: 8px;">${end}</td>
-                <td style="padding: 8px;">${svcItems.length}</td>
+                <td style="padding: 8px;">${start}</td>
+                <td style="padding: 8px;">${end}</td>
+                <td style="padding: 8px;">${svcItems.length} ชิ้น</td>
                 <td style="padding: 8px;"></td>
             </tr>
         `;
         
-        svcItems.forEach(item => {
-            if (!item.weight || item.weight == 0) return;
-            const fee = parseFloat(item.fee) || 0;
-            if (!priceMap[fee]) priceMap[fee] = 0;
-            priceMap[fee]++;
+        svcItems.forEach(s => {
+            const f = parseFloat(s.fee) || 0;
+            totalFee += f;
+            const key = `${svc} @ ${f.toLocaleString()} ฿`;
+            priceMap[key] = (priceMap[key] || 0) + 1;
         });
     }
     
-    const totalFee = items.reduce((sum, item) => sum + ((!item.weight || item.weight == 0) ? 0 : (parseFloat(item.fee) || 0)), 0);
-    
-    let priceBreakdownHtml = Object.entries(priceMap)
-        .sort((a,b) => parseFloat(a[0]) - parseFloat(b[0]))
-        .map(([price, count]) => {
-            if (parseFloat(price) === 0) return ''; // Skip 0 price breakdown
-            return `<span style="display:inline-block; margin-right: 15px;">เรท <b>${price} บาท</b> = ${count} ชิ้น</span>`;
-        })
-        .join('');
-        
+    let priceBreakdownHtml = '';
+    for (const [desc, count] of Object.entries(priceMap)) {
+        priceBreakdownHtml += `<div style="margin-bottom: 4px;">- ${desc}: <b>${count}</b> ชิ้น</div>`;
+    }
+
     const company = settings.company || '......................................';
+    const address = settings.address || '............................................................................';
+    const phone = settings.phone || '......................................';
     const license = settings.license || 'พ. ...... / 2569';
-    
-    return `
+
+    const singleSheetHtml = `
         <div class="print-page">
             ${generateLogoHtml()}
             <center><h2 style="font-size: 18pt;">ใบสรุปการฝากส่งไปรษณียภัณฑ์ชำระค่าฝากส่งเป็น${settings.paymentType || 'เงินเชื่อ'}<br><span style="color: #444; font-size: 16pt;">หมวด: ${titleSuffix}</span></h2></center>
@@ -924,9 +942,9 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </thead>
                 <tbody>
                     ${rangeRows}
-                    <tr>
+                    <tr style="font-weight: bold;">
                         <th colspan="3" style="text-align: right; padding: 8px 15px;">รวมทั้งหมด</th>
-                        <th style="padding: 8px;">${totalItemsAll}</th>
+                        <th style="padding: 8px;">${totalItemsAll} ชิ้น</th>
                         <th style="padding: 8px;"></th>
                     </tr>
                 </tbody>
@@ -937,11 +955,11 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     <table style="width: 100%; border-collapse: collapse; text-align: center;" border="1">
                         <tr><th colspan="2" style="background: #f0f0f0; padding: 8px;">รวมค่าบริการ (บาท)</th></tr>
                         <tr><td style="text-align: left; padding: 8px 15px;">ยอดยกมา</td><td style="padding: 8px;"></td></tr>
-                        <tr><td style="text-align: left; padding: 8px 15px;">ยอดครั้งนี้</td><td style="padding: 8px;"><b>${totalFee > 0 ? totalFee.toLocaleString() + ' บาท' : ''}</b></td></tr>
+                        <tr><td style="text-align: left; padding: 8px 15px;">ยอดครั้งนี้</td><td style="padding: 8px;"><b>${totalFee > 0 ? totalFee.toLocaleString(undefined, {minimumFractionDigits: 2}) + ' บาท' : '0.00 บาท'}</b></td></tr>
                         <tr><td style="text-align: left; padding: 8px 15px;">ยอดยกไป</td><td style="padding: 8px;"></td></tr>
                     </table>
                 </div>
-                <div style="flex: 2;">
+                <div style="flex: 1.5;">
                     <div style="background: #fafafa; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 11pt;">
                         <div style="margin-bottom: 8px;"><b>รายละเอียดชิ้นต่อราคา (อ้างอิง):</b></div>
                         ${priceBreakdownHtml}
@@ -967,7 +985,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     <div style="margin-bottom: 3px;">รับฝากไว้แล้ว</div>
                     <div style="margin-bottom: 6px;">ลงชื่อ ........................................................</div>
                     <div style="margin-bottom: 3px;">เจ้าหน้าที่รับฝาก</div>
-                    <div style="margin-top: 3px; font-size: 10pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</div>
+                    <div style="margin-top: 3px; font-size: 10pt; font-weight: bold;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</div>
                 </div>
             </div>
             ${generateMeterLineHtml()}
@@ -1046,6 +1064,15 @@ addBtn.onclick = async (e) => {
   const type = getServiceType(p);
   const w = parseFloat(weightInput.value) || 0;
   
+  // Insurance Validation
+  if (optInsurance.checked && type === 'EMS') {
+      const insV = parseFloat(insuranceVal.value) || 0;
+      if (insV <= 0) {
+          alert('กรุณาระบุจำนวนเงินรับประกันสำหรับบริการ EMS');
+          insuranceVal.focus();
+          return;
+      }
+  }
   if (bulkToggle.checked) {
       const endD = digitsEndInput.value.trim();
       const count = parseInt(batchCountInput.value);
@@ -1996,83 +2023,54 @@ function setupFluentNavigation() {
             if (e.key === 'Enter') {
                 e.preventDefault();
 
-                if (f === feeInput) {
-                    addBtn.click();
-                    setTimeout(() => {
-                        if (bulkToggle.checked) num8StartInput.focus();
-                        else digitsInput.focus();
-                    }, 100);
-                    return;
-                }
-
-                if (f === weightInput) {
-                    const insVisible = insuranceVal.offsetParent !== null;
-                    if (insVisible) {
-                        insuranceVal.focus();
-                        insuranceVal.select();
-                        return;
-                    }
-                    addBtn.click();
-                    setTimeout(() => {
-                        if (bulkToggle.checked) num8StartInput.focus();
-                        else digitsInput.focus();
-                    }, 100);
-                    return;
-                }
-
-                // CUSTOM NAVIGATION LOGIC
-                
                 // 1. BULK MODE Logic
                 if (bulkToggle.checked) {
-                    if (field === num8StartInput) {
+                    if (f === num8StartInput) {
                         batchCountInput.focus();
                         batchCountInput.select();
                         return;
                     }
-                    if (field === batchCountInput) {
+                    if (f === batchCountInput) {
                         weightInput.focus();
                         weightInput.select();
                         return;
                     }
-                    if (field === weightInput) {
+                    if (f === weightInput) {
                         addBtn.click();
-                        setTimeout(() => num8StartInput.focus(), 100);
                         return;
                     }
                 } 
                 // 2. SINGLE MODE Logic
                 else {
-                    if (field === digitsInput) {
+                    if (f === digitsInput) {
                         recipientInput.focus();
                         return;
                     }
-                    if (field === recipientInput) {
+                    if (f === recipientInput) {
                         destInput.focus();
                         return;
                     }
-                    if (field === destInput) {
+                    if (f === destInput) {
                         weightInput.focus();
                         weightInput.select();
                         return;
                     }
-                    if (field === weightInput) {
+                    if (f === weightInput) {
                         if (currentServiceTab === 'CUSTOM') {
                             feeInput.focus();
                             feeInput.select();
                         } else {
                             addBtn.click();
-                            setTimeout(() => digitsInput.focus(), 100);
                         }
                         return;
                     }
-                    if (field === feeInput && currentServiceTab === 'CUSTOM') {
+                    if (f === feeInput) {
                         addBtn.click();
-                        setTimeout(() => digitsInput.focus(), 100);
                         return;
                     }
                 }
 
-                // Fallback for other fields
+                // Fallback: Navigation to next visible field
                 let nextIdx = index + 1;
                 while (nextIdx < fields.length) {
                     const nextField = fields[nextIdx];
@@ -2082,6 +2080,11 @@ function setupFluentNavigation() {
                         return;
                     }
                     nextIdx++;
+                }
+                
+                // If last field, try adding
+                if (f === feeInput || f === insuranceVal) {
+                    addBtn.click();
                 }
             }
         });
