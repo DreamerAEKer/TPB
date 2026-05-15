@@ -269,9 +269,18 @@ function calculateBaseFee(type, weight, options = {}) {
     }
     
     if (options.insurance && type === 'EMS') {
-        const v = options.insuranceVal || 0;
-        if (v <= 20000) baseFee += 15 + Math.ceil(v / 500) * 5;
-        else baseFee += 215 + Math.ceil((v - 20000) / 500) * 10;
+        const v = parseFloat(options.insuranceVal) || 0;
+        // Insurance must be between 2,100 and 50,000
+        if (v >= 2100) {
+            if (v <= 20000) {
+                // Formula: 15 (Handling) + (5 THB per 500 THB of value)
+                baseFee += 15 + Math.ceil(v / 500) * 5;
+            } else {
+                // Formula: 215 (Base for 20k) + (10 THB per 500 THB of remaining value)
+                const cappedV = Math.min(v, 50000);
+                baseFee += 215 + Math.ceil((cappedV - 20000) / 500) * 10;
+            }
+        }
     }
     return baseFee;
 }
@@ -462,11 +471,10 @@ window.toggleRowService = async (i, serviceType, checked) => {
         s.options.ar = checked;
     } else if (serviceType === 'insurance') {
         if (checked) {
-            let v = parseFloat(s.options.insuranceVal) || 0;
-            if (v <= 0) {
-                const inputVal = prompt("ระบุจำนวนเงินรับประกัน (2,000 - 50,000 บาท):", "2000");
+            if (v < 2100) {
+                const inputVal = prompt("ระบุจำนวนเงินรับประกัน (2,100 - 50,000 บาท):", "2100");
                 const parsed = parseFloat(inputVal);
-                if (!inputVal || isNaN(parsed) || parsed <= 0) {
+                if (!inputVal || isNaN(parsed) || parsed < 2100) {
                     alert("จำเป็นต้องระบุจำนวนเงินรับประกันเพื่อใช้บริการนี้");
                     renderShipments(); // Force UI sync
                     return;
@@ -595,12 +603,16 @@ function updatePreview() {
   
   if (isInsActive) {
       const insV = parseFloat(insuranceVal.value) || 0;
-      if (insV <= 0) {
+      const insWarn = document.getElementById('ins-warn');
+      
+      if (insV < 2100 || insV > 50000) {
           insuranceVal.style.borderColor = '#ef4444';
           insuranceVal.style.backgroundColor = '#fef2f2';
+          if (insWarn) insWarn.style.display = 'block';
       } else {
           insuranceVal.style.borderColor = '#86efac';
           insuranceVal.style.backgroundColor = 'white';
+          if (insWarn) insWarn.style.display = 'none';
       }
   }
 
@@ -1050,7 +1062,13 @@ batchCountInput.oninput = () => syncBatchInputs('count');
 weightInput.oninput = updatePreview;
 feeInput.oninput = updatePreview;
 optAR.onchange = updatePreview;
-optInsurance.onchange = updatePreview;
+optInsurance.onchange = () => {
+    if (optInsurance.checked) {
+        const currentVal = parseFloat(insuranceVal.value) || 0;
+        if (currentVal < 2100) insuranceVal.value = 2100;
+    }
+    updatePreview();
+};
 insuranceVal.oninput = updatePreview;
 recipientInput.oninput = updatePreview;
 destInput.oninput = updatePreview;
@@ -1076,8 +1094,8 @@ addBtn.onclick = async (e) => {
   // Insurance Validation
   if (optInsurance.checked && type === 'EMS') {
       const insV = parseFloat(insuranceVal.value) || 0;
-      if (insV <= 0) {
-          alert('กรุณาระบุจำนวนเงินรับประกันสำหรับบริการ EMS');
+      if (insV < 2100 || insV > 50000) {
+          alert('วงเงินรับประกันต้องอยู่ระหว่าง 2,100 - 50,000 บาท');
           insuranceVal.focus();
           return;
       }
@@ -1403,7 +1421,8 @@ dispatchBtn.onclick = async () => {
 nextNumBtn.onclick = () => {
   const v = digitsInput.value;
   if (currentServiceTab !== 'CUSTOM' && v.length === 8) {
-    digitsInput.value = (parseInt(v) + 1).toString().padStart(8, '0');
+    const nextVal = (parseInt(v) + 1) % 100000000;
+    digitsInput.value = nextVal.toString().padStart(8, '0');
     updatePreview();
     if (bulkToggle.checked) syncBatchInputs('count');
   }
