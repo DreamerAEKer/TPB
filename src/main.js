@@ -779,18 +779,18 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 const displayFee = isWeightEmpty ? '' : parseFloat(s.fee).toLocaleString(undefined, {minimumFractionDigits: 2});
                 
                 rowsHtml += `
-                    <tr>
-                        <td style="padding: 2px 4px;">${p * ITEMS_PER_PAGE + i + 1}</td>
-                        <td style="text-align: left; padding: 2px 4px;">${displayRecipient}</td>
-                        <td style="text-align: left; padding: 2px 4px;">${displayDestination}</td>
-                        <td style="font-family: monospace; font-size: 11pt; padding: 2px 4px;">${s.trackingFormatted}</td>
-                        <td style="padding: 2px 4px; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}</td>
-                        <td style="padding: 2px 4px;">${displayFee}</td>
-                        <td style="padding: 2px 4px; font-size: 8pt; text-align: left;">${generateShipmentNote(s)}</td>
+                    <tr style="height: 8.5mm;">
+                        <td style="padding: 1px 2px; text-align: center; vertical-align: middle; width: 10mm;">${p * ITEMS_PER_PAGE + i + 1}</td>
+                        <td style="text-align: left; padding: 1px 4px; vertical-align: middle; width: 45mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayRecipient}</td>
+                        <td style="text-align: left; padding: 1px 4px; vertical-align: middle; width: 40mm;">${displayDestination}</td>
+                        <td style="font-family: monospace; font-size: 11pt; padding: 1px 2px; text-align: center; vertical-align: middle; width: 42mm;">${s.trackingFormatted}</td>
+                        <td style="padding: 1px 2px; text-align: center; vertical-align: middle; width: 18mm; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}</td>
+                        <td style="padding: 1px 2px; text-align: center; vertical-align: middle; width: 18mm;">${displayFee}</td>
+                        <td style="padding: 1px 4px; font-size: 8pt; text-align: left; vertical-align: middle;">${generateShipmentNote(s)}</td>
                     </tr>
                 `;
             } else {
-                rowsHtml += `<tr><td style="padding: 2px 4px;">&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+                rowsHtml += `<tr style="height: 8.5mm;"><td style="text-align: center; vertical-align: middle;">&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
             }
         }
         
@@ -817,19 +817,19 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                     &nbsp;
                 </div>
                 <div style="margin-bottom: 5px;">
-                    <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11pt;" border="1">
+                    <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 10.5pt; table-layout: fixed;" border="1">
                         <thead style="background: #f0f0f0;">
-                            <tr>
-                                <th rowspan="2" style="padding: 4px;">ลำดับที่</th>
-                                <th rowspan="2" style="padding: 4px;">นามผู้รับ</th>
-                                <th rowspan="2" style="padding: 4px;">ปลายทาง<br>รหัสไปรษณีย์</th>
-                                <th rowspan="2" style="padding: 4px; width: 150px;">เลขที่สิ่งของ 13 หลัก</th>
-                                <th colspan="2" style="padding: 4px;">การรับประกัน และค่าบริการ</th>
-                                <th rowspan="2" style="padding: 4px;">หมายเหตุ</th>
+                            <tr style="height: 7mm;">
+                                <th rowspan="2" style="padding: 2px; width: 10mm;">ลำดับ</th>
+                                <th rowspan="2" style="padding: 2px; width: 45mm;">นามผู้รับ</th>
+                                <th rowspan="2" style="padding: 2px; width: 40mm;">ปลายทาง<br>รหัสไปรษณีย์</th>
+                                <th rowspan="2" style="padding: 2px; width: 42mm;">เลขที่สิ่งของ 13 หลัก</th>
+                                <th colspan="2" style="padding: 2px;">การรับประกัน และค่าบริการ</th>
+                                <th rowspan="2" style="padding: 2px;">หมายเหตุ</th>
                             </tr>
-                            <tr>
-                                <th style="padding: 4px;">น้ำหนัก<br>(กรัม)</th>
-                                <th style="padding: 4px;">ค่าบริการ<br>(บาท)</th>
+                            <tr style="height: 7mm;">
+                                <th style="padding: 2px; width: 18mm;">น้ำหนัก<br>(กรัม)</th>
+                                <th style="padding: 2px; width: 18mm;">ค่าบริการ<br>(บาท)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -855,10 +855,10 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-top: 5px; padding-top: 5px; font-size: 11pt; page-break-inside: avoid; break-inside: avoid;">
                     <div style="width: 48%; text-align: center;">
-                        <div style="margin-bottom: 8px;">
+                        <div style="margin-bottom: 5px;">
                             <div style="margin-bottom: 2px;">รับผิดชอบฝากส่ง</div>
-                            <div style="margin-bottom: 4px;">ลงชื่อ ........................................................</div>
-                            <div style="margin-bottom: 3px;">( ${settings.showSignatureNames ? (settings.responsibleName || '........................................................') : '........................................................'} )</div>
+                            <div style="margin-bottom: 3px;">ลงชื่อ ........................................................</div>
+                            <div style="margin-bottom: 2px;">( ${settings.showSignatureNames ? (settings.responsibleName || '........................................................') : '........................................................'} )</div>
                         </div>
                         ${settings.senderName ? `
                             <div style="margin-top: 5px; font-size: 10pt;">
