@@ -718,6 +718,7 @@ function generateShipmentNote(s) {
     const notes = [];
     if (s.options.ar) notes.push("AR");
     if (s.options.arTracking) notes.push("AR Track");
+    if (s.options.insurance) notes.push(`🛡️ ${(parseFloat(s.options.insuranceVal)||0).toLocaleString()}`);
     if (s.options.useVolWeight) notes.push("ขนาดใหญ่");
     if (s.serviceType === 'REG') {
         if (s.options.regType === 'BOX') notes.push("หีบห่อ");
@@ -783,7 +784,6 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         <td style="text-align: left; padding: 3px 4px;">${displayRecipient}</td>
                         <td style="text-align: left; padding: 3px 4px;">${displayDestination}</td>
                         <td style="font-family: monospace; font-size: 11pt; padding: 3px 4px;">${s.trackingFormatted}</td>
-                        <td style="padding: 3px 4px;">${s.options?.insurance ? (parseFloat(s.options.insuranceVal)||0).toLocaleString() : ''}</td>
                         <td style="padding: 3px 4px; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}</td>
                         <td style="padding: 3px 4px;">${displayFee}</td>
                         <td style="padding: 3px 4px; font-size: 8pt; text-align: left;">${generateShipmentNote(s)}</td>
@@ -824,11 +824,10 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                                 <th rowspan="2" style="padding: 4px;">นามผู้รับ</th>
                                 <th rowspan="2" style="padding: 4px;">ปลายทาง<br>รหัสไปรษณีย์</th>
                                 <th rowspan="2" style="padding: 4px; width: 150px;">เลขที่สิ่งของ 13 หลัก</th>
-                                <th colspan="3" style="padding: 4px;">การรับประกัน และค่าบริการ</th>
+                                <th colspan="2" style="padding: 4px;">การรับประกัน และค่าบริการ</th>
                                 <th rowspan="2" style="padding: 4px;">หมายเหตุ</th>
                             </tr>
                             <tr>
-                                <th style="padding: 4px;">รับประกัน<br>(บาท)</th>
                                 <th style="padding: 4px;">น้ำหนัก<br>(กรัม)</th>
                                 <th style="padding: 4px;">ค่าบริการ<br>(บาท)</th>
                             </tr>
@@ -838,7 +837,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                             <tr style="background: #fafafa; font-weight: bold;">
                                 <td colspan="3" style="padding: 6px; text-align: right;">รวมหน้านี้</td>
                                 <td style="padding: 6px;">${pageItems.length} ชิ้น</td>
-                                <td colspan="2"></td>
+                                <td colspan="1"></td>
                                 <td style="padding: 6px;">${pageTotalFee > 0 ? pageTotalFee.toLocaleString() + ' บาท' : ''}</td>
                                 <td></td>
                             </tr>
@@ -846,7 +845,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                             <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #000; font-size: 12pt;">
                                 <td colspan="3" style="padding: 6px; text-align: right;">รวมทั้งสิ้น</td>
                                 <td style="padding: 6px;">${grandTotalItems} ชิ้น</td>
-                                <td colspan="2"></td>
+                                <td colspan="1"></td>
                                 <td style="padding: 6px; border-bottom: 3px double #000;">${grandTotalFee > 0 ? grandTotalFee.toLocaleString() + ' บาท' : ''}</td>
                                 <td></td>
                             </tr>
