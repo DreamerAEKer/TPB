@@ -395,16 +395,16 @@ function renderShipments() {
         <div style="font-weight: 600;">${s.trackingFormatted}</div>
       </td>
       <td class="services-cell">
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+        <div style="display: flex; gap: 8px; flex-wrap: nowrap; justify-content: center;">
             <label class="svc-mini" title="ตอบรับ (AR)"><input type="checkbox" ${s.options?.ar ? 'checked' : ''} onchange="toggleRowService(${i}, 'ar', this.checked)"> AR</label>
-            ${s.serviceType === 'REG' ? `<label class="svc-mini" title="ตอบรับ Tracking (8 บาท)"><input type="checkbox" ${s.options?.arTracking ? 'checked' : ''} onchange="toggleRowService(${i}, 'arTracking', this.checked)"> ART</label>` : ''}
+            ${s.serviceType === 'REG' ? `<label class="svc-mini" title="ตอบรับ Tracking (8 บาท)"><input type="checkbox" ${s.options?.arTracking ? 'checked' : ''} onchange="toggleRowService(${i}, 'arTracking', this.checked)"> AR Track</label>` : ''}
             ${s.serviceType === 'EMS' ? `<label class="svc-mini" title="ประกัน"><input type="checkbox" ${s.options?.insurance ? 'checked' : ''} onchange="toggleRowService(${i}, 'insurance', this.checked)"> 🛡️</label>` : ''}
             ${(s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && s.destination.includes('เกาะ')) ? `<label class="svc-mini" title="พื้นที่ห่างไกล"><input type="checkbox" ${s.options?.isRemote ? 'checked' : ''} onchange="toggleRowService(${i}, 'isRemote', this.checked)"> 🏝️</label>` : ''}
         </div>
       </td>
-      <td style="${s.options?.useVolWeight ? 'font-weight: 800;' : ''}">${s.weight} กรัม</td>
-      <td class="editable-cell ${priceClass}" contenteditable="true" data-field="fee" data-index="${i}" title="${priceClass ? 'พื้นที่ปกติ แต่มีการบวกเพิ่ม 20 บาท?' : ''}">${s.fee} บาท</td>
-      <td><button class="btn-icon delete-btn" data-index="${i}">ลบ</button></td>
+      <td class="editable-cell" contenteditable="true" data-field="weight" data-index="${i}" style="${s.options?.useVolWeight ? 'font-weight: 800;' : ''}">${s.weight}</td>
+      <td class="editable-cell ${priceClass}" contenteditable="true" data-field="fee" data-index="${i}" title="${priceClass ? 'พื้นที่ปกติ แต่มีการบวกเพิ่ม 20 บาท?' : ''}">${s.fee}</td>
+      <td contenteditable="false"><button class="btn-icon delete-btn" data-index="${i}">ลบ</button></td>
     `;
     shipmentList.appendChild(tr);
   });
@@ -440,8 +440,19 @@ function renderShipments() {
         const s = shipments[idx];
         
         let needsRender = false;
-        if (field === 'fee' && s.serviceType !== 'CUSTOM') {
+        if ((field === 'fee' || field === 'weight') && s.serviceType !== 'CUSTOM') {
             const oldFee = s.fee;
+            
+            // If weight was changed, recalculate fee first
+            if (field === 'weight') {
+                const w = parseFloat(s.weight) || 0;
+                const base = calculateBaseFee(s.serviceType, w, s.options || {});
+                let total = base;
+                if (s.options?.isRemote) total += 20;
+                if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
+                s.fee = total;
+            }
+            
             applySmartPricing(idx);
             if (s.fee !== oldFee) needsRender = true;
         } else if (field === 'destination') {
