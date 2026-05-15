@@ -414,7 +414,12 @@ function renderShipments() {
         <div style="display: flex; gap: 8px; flex-wrap: nowrap; justify-content: center;">
             <label class="svc-mini" title="ตอบรับ (AR)"><input type="checkbox" ${s.options?.ar ? 'checked' : ''} onchange="toggleRowService(${i}, 'ar', this.checked)"> AR</label>
             ${s.serviceType === 'REG' ? `<label class="svc-mini" title="ตอบรับ Tracking (8 บาท)"><input type="checkbox" ${s.options?.arTracking ? 'checked' : ''} onchange="toggleRowService(${i}, 'arTracking', this.checked)"> AR Track</label>` : ''}
-            ${s.serviceType === 'EMS' ? `<label class="svc-mini" title="ประกัน"><input type="checkbox" ${s.options?.insurance ? 'checked' : ''} onchange="toggleRowService(${i}, 'insurance', this.checked)"> 🛡️</label>` : ''}
+            ${s.serviceType === 'EMS' ? `
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <label class="svc-mini" title="ประกัน"><input type="checkbox" ${s.options?.insurance ? 'checked' : ''} onchange="toggleRowService(${i}, 'insurance', this.checked)"> 🛡️</label>
+                    ${s.options?.insurance ? `<input type="text" class="mini-input" style="width: 50px; font-size: 0.75rem; padding: 2px;" value="${s.options.insuranceVal || 2000}" oninput="this.value = sanitizeNumeric(this.value); updateRowInsuranceVal(${i}, this.value)">` : ''}
+                </div>
+            ` : ''}
             ${(s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && s.destination.includes('เกาะ')) ? `<label class="svc-mini" title="พื้นที่ห่างไกล"><input type="checkbox" ${s.options?.isRemote ? 'checked' : ''} onchange="toggleRowService(${i}, 'isRemote', this.checked)"> 🏝️</label>` : ''}
         </div>
       </td>
@@ -525,18 +530,19 @@ window.toggleRowService = async (i, serviceType, checked) => {
         if (checked) s.options.ar = false;
     } else if (serviceType === 'insurance') {
         if (checked) {
-            if (v < 2100) {
-                const inputVal = prompt("ระบุจำนวนเงินรับประกัน (2,100 - 50,000 บาท):", "2100");
-                const parsed = parseFloat(inputVal);
-                if (!inputVal || isNaN(parsed) || parsed < 2100) {
-                    alert("จำเป็นต้องระบุจำนวนเงินรับประกันเพื่อใช้บริการนี้");
-                    renderShipments(); // Force UI sync
+            let currentVal = s.options.insuranceVal || 2000;
+            if (currentVal < 2000) {
+                const inputVal = prompt("ระบุจำนวนเงินรับประกัน (2,000 - 50,000 บาท):", "2000");
+                const parsed = parseFloat(sanitizeNumeric(inputVal || ""));
+                if (!inputVal || isNaN(parsed) || parsed < 2000) {
+                    alert("จำเป็นต้องระบุจำนวนเงินรับประกันเพื่อใช้บริการนี้ (ขั้นต่ำ 2,000 บาท)");
+                    renderShipments();
                     return;
                 }
-                v = parsed;
+                currentVal = parsed;
             }
             s.options.insurance = true;
-            s.options.insuranceVal = v;
+            s.options.insuranceVal = currentVal;
         } else {
             s.options.insurance = false;
         }
@@ -559,6 +565,25 @@ window.toggleRowService = async (i, serviceType, checked) => {
     renderShipments();
     updateSummary();
     await updateHistory();
+};
+
+window.updateRowInsuranceVal = async (i, val) => {
+    const s = shipments[i];
+    const parsed = parseFloat(val) || 0;
+    s.options.insuranceVal = parsed;
+    
+    // Recalculate fee
+    const base = calculateBaseFee(s.serviceType, s.weight, s.options);
+    let total = base;
+    if (s.options.isRemote) total += 20;
+    if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
+    s.fee = total;
+
+    updateSummary();
+    await updateHistory();
+    // No full render here to avoid losing focus while typing
+    const row = document.querySelector(`td.editable-cell[data-field="fee"][data-index="${i}"]`);
+    if (row) row.innerText = total;
 };
 
 function applySmartPricing(i) {
