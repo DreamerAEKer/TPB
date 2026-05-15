@@ -99,23 +99,54 @@ async function loadArchive(id) {
 
 // --- PRICING DATA ---
 const rates = {
-  EMS: { tiers: [[10, 32], [20, 32], [100, 37], [250, 42], [500, 52], [1000, 67], [2000, 97], [5000, 197]], ar: 12 },
-  EMS_JUMBO: { tiers: [[5000, 250], [10000, 350], [15000, 450], [20000, 550], [25000, 650], [30000, 750]], ar: 12 },
+  EMS: { tiers: [
+    [20, 32], [100, 37], [250, 42], [500, 52], [1000, 67], [1500, 82], [2000, 97], [2500, 100], [3000, 105], [3500, 110], 
+    [4000, 120], [4500, 120], [5000, 120], [5500, 130], [6000, 140], [6500, 150], [7000, 160], [7500, 170], [8000, 180], [8500, 190], 
+    [9000, 200], [9500, 210], [10000, 220], [11000, 230], [12000, 240], [13000, 250], [14000, 260], [15000, 270], [16000, 280], [17000, 290], 
+    [18000, 300], [19000, 310], [20000, 320], [21000, 330], [22000, 340], [23000, 350], [24000, 360], [25000, 380], [26000, 400], [27000, 420], 
+    [28000, 440], [29000, 460], [30000, 480]
+  ], ar: 12 },
   REG_ENVELOPE: { tiers: [[10, 18], [20, 19], [100, 24], [250, 30], [500, 36], [1000, 53], [2000, 75]], ar: 3 },
-  REG_BOX: { tiers: [[10, 22], [20, 22], [100, 26], [250, 32], [500, 38], [1000, 55], [2000, 77]], ar: 3 },
-  ECO: { tiers: [[10, 20], [20, 20], [100, 22], [250, 26], [500, 30], [1000, 40], [2000, 60]], ar: 3 },
+  REG_BOX: { tiers: [[500, 49], [1000, 60], [2000, 77]], ar: 3 },
+  ECO: { tiers: [[20, 20], [100, 22], [250, 26], [500, 30], [1000, 40], [2000, 60], [4000, 80], [6000, 120], [10000, 160]], ar: 3 },
   PARCEL: { base: 25, baseWeight: 1000, perKg: 20, ar: 3 }
 };
 
-const REMOTE_ALWAYS_ZIPCODES = new Set(['21160', '23000', '23120', '23170', '50250', '50310', '50350', '55130', '55220', '57170', '57180', '57260', '57310', '57340', '58000', '58110', '58120', '58130', '58140', '58150', '63150', '63170', '71180', '71240', '81210', '82000', '83000', '83100', '83110', '83120', '83130', '83150', '84140', '84310', '85000', '91000', '91110', '92110', '92120', '94000', '94110', '94120', '94130', '94140', '94150', '94160', '94170', '94180', '94190', '94220', '94230', '95000', '95110', '95120', '95130', '95140', '95150', '95160', '95170', '96000', '96110', '96120', '96130', '96140', '96150', '96160', '96170', '96180', '96190', '96210', '96220']);
-const REMOTE_ISLAND_ZIPCODES = new Set(['20120', '20150', '81130', '81150', '82160', '84220', '84280', '84320', '84330', '84360']);
+const REMOTE_ALWAYS_ZIPCODES = new Set([
+  // Northern
+  '50250', '50310', '50350', // Chiang Mai
+  '55130', '55220', // Nan
+  '57170', '57180', '57260', '57310', '57340', // Chiang Rai
+  '58000', '58110', '58120', '58130', '58140', '58150', // Mae Hong Son
+  '63150', '63170', // Tak
+  // Western
+  '71180', '71240', // Kanchanaburi
+  // Southern (Full Area)
+  '83000', '83100', '83110', '83120', '83130', '83150', // Phuket
+  '94000', '94110', '94120', '94130', '94140', '94150', '94160', '94170', '94180', '94190', '94220', '94230', // Pattani
+  '95000', '95110', '95120', '95130', '95140', '95150', '95160', '95170', // Yala
+  '96000', '96110', '96120', '96130', '96140', '96150', '96160', '96170', '96180', '96190', '96210', '96220'  // Narathiwat
+]);
+
+const REMOTE_ISLAND_ZIPCODES = new Set([
+  '20120', '20150', // Chonburi (Sichang, Larn)
+  '21160', // Rayong (Samet)
+  '23000', '23120', '23170', // Trat (Kood, Mak, Chang)
+  '81130', '81150', '81210', // Krabi (Siboya, Lanta, Phi Phi)
+  '82000', '82160', // Phang Nga (Panyee, Yao)
+  '84140', '84310', '84320', '84330', // Surat (Samui)
+  '84220', '84280', '84360', // Surat (Phluay, Phangan, Tao)
+  '85000', // Ranong (Phayam)
+  '91000', '91110', // Satun (Sarai, Puyu, Lipe, Bulon)
+  '92110', '92120' // Trang (Libong, Mook, Sukorn)
+]);
 
 // --- APP STATE ---
 let shipments = [];
 let history = [];
 let historyIndex = 0;
 let currentServiceTab = 'EMS';
-let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: false, paymentType: 'เงินเชื่อ', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left', postOffice: 'ไปรษณีย์กลาง 10501' };
+let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: true, paymentType: 'เงินเชื่อ', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left', postOffice: 'ไปรษณีย์กลาง 10501', meterDescending: 0, meterAscending: 0 };
 let editingArchiveId = null;
 let currentView = 'dashboard';
 
@@ -177,6 +208,7 @@ const exportCsvBtn = document.getElementById('export-csv-btn');
 const regTypeGroup = document.getElementById('reg-type-group');
 const regTypeInput = document.getElementById('reg-type');
 const emsDimGroup = document.getElementById('ems-dim-group');
+const loadingOverlay = document.getElementById('loading-overlay');
 const dimW = document.getElementById('dim-w');
 const dimL = document.getElementById('dim-l');
 const dimH = document.getElementById('dim-h');
@@ -211,8 +243,6 @@ function calculateBaseFee(type, weight, options = {}) {
         let actualType = type;
         if (type === 'REG') {
             actualType = (options.regType === 'BOX') ? 'REG_BOX' : 'REG_ENVELOPE';
-        } else if (type === 'EMS' && options.isJumbo) {
-            actualType = 'EMS_JUMBO';
         }
         
         const serviceTable = rates[actualType];
@@ -302,6 +332,23 @@ function updateSummary() {
       const counterEl = document.getElementById(`count-${svc.toLowerCase()}`);
       if(counterEl) counterEl.textContent = count;
   });
+  
+  updateMeterStatus();
+}
+
+function updateMeterStatus() {
+    const isMeter = settings.paymentType === 'เครื่องประทับไปรษณียากร';
+    const statusBar = document.getElementById('meter-status-bar');
+    const descVal = document.getElementById('meter-descending-val');
+    const lowWarn = document.getElementById('meter-low-warn');
+    
+    if (isMeter) {
+        statusBar.classList.remove('hidden');
+        descVal.textContent = (settings.meterDescending || 0).toLocaleString(undefined, {minimumFractionDigits: 2}) + ' ฿';
+        lowWarn.style.display = (settings.meterDescending < 1000) ? 'block' : 'none';
+    } else {
+        statusBar.classList.add('hidden');
+    }
 }
 
 function renderShipments() {
@@ -318,9 +365,8 @@ function renderShipments() {
     const isIslandPotential = zip && REMOTE_ISLAND_ZIPCODES.has(zip);
     const isActuallyRemote = isAlwaysRemote || (isIslandPotential && s.isIsland);
 
-    const baseFee = calculateBaseFee(s.serviceType, s.weight, s.options || {});
-    const isPriceNormalWithSurcharge = parseFloat(s.fee) === (baseFee + 20);
-    const priceClass = (!isActuallyRemote && isPriceNormalWithSurcharge && s.serviceType !== 'CUSTOM') ? 'price-warn' : '';
+    const isRemoteActive = s.options?.isRemote || isActuallyRemote;
+    const priceClass = (!isActuallyRemote && !s.options?.isRemote && isPriceNormalWithSurcharge && s.serviceType !== 'CUSTOM') ? 'price-warn' : '';
 
     const svcDisplay = s.serviceType === 'CUSTOM' ? (s.customServiceName || 'กำหนดเอง') : s.serviceType;
 
@@ -330,7 +376,7 @@ function renderShipments() {
       <td class="editable-cell" contenteditable="true" data-field="recipient" data-index="${i}" data-placeholder="ระบุนามผู้รับ...">${s.recipient || ''}</td>
       <td class="editable-cell" data-index="${i}">
         <div contenteditable="true" data-field="destination" data-index="${i}" data-placeholder="ระบุปลายทาง..." style="outline:none; width: 100%;">
-            ${highlightPostcode(s.destination, isActuallyRemote)}
+            ${highlightPostcode(s.destination, isRemoteActive)}
         </div>
         ${isIslandPotential ? `<label class="island-check"><input type="checkbox" ${s.isIsland ? 'checked' : ''} onchange="toggleIsland(${i}, this.checked)"> เป็นเกาะ</label>` : ''}
       </td>
@@ -402,7 +448,7 @@ function renderShipments() {
 function highlightPostcode(text, isRemote) {
     if (!text) return '';
     return text.replace(/(\d{5})/, (match) => {
-        return isRemote ? `<span class="remote-highlight">${match}</span>` : match;
+        return isRemote ? `<strong>${match}</strong>` : match;
     });
 }
 
@@ -432,6 +478,10 @@ window.toggleRowService = async (i, serviceType, checked) => {
     let total = base;
     if (s.options.isRemote) total += 20;
     if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
+    
+    // Store metadata for bolding in manifest
+    s.isVolumetric = !!s.useVolWeight;
+    s.isRemoteBold = !!s.optRemote;
     
     s.fee = total;
     
@@ -525,7 +575,7 @@ function updatePreview() {
   // Insurance detail depends on both EMS tab and checkbox
   document.getElementById('insurance-detail').style.display = (optInsurance.checked && activeSvc === 'EMS') ? 'flex' : 'none';
 
-  let isJumbo = false;
+  let isLarge = false;
   let volWeight = 0;
   let useVolWeight = false;
   let calcWeight = w;
@@ -537,9 +587,9 @@ function updatePreview() {
       const total = wDim + lDim + hDim;
       const maxSide = Math.max(wDim, lDim, hDim);
       
-      if (maxSide > 60 && total <= 120) isJumbo = true;
-      if (maxSide > 60 && maxSide <= 120 && total <= 240) isJumbo = true;
-      jumboBadge.style.display = isJumbo ? 'block' : 'none';
+      // Large item logic: side > 60cm or sum > 120cm
+      if (maxSide > 60 || total > 120) isLarge = true;
+      jumboBadge.style.display = isLarge ? 'block' : 'none';
 
       // Volumetric weight calculation (W * L * H / 5 in grams)
       volWeight = Math.ceil((wDim * lDim * hDim) / 5);
@@ -550,7 +600,13 @@ function updatePreview() {
       
       const volWarnBadge = document.getElementById('vol-warn-badge');
       if (volWarnBadge) {
-          volWarnBadge.style.display = (volWeight > 30000) ? 'block' : 'none';
+          // Warning for both Actual weight and Volumetric weight exceeding 30kg
+          volWarnBadge.style.display = (w > 30000 || volWeight > 30000) ? 'block' : 'none';
+      }
+      
+      const dimLimitBadge = document.getElementById('dim-limit-badge');
+      if (dimLimitBadge) {
+          dimLimitBadge.style.display = (total > 240) ? 'block' : 'none';
       }
   }
 
@@ -560,8 +616,7 @@ function updatePreview() {
         arTracking: optArTracking.checked,
         insurance: optInsurance.checked, 
         insuranceVal: parseFloat(insuranceVal.value),
-        regType: regTypeInput.value,
-        isJumbo: isJumbo
+        regType: regTypeInput.value
       });
       let total = base;
       if (optRemote.checked) total += 20;
@@ -570,11 +625,10 @@ function updatePreview() {
           total += 3;
       }
 
-      // Check if this is the "Starting" state (no user input yet)
-      const isInitialState = !recipientInput.value && !destInput.value && w === 0;
-      if (isInitialState) {
-          feeInput.value = `เริ่มต้น ${total}`;
-          feeInput.style.color = '#888'; // Make it less prominent
+      // Rule: If weight is 0 and it's not CUSTOM, fee is 0
+      if (w === 0 && activeSvc !== 'CUSTOM') {
+          feeInput.value = '0';
+          feeInput.style.color = '#888';
       } else {
           feeInput.value = total;
           feeInput.style.color = 'inherit';
@@ -629,7 +683,6 @@ function generateShipmentNote(s) {
     }
     return notes.join(", ");
 }
-
 function generateLogoHtml() {
     if (!settings.logo) return '';
     let align = 'flex-start';
@@ -643,10 +696,26 @@ function generateLogoHtml() {
     `;
 }
 
+function generateMeterLineHtml() {
+    if (settings.paymentType !== 'เครื่องประทับไปรษณียากร') return '';
+    return `
+        <div style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 11pt;">
+            <div style="font-weight: bold; margin-bottom: 5px;">ตัวเลขจำนวนเงินในเครื่องหลังการส่งครั้งนี้ คือ</div>
+            <div style="margin-left: 20px;">
+                1. แถวบน (คงเหลือ) .......................<b>${(settings.meterDescending || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</b>....................... บาท
+            </div>
+            <div style="margin-left: 20px; margin-top: 5px;">
+                2. แถวล่าง (สะสม) .......................<b>${(settings.meterAscending || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</b>....................... บาท
+            </div>
+        </div>
+    `;
+}
+
 // --- PRINTING LOGIC ---
-function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
+function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     const ITEMS_PER_PAGE = 25;
     const totalPages = Math.ceil(itemsToPrint.length / ITEMS_PER_PAGE) || 1;
+    let combinedHtml = '';
     
     const company = settings.company || '......................................';
     const address = settings.address || '........................................';
@@ -661,11 +730,11 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
             if (i < pageItems.length) {
                 const s = pageItems[i];
                 
+                const displayRecipient = s.recipient || '';
+                const displayDestination = highlightPostcode(s.destination, s.options?.isRemote);
                 const isWeightEmpty = !s.weight || s.weight == 0;
-                const displayRecipient = isWeightEmpty ? '' : (s.recipient || '');
-                const displayDestination = isWeightEmpty ? '' : highlightPostcode(s.destination, s.options?.isRemote);
                 const displayWeight = isWeightEmpty ? '' : s.weight;
-                const displayFee = isWeightEmpty ? '' : s.fee;
+                const displayFee = isWeightEmpty ? '' : parseFloat(s.fee).toLocaleString(undefined, {minimumFractionDigits: 2});
                 
                 rowsHtml += `
                     <tr>
@@ -673,8 +742,8 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
                         <td style="text-align: left; padding: 3px 4px;">${displayRecipient}</td>
                         <td style="text-align: left; padding: 3px 4px;">${displayDestination}</td>
                         <td style="font-family: monospace; font-size: 11pt; padding: 3px 4px;">${s.trackingFormatted}</td>
-                        <td style="padding: 3px 4px;">${s.options?.insurance ? s.options.insuranceVal : ''}</td>
-                        <td style="padding: 3px 4px; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight}</td>
+                        <td style="padding: 3px 4px;">${s.options?.insurance ? (parseFloat(s.options.insuranceVal)||0).toLocaleString() : ''}</td>
+                        <td style="padding: 3px 4px; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}</td>
                         <td style="padding: 3px 4px;">${displayFee}</td>
                         <td style="padding: 3px 4px; font-size: 8pt; text-align: left;">${generateShipmentNote(s)}</td>
                     </tr>
@@ -763,16 +832,20 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
                         <div style="margin-bottom: 5px;">รับฝากไว้แล้ว</div>
                         <div style="margin-bottom: 8px;">ลงชื่อ ........................................................</div>
                         <div style="margin-bottom: 5px;">เจ้าหน้าที่รับฝาก</div>
-                        <div style="margin-top: 5px; font-size: 10pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</div>
+                        <div style="margin-top: 5px; font-size: 10pt; font-weight: bold; white-space: nowrap;">${(settings.postOffice && settings.postOffice.trim()) ? settings.postOffice : 'ไปรษณีย์กลาง 10501'}</div>
                     </div>
                 </div>
+                ${generateMeterLineHtml()}
             </div>
         `;
-        container.innerHTML += pageHtml;
+        for (let c = 0; c < copies; c++) {
+            combinedHtml += pageHtml;
+        }
     }
+    return combinedHtml;
 }
 
-function generateSummarySheet(items, titleSuffix) {
+function generateSummarySheet(items, titleSuffix, copies = 1) {
     const groups = {};
     items.forEach(item => {
         const svc = item.customServiceName || item.serviceType;
@@ -812,7 +885,10 @@ function generateSummarySheet(items, titleSuffix) {
     
     let priceBreakdownHtml = Object.entries(priceMap)
         .sort((a,b) => parseFloat(a[0]) - parseFloat(b[0]))
-        .map(([price, count]) => `<span style="display:inline-block; margin-right: 15px;">เรท <b>${price} บาท</b> = ${count} ชิ้น</span>`)
+        .map(([price, count]) => {
+            if (parseFloat(price) === 0) return ''; // Skip 0 price breakdown
+            return `<span style="display:inline-block; margin-right: 15px;">เรท <b>${price} บาท</b> = ${count} ชิ้น</span>`;
+        })
         .join('');
         
     const company = settings.company || '......................................';
@@ -891,8 +967,15 @@ function generateSummarySheet(items, titleSuffix) {
                     <div style="margin-top: 5px; font-size: 10pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</div>
                 </div>
             </div>
+            ${generateMeterLineHtml()}
         </div>
     `;
+
+    let result = '';
+    for (let c = 0; c < copies; c++) {
+        result += singleSheetHtml;
+    }
+    return result;
 }
 
 // --- EVENT HANDLERS ---
@@ -989,7 +1072,7 @@ addBtn.onclick = async (e) => {
               trackingFormatted = formatTrackingNumber(p, d, cd);
           }
           
-          let isJumbo = false;
+          let isLarge = false;
           let useVolWeight = false;
           let finalWeight = w;
           if (type === 'EMS') {
@@ -998,8 +1081,8 @@ addBtn.onclick = async (e) => {
               const hDim = parseFloat(dimH.value) || 0;
               const total = wDim + lDim + hDim;
               const maxSide = Math.max(wDim, lDim, hDim);
-              if (maxSide > 60 && total <= 120) isJumbo = true;
-              if (maxSide > 60 && maxSide <= 120 && total <= 240) isJumbo = true;
+              
+              if (maxSide > 60 || total > 120) isLarge = true;
               
               const volWeight = Math.ceil((wDim * lDim * hDim) / 5);
               if (volWeight > w) {
@@ -1020,11 +1103,10 @@ addBtn.onclick = async (e) => {
                 insurance: optInsurance.checked, 
                 insuranceVal: parseFloat(insuranceVal.value),
                 regType: regTypeInput.value,
-                isJumbo: isJumbo,
+                isLarge: isLarge,
                 useVolWeight: useVolWeight,
                 dimensions: { w: parseFloat(dimW.value), l: parseFloat(dimL.value), h: parseFloat(dimH.value) },
-                isRemote: optRemote.checked,
-                hasFuelSurcharge: settings.fuelSurcharge && (type === 'EMS' || type === 'ECO')
+                isRemote: optRemote.checked
               },
               isIsland: false,
               trackingFormatted: trackingFormatted,
@@ -1047,7 +1129,7 @@ addBtn.onclick = async (e) => {
           trackingFormatted = formatTrackingNumber(p, startD, cd);
       }
       
-      let isJumbo = false;
+      let isLarge = false;
       let useVolWeight = false;
       let finalWeight = w;
       if (type === 'EMS') {
@@ -1056,8 +1138,8 @@ addBtn.onclick = async (e) => {
           const hDim = parseFloat(dimH.value) || 0;
           const total = wDim + lDim + hDim;
           const maxSide = Math.max(wDim, lDim, hDim);
-          if (maxSide > 60 && total <= 120) isJumbo = true;
-          if (maxSide > 60 && maxSide <= 120 && total <= 240) isJumbo = true;
+          
+          if (maxSide > 60 || total > 120) isLarge = true;
           
           const volWeight = Math.ceil((wDim * lDim * hDim) / 5);
           if (volWeight > w) {
@@ -1078,11 +1160,10 @@ addBtn.onclick = async (e) => {
                 insurance: optInsurance.checked, 
                 insuranceVal: parseFloat(insuranceVal.value),
                 regType: regTypeInput.value,
-                isJumbo: isJumbo,
+                isLarge: isLarge,
                 useVolWeight: useVolWeight,
                 dimensions: { w: parseFloat(dimW.value), l: parseFloat(dimL.value), h: parseFloat(dimH.value) },
-                isRemote: optRemote.checked,
-                hasFuelSurcharge: settings.fuelSurcharge && (type === 'EMS' || type === 'ECO')
+                isRemote: optRemote.checked
               },
               isIsland: optRemote.checked && REMOTE_ISLAND_ZIPCODES.has(destInput.value.match(/\d{5}/)?.[0]),
               trackingFormatted: trackingFormatted,
@@ -1095,6 +1176,17 @@ addBtn.onclick = async (e) => {
       }
       recipientInput.value = '';
       destInput.value = '';
+      weightInput.value = '';
+      dimW.value = '0';
+      dimL.value = '0';
+      dimH.value = '0';
+      optRemote.checked = false;
+      updatePreview();
+      
+      setTimeout(() => {
+          if (bulkToggle.checked) num8StartInput.focus();
+          else digitsInput.focus();
+      }, 100);
   }
 
   if (currentServiceTab !== type) {
@@ -1146,9 +1238,24 @@ printBtn.onclick = () => {
   if (!filtered.length) return alert(`ไม่มีรายการในหมวด ${currentServiceTab} สำหรับพิมพ์`);
   
   const printSection = document.getElementById('print-section');
-  printSection.innerHTML = '';
-  generatePrintPages(filtered, printSection, currentServiceTab);
-  window.print();
+  const paymentType = settings.paymentType || 'เงินเชื่อ';
+  let manifestCopies = 1;
+  
+  if (paymentType === 'เงินเชื่อ') {
+      manifestCopies = 3;
+  } else if (paymentType === 'เครื่องประทับไปรษณียากร') {
+      const isEMS = currentServiceTab === 'EMS' || (currentServiceTab === 'CUSTOM' && filtered.some(s => s.customServiceName && s.customServiceName.toUpperCase().includes('EMS')));
+      manifestCopies = isEMS ? 2 : 1;
+  }
+
+  loadingOverlay.style.display = 'flex';
+  
+  // Use setTimeout to allow UI to show loader
+  setTimeout(() => {
+    printSection.innerHTML = generatePrintPages(filtered, currentServiceTab, manifestCopies);
+    loadingOverlay.style.display = 'none';
+    window.print();
+  }, 100);
 };
 
 dispatchBtn.onclick = async () => {
@@ -1170,10 +1277,29 @@ dispatchBtn.onclick = async () => {
         // Create new archive
         const archiveId = 'M-' + Date.now();
         const dateStr = new Date().toISOString();
+        
+        // Handle Meter Update
+        let meterBefore = null;
+        let meterAfter = null;
+        if (settings.paymentType === 'เครื่องประทับไปรษณียากร') {
+            const totalFee = shipments.reduce((sum, item) => sum + (parseFloat(item.fee) || 0), 0);
+            meterBefore = { desc: settings.meterDescending, asc: settings.meterAscending };
+            
+            settings.meterDescending -= totalFee;
+            settings.meterAscending += totalFee;
+            meterAfter = { desc: settings.meterDescending, asc: settings.meterAscending };
+            
+            await saveToDB('settings', settings);
+            updateMeterStatus();
+        }
+
         await saveArchive({
             id: archiveId,
             date: dateStr,
-            items: [...shipments]
+            items: [...shipments],
+            paymentType: settings.paymentType,
+            meterBefore,
+            meterAfter
         });
     }
     
@@ -1182,40 +1308,57 @@ dispatchBtn.onclick = async () => {
     const otherGroup = shipments.filter(s => !isEMSGroup(s));
     
     const printSection = document.getElementById('print-section');
-    printSection.innerHTML = '';
+    loadingOverlay.style.display = 'flex';
     
-    if (emsGroup.length > 0) {
-        printSection.innerHTML += generateSummarySheet(emsGroup, "กลุ่ม EMS");
-        generatePrintPages(emsGroup, printSection, "กลุ่ม EMS");
-    }
-    
-    if (otherGroup.length > 0) {
-        printSection.innerHTML += generateSummarySheet(otherGroup, "กลุ่มอื่นๆ");
-        generatePrintPages(otherGroup, printSection, "กลุ่มอื่นๆ");
-    }
-    
-    window.print();
-    
-    // Clear / Reset
-    setTimeout(async () => {
-        const msg = editingArchiveId 
-            ? 'บันทึกแก้ไขและพิมพ์เสร็จสิ้น ต้องการเคลียร์หน้าจอเพื่อเริ่มบิลใหม่เลยหรือไม่?' 
-            : 'พิมพ์เสร็จสิ้นแล้ว ล้างรายการในระบบเพื่อเริ่มล็อตใหม่เลยหรือไม่?';
-            
-        if(confirm(msg)) {
-            shipments = [];
-            history = [[]];
-            historyIndex = 0;
-            editingArchiveId = null;
-            await saveToDB('shipments', shipments);
-            await saveToDB('history', history);
-            await saveToDB('historyIndex', historyIndex);
-            await saveToDB('editingArchiveId', editingArchiveId);
-            renderShipments();
-            updateSummary();
-            updateHistoryButtons();
+    setTimeout(() => {
+        let finalHtml = '';
+        const paymentType = settings.paymentType || 'เงินเชื่อ';
+
+        if (emsGroup.length > 0) {
+            let sumCopies = 1;
+            let manCopies = 1;
+            if (paymentType === 'เงินเชื่อ') { sumCopies = 2; manCopies = 3; }
+            else if (paymentType === 'เครื่องประทับไปรษณียากร') { sumCopies = 3; manCopies = 2; }
+
+            finalHtml += generateSummarySheet(emsGroup, "กลุ่ม EMS", sumCopies);
+            finalHtml += generatePrintPages(emsGroup, "กลุ่ม EMS", manCopies);
         }
-    }, 1000);
+        
+        if (otherGroup.length > 0) {
+            let sumCopies = 1;
+            let manCopies = 1;
+            if (paymentType === 'เงินเชื่อ') { sumCopies = 2; manCopies = 3; }
+            else if (paymentType === 'เครื่องประทับไปรษณียากร') { sumCopies = 3; manCopies = 1; }
+
+            finalHtml += generateSummarySheet(otherGroup, "กลุ่มอื่นๆ", sumCopies);
+            finalHtml += generatePrintPages(otherGroup, "กลุ่มอื่นๆ", manCopies);
+        }
+        
+        printSection.innerHTML = finalHtml;
+        loadingOverlay.style.display = 'none';
+        window.print();
+        
+        // Clear / Reset
+        setTimeout(async () => {
+            const msg = editingArchiveId 
+                ? 'บันทึกแก้ไขและพิมพ์เสร็จสิ้น ต้องการเคลียร์หน้าจอเพื่อเริ่มบิลใหม่เลยหรือไม่?' 
+                : 'พิมพ์เสร็จสิ้นแล้ว ล้างรายการในระบบเพื่อเริ่มล็อตใหม่เลยหรือไม่?';
+                
+            if(confirm(msg)) {
+                shipments = [];
+                history = [[]];
+                historyIndex = 0;
+                editingArchiveId = null;
+                await saveToDB('shipments', shipments);
+                await saveToDB('history', history);
+                await saveToDB('historyIndex', historyIndex);
+                await saveToDB('editingArchiveId', editingArchiveId);
+                renderShipments();
+                updateSummary();
+                updateHistoryButtons();
+            }
+        }, 1000);
+    }, 100);
 };
 
 nextNumBtn.onclick = () => {
@@ -1290,6 +1433,18 @@ document.querySelectorAll('.service-tab').forEach(tab => {
             feeInput.style.color = 'inherit';
         }
         
+        recipientInput.value = '';
+        destInput.value = '';
+        weightInput.value = '';
+        dimW.value = '0';
+        dimL.value = '0';
+        dimH.value = '0';
+        insuranceVal.value = '2000';
+        optAR.checked = false;
+        optInsurance.checked = false;
+        optArTracking.checked = false;
+        optRemote.checked = false;
+        
         renderShipments();
         updateSummary();
         updatePreview(); // Fix: Ensure UI fields hide/show immediately on tab change
@@ -1334,11 +1489,19 @@ saveSettingsBtn.onclick = async () => {
     settings.logoWidth = parseInt(document.getElementById('set-logo-width').value) || 150;
     settings.logoAlign = document.getElementById('set-logo-align').value;
     // Note: settings.logo is updated directly on file select
+    
+    settings.meterDescending = parseFloat(document.getElementById('set-meter-desc').value) || 0;
+    settings.meterAscending = parseFloat(document.getElementById('set-meter-asc').value) || 0;
 
     await saveToDB('settings', settings);
     settingsModal.style.display = 'none';
     updatePreview();
+    updateMeterStatus();
     alert('บันทึกการตั้งค่าสำเร็จ');
+};
+
+document.getElementById('set-payment-type').onchange = (e) => {
+    document.getElementById('meter-settings-fields').style.display = (e.target.value === 'เครื่องประทับไปรษณียากร') ? 'block' : 'none';
 };
 
 document.getElementById('set-show-sig-names').onchange = (e) => {
@@ -1528,16 +1691,81 @@ navArchive.onclick = () => {
         reportMonthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     }
     renderArchiveView();
+    renderStats();
 };
 
-reportMonthInput.onchange = renderArchiveView;
+reportMonthInput.onchange = () => {
+    renderArchiveView();
+    renderStats();
+};
+
+const archiveFilterType = document.getElementById('archive-filter-type');
+archiveFilterType.onchange = () => {
+    renderArchiveView();
+    renderStats();
+};
+
+async function renderStats() {
+    const archives = await loadAllArchives();
+    const monthStr = reportMonthInput.value; // "YYYY-MM"
+    if (!monthStr) return; // Don't run if no month selected
+
+    const statsPayment = document.getElementById('stats-payment-types');
+    const statsYearly = document.getElementById('stats-yearly');
+    if (!statsPayment || !statsYearly) return;
+    
+    // Monthly Stats
+    const filterType = archiveFilterType.value;
+    const monthlyArchives = archives.filter(a => a.date && a.date.startsWith(monthStr));
+    const payGroup = { 'เงินสด': 0, 'เงินเชื่อ': 0, 'เครื่องประทับไปรษณียากร': 0 };
+    
+    monthlyArchives.forEach(a => {
+        if (!a.items) return;
+        const pType = a.paymentType || 'เงินเชื่อ'; // fallback
+        const fee = a.items.reduce((s, item) => s + (parseFloat(item.fee) || 0), 0);
+        if (payGroup.hasOwnProperty(pType)) payGroup[pType] += fee;
+    });
+    
+    const filteredStats = (filterType === 'ทั้งหมด') 
+        ? Object.entries(payGroup) 
+        : Object.entries(payGroup).filter(([type]) => type === filterType);
+
+    statsPayment.innerHTML = filteredStats.map(([type, total]) => `
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 4px 0;">
+            <span style="font-weight: 600;">${type}:</span>
+            <span style="color: #0f766e; font-weight: bold;">${total.toLocaleString(undefined, {minimumFractionDigits: 2})} ฿</span>
+        </div>
+    `).join('');
+
+    // Yearly Stats
+    const currentYear = monthStr.substring(0, 4);
+    const yearlyArchives = archives.filter(a => a.date && a.date.startsWith(currentYear));
+    const yearTotal = yearlyArchives.reduce((s, a) => {
+        if (!a.items) return s;
+        return s + a.items.reduce((sum, item) => sum + (parseFloat(item.fee) || 0), 0);
+    }, 0);
+    const yearItems = yearlyArchives.reduce((s, a) => s + (a.items ? a.items.length : 0), 0);
+
+    statsYearly.innerHTML = `
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
+            <div style="font-size: 0.8rem; color: #64748b;">ยอดรวมปี ${currentYear}</div>
+            <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString(undefined, {minimumFractionDigits: 2})} ฿</div>
+            <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
+        </div>
+    `;
+}
 
 async function renderArchiveView() {
     const monthStr = reportMonthInput.value; // "YYYY-MM"
     if (!monthStr) return;
     
     // Optimized: Only load data for this month from DB index
-    const filtered = await loadArchivesByMonth(monthStr);
+    let filtered = await loadArchivesByMonth(monthStr);
+    
+    const filterType = archiveFilterType.value;
+    if (filterType !== 'ทั้งหมด') {
+        filtered = filtered.filter(a => (a.paymentType || 'เงินเชื่อ') === filterType);
+    }
     
     // group by day
     const dayGroups = {};
@@ -1624,26 +1852,24 @@ async function renderArchiveView() {
             historyIndex = 0;
             editingArchiveId = batchId;
             
-            await saveToDB('shipments', shipments);
-            await saveToDB('history', history);
-            await saveToDB('historyIndex', historyIndex);
-            await saveToDB('editingArchiveId', editingArchiveId);
+            await Promise.all([
+                saveToDB('shipments', shipments),
+                saveToDB('history', history),
+                saveToDB('historyIndex', historyIndex),
+                saveToDB('editingArchiveId', editingArchiveId)
+            ]);
             
-            // Auto-switch to the first item's service tab
-            if (shipments.length > 0) {
-                currentServiceTab = shipments[0].serviceType;
-                document.querySelectorAll('.service-tab').forEach(t => {
-                    t.classList.toggle('active', t.dataset.service === currentServiceTab);
-                });
-                serviceTitle.textContent = `จัดการรายการ: ${currentServiceTab === 'CUSTOM' ? 'อื่นๆ' : currentServiceTab}`;
-            }
+            // Re-sync global state to be safe
+            await initApp(); 
 
             navDashboard.click(); // switch to dashboard view
             
-            renderShipments();
-            updateSummary();
-            updateHistoryButtons();
-            updatePreview();
+            setTimeout(() => {
+                renderShipments();
+                updateSummary();
+                updateHistoryButtons();
+                updatePreview();
+            }, 50);
         };
         
         archiveList.appendChild(tr);
@@ -1709,7 +1935,7 @@ async function initApp() {
     
     document.getElementById('set-license').value = settings.license || '';
     document.getElementById('set-payment-type').value = settings.paymentType || 'เงินเชื่อ';
-    setFuelSurcharge.checked = settings.fuelSurcharge || false;
+    setFuelSurcharge.checked = settings.fuelSurcharge;
     document.getElementById('set-post-office').value = settings.postOffice || 'ไปรษณีย์กลาง 10501';
     
     document.getElementById('set-show-sig-names').checked = settings.showSignatureNames || false;
@@ -1723,10 +1949,27 @@ async function initApp() {
     document.getElementById('set-logo-align').value = settings.logoAlign || 'left';
     updateLogoPreview();
 
+    // Meter setup
+    document.getElementById('set-meter-desc').value = settings.meterDescending || 0;
+    document.getElementById('set-meter-asc').value = settings.meterAscending || 0;
+    document.getElementById('meter-settings-fields').style.display = (settings.paymentType === 'เครื่องประทับไปรษณียากร') ? 'block' : 'none';
+
+    if (!reportMonthInput.value) {
+        const now = new Date();
+        reportMonthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }
+    
+    // Auto-set archive filter to current global payment type
+    if (archiveFilterType) {
+        archiveFilterType.value = settings.paymentType || 'เงินเชื่อ';
+    }
+    
     updatePreview();
     renderShipments();
     updateSummary();
     updateHistoryButtons();
+    updateMeterStatus();
+    renderStats();
     
     // Setup Fluent Navigation (Enter Key)
     setupFluentNavigation();
@@ -1740,29 +1983,18 @@ async function initApp() {
 
 function setupFluentNavigation() {
     const fields = [
-        prefixInput,
-        digitsInput,
-        num8StartInput,
-        digitsEndInput,
-        batchCountInput,
-        recipientInput,
-        destInput,
-        dimW,
-        dimL,
-        dimH,
-        weightInput
+        prefixInput, digitsInput, num8StartInput, digitsEndInput, batchCountInput,
+        recipientInput, destInput, dimW, dimL, dimH, weightInput, optAR, optInsurance, insuranceVal, feeInput
     ];
 
-    fields.forEach(f => {
+    fields.forEach((f, index) => {
         if (!f) return;
         f.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                
-                // If it's the weight field, trigger ADD
-                if (f === weightInput) {
+
+                if (f === feeInput) {
                     addBtn.click();
-                    // Return focus to digits/num8-start for next entry
                     setTimeout(() => {
                         if (bulkToggle.checked) num8StartInput.focus();
                         else digitsInput.focus();
@@ -1770,31 +2002,81 @@ function setupFluentNavigation() {
                     return;
                 }
 
-                // Normal navigation
-                let nextIdx = fields.indexOf(f) + 1;
+                if (f === weightInput) {
+                    const insVisible = insuranceVal.offsetParent !== null;
+                    if (insVisible) {
+                        insuranceVal.focus();
+                        insuranceVal.select();
+                        return;
+                    }
+                    addBtn.click();
+                    setTimeout(() => {
+                        if (bulkToggle.checked) num8StartInput.focus();
+                        else digitsInput.focus();
+                    }, 100);
+                    return;
+                }
+
+                // CUSTOM NAVIGATION LOGIC
                 
-                // Skip hidden or irrelevant fields
+                // 1. BULK MODE Logic
+                if (bulkToggle.checked) {
+                    if (field === num8StartInput) {
+                        batchCountInput.focus();
+                        batchCountInput.select();
+                        return;
+                    }
+                    if (field === batchCountInput) {
+                        weightInput.focus();
+                        weightInput.select();
+                        return;
+                    }
+                    if (field === weightInput) {
+                        addBtn.click();
+                        setTimeout(() => num8StartInput.focus(), 100);
+                        return;
+                    }
+                } 
+                // 2. SINGLE MODE Logic
+                else {
+                    if (field === digitsInput) {
+                        recipientInput.focus();
+                        return;
+                    }
+                    if (field === recipientInput) {
+                        destInput.focus();
+                        return;
+                    }
+                    if (field === destInput) {
+                        weightInput.focus();
+                        weightInput.select();
+                        return;
+                    }
+                    if (field === weightInput) {
+                        if (currentServiceTab === 'CUSTOM') {
+                            feeInput.focus();
+                            feeInput.select();
+                        } else {
+                            addBtn.click();
+                            setTimeout(() => digitsInput.focus(), 100);
+                        }
+                        return;
+                    }
+                    if (field === feeInput && currentServiceTab === 'CUSTOM') {
+                        addBtn.click();
+                        setTimeout(() => digitsInput.focus(), 100);
+                        return;
+                    }
+                }
+
+                // Fallback for other fields
+                let nextIdx = index + 1;
                 while (nextIdx < fields.length) {
                     const nextField = fields[nextIdx];
-                    const isBulk = bulkToggle.checked;
-                    
-                    // Logic to skip fields based on bulk mode
-                    if (isBulk) {
-                        if (nextField === digitsInput || nextField === recipientInput || nextField === destInput) {
-                            nextIdx++;
-                            continue;
-                        }
-                    } else {
-                        if (nextField === num8StartInput || nextField === digitsEndInput || nextField === batchCountInput) {
-                            nextIdx++;
-                            continue;
-                        }
-                    }
-                    
                     if (nextField && nextField.offsetParent !== null) {
                         nextField.focus();
                         if (nextField.select) nextField.select();
-                        break;
+                        return;
                     }
                     nextIdx++;
                 }

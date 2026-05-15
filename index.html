@@ -9,6 +9,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="src/style.css">
+    <style>
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
 </head>
 <body style="display: flex; flex-direction: column; height: 100vh;">
     <!-- Top Navigation -->
@@ -18,7 +22,10 @@
             <button id="nav-dashboard" style="background: transparent; color: white; border: none; padding: 10px 15px; font-size: 1rem; border-bottom: 3px solid var(--primary-color);">แผงควบคุมหลัก</button>
             <button id="nav-archive" style="background: transparent; color: #cbd5e1; border: none; padding: 10px 15px; font-size: 1rem; border-bottom: 3px solid transparent;">📚 ประวัติและรายงาน</button>
         </div>
-        <div style="margin-left: auto; font-size: 0.75rem; color: #94a3b8; opacity: 0.8;">&copy; MrAEK</div>
+        <div style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
+            <div style="font-size: 0.85rem; color: #f8fafc; font-weight: 600; opacity: 0.9;">&copy; MrAEK</div>
+            <div style="font-size: 0.65rem; color: #94a3b8; opacity: 0.7; font-family: monospace;">v4.5.2</div>
+        </div>
     </div>
 
     <!-- App Container -->
@@ -70,7 +77,7 @@
                     
                     <label for="num8-end">ถึงเลขที่</label>
                     <input type="text" id="digits-end" placeholder="88888888" maxlength="8">
-                    <label>จำนวนชุด</label>
+                    <label>จำนวน</label>
                     <input type="number" id="batch-count" placeholder="0" min="1">
                 </div>
 
@@ -96,14 +103,18 @@
 
                 <!-- NEW: EMS Dimensions -->
                 <div id="ems-dim-group" class="form-group" style="display: none; margin-top: 0.5rem; background: #fff1f2; padding: 10px; border-radius: 8px; border: 1px solid #fecaca;">
-                    <label style="color: #be123c;">ขนาดพัสดุ EMS (ซม.)</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <label style="color: #be123c; margin-bottom: 0;">ขนาดพัสดุ EMS (ซม.)</label>
+                        <span style="font-size: 0.7rem; color: #be123c; font-weight: 600;">* ถ้ามีด้านยาวเกิน 60 ซม. โปรดกรอก</span>
+                    </div>
                     <div style="display: flex; gap: 5px;">
                         <input type="number" id="dim-w" placeholder="กว้าง" value="0" style="width: 100%; padding: 5px; font-size: 0.8rem;">
                         <input type="number" id="dim-l" placeholder="ยาว" value="0" style="width: 100%; padding: 5px; font-size: 0.8rem;">
                         <input type="number" id="dim-h" placeholder="สูง" value="0" style="width: 100%; padding: 5px; font-size: 0.8rem;">
                     </div>
                     <div id="jumbo-badge" style="display: none; color: #be123c; font-weight: bold; font-size: 0.75rem; margin-top: 5px;">⚡ ตรวจพบเป็น EMS ขนาดใหญ่</div>
-                    <div id="vol-warn-badge" style="display: none; color: #ef4444; font-weight: bold; font-size: 0.75rem; margin-top: 5px;">⚠️ ค่าน้ำหนักปริมาตรที่ใส่ เกินมาตรฐาน EMS คือ เมื่อเกิน 30 กิโล</div>
+                    <div id="vol-warn-badge" style="display: none; color: #ef4444; font-weight: bold; font-size: 0.75rem; margin-top: 5px;">⚠️ ค่าน้ำหนักที่ระบุ เกินมาตรฐาน (30 กก.)</div>
+                    <div id="dim-limit-badge" style="display: none; color: #ef4444; font-weight: bold; font-size: 0.75rem; margin-top: 5px;">❌ ขนาดรวม (ก+ย+ส) เกินมาตรฐาน 240 ซม.</div>
                 </div>
 
                 <div id="custom-service-group" class="form-group" style="display: none; margin-top: 0.5rem; background: #f0fdf4; padding: 10px; border-radius: 8px; border: 1px solid #bbf7d0;">
@@ -167,7 +178,11 @@
                     </div>
                     <button id="settings-btn" class="btn-icon" title="ตั้งค่าข้อมูลบริษัท" style="font-size: 1.5rem;">⚙️</button>
                 </div>
-                <!-- ... rest of header ... -->
+                <div id="meter-status-bar" class="hidden" style="flex: 1; margin: 0 2rem; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.5rem 1rem; border-radius: 8px; display: flex; align-items: center; gap: 1rem; font-size: 0.9rem;">
+                    <div style="font-weight: bold; color: #166534;">📠 ยอดคงเหลือในเครื่อง:</div>
+                    <div id="meter-descending-val" style="font-size: 1.1rem; font-weight: 700; color: #059669;">0.00 ฿</div>
+                    <div id="meter-low-warn" style="display: none; background: #fee2e2; color: #be123c; padding: 2px 8px; border-radius: 4px; font-weight: bold; animation: pulse 2s infinite;">⚠️ เงินใกล้หมด!</div>
+                </div>
                 <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;">
                     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
                         <button id="undo-btn" class="btn-icon" title="ย้อนกลับ (Undo)">↩️ ย้อนกลับ</button>
@@ -210,13 +225,35 @@
                     <p style="color: #64748b;">ดูสรุปยอดรายเดือน และแก้ไขใบนำส่งย้อนหลัง</p>
                 </div>
                 <div>
+                    <select id="archive-filter-type" style="padding: 8px; font-size: 1rem; border: 1px solid #cbd5e1; border-radius: 4px; margin-right: 10px; background: white;">
+                        <option value="ทั้งหมด">แสดงทั้งหมด</option>
+                        <option value="เงินสด">เงินสด</option>
+                        <option value="เงินเชื่อ">เงินเชื่อ</option>
+                        <option value="เครื่องประทับไปรษณียากร">เครื่องประทับไปรษณียากร</option>
+                    </select>
                     <input type="month" id="report-month" style="padding: 8px; font-size: 1rem; border: 1px solid #cbd5e1; border-radius: 4px; margin-right: 10px;">
                     <button id="export-csv-btn" style="background: #10b981; color: white;">📥 Export CSV</button>
                 </div>
             </div>
             
-            <div style="max-width: 1200px; margin-left: auto; margin-right: auto; width: 100%; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden;">
-                <table style="width: 100%; border-collapse: collapse;">
+            <!-- Statistics Section -->
+            <div id="stats-container" style="max-width: 1200px; margin: 2rem auto; width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                <div class="stat-card" style="text-align: left; padding: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem; color: #64748b;">💰 ยอดรวมแยกตามประเภท (เดือนนี้)</h3>
+                    <div id="stats-payment-types" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <!-- JS generated -->
+                    </div>
+                </div>
+                <div class="stat-card" style="text-align: left; padding: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem; color: #64748b;">📊 สถิติการส่งรายปี</h3>
+                    <div id="stats-yearly" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <!-- JS generated -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="archive-table-wrapper" style="max-width: 1200px; margin-left: auto; margin-right: auto; width: 100%; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                <table style="width: 100%; min-width: 1000px; border-collapse: collapse;">
                     <thead style="background: #f1f5f9; border-bottom: 2px solid #e2e8f0;">
                         <tr>
                             <th rowspan="2" style="text-align: center; border-right: 1px solid #e2e8f0; padding: 12px;">วันที่</th>
@@ -288,6 +325,17 @@
                     <option value="เครื่องประทับไปรษณียากร">📠 เครื่องประทับไปรษณียากร</option>
                 </select>
             </div>
+            <div id="meter-settings-fields" style="display: none; background: #f0f9ff; padding: 1rem; border-radius: 8px; border: 1px solid #bae6fd; margin-bottom: 1rem;">
+                <div style="font-weight: bold; color: #0369a1; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 5px;">📠 ตั้งค่ามิเตอร์เครื่องประทับ</div>
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                    <label style="font-size: 0.8rem;">เงินที่มี (Descending)</label>
+                    <input type="number" id="set-meter-desc" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label style="font-size: 0.8rem;">เงินที่ใช้ไปทั้งหมด (Ascending)</label>
+                    <input type="number" id="set-meter-asc" step="0.01" placeholder="0.00">
+                </div>
+            </div>
             <div class="form-group" style="margin-bottom: 1rem; flex-direction: row; align-items: center; gap: 10px; background: #fff1f2; padding: 10px; border-radius: 8px;">
                 <input type="checkbox" id="set-fuel-surcharge" style="width: 20px; height: 20px;">
                 <label for="set-fuel-surcharge" style="color: #be123c; margin: 0; cursor: pointer;">⛽ เปิดใช้งาน Fuel Charge (+3บาท)</label>
@@ -354,6 +402,13 @@
                 <button id="close-settings-btn" style="flex: 1; background: #e2e8f0; color: #333;">ยกเลิก</button>
             </div>
         </div>
+    </div>
+
+    <!-- Loading/Processing Overlay -->
+    <div id="loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 2000; flex-direction: column; justify-content: center; align-items: center;">
+        <div style="width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem;"></div>
+        <div style="font-weight: bold; color: var(--secondary-color); font-size: 1.2rem;">กำลังประมวลผลและสร้างใบนำส่ง...</div>
+        <div style="color: #64748b; margin-top: 0.5rem;">กรุณารอสักครู่ (อาจใช้เวลา 1-5 วินาที สำหรับรายการจำนวนมาก)</div>
     </div>
 
     <script src="src/main.js"></script>
