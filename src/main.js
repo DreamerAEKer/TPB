@@ -732,8 +732,8 @@ function generateLogoHtml(show = true) {
     if (settings.logoAlign === 'right') align = 'flex-end';
     
     return `
-        <div style="position: absolute; top: 4mm; left: 10mm; right: 10mm; display: flex; justify-content: ${align}; z-index: 100;">
-            <img src="${settings.logo}" style="width: ${settings.logoWidth}px; max-height: 10mm; object-fit: contain;">
+        <div style="position: absolute; top: 2mm; left: 10mm; right: 10mm; display: flex; justify-content: ${align}; z-index: 100;">
+            <img src="${settings.logo}" style="width: ${settings.logoWidth}px; max-height: 8mm; object-fit: contain;">
         </div>
     `;
 }
@@ -800,7 +800,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
 
         const pageHtml = `
             <div class="print-page">
-                ${generateLogoHtml(p < totalPages - 1)}
+                ${generateLogoHtml(true)}
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
                     <div style="line-height: 1.5;">
                         <div style="font-size: 11pt;">บริษัท <b>${company}</b></div>
@@ -813,10 +813,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         <div style="font-size: 11pt;"><span style="font-weight: bold; font-size: 12pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</span> ใบอนุญาตพิเศษที่ <b>${license}</b></div>
                     </div>
                 </div>
-                <div style="margin-bottom: 5px; font-size: 11pt;">
-                    &nbsp;
-                </div>
-                <div style="margin-bottom: 5px;">
+                <div style="margin-bottom: 2px;">
                     <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11pt;" border="1">
                         <thead style="background: #f0f0f0;">
                             <tr>
@@ -853,25 +850,21 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         </tbody>
                     </table>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 5px; padding-top: 5px; font-size: 11pt; page-break-inside: avoid; break-inside: avoid;">
-                    <div style="width: 48%; text-align: center;">
-                        <div style="margin-bottom: 8px;">
-                            <div style="margin-bottom: 2px;">รับผิดชอบฝากส่ง</div>
-                            <div style="margin-bottom: 4px;">ลงชื่อ ........................................................</div>
-                            <div style="margin-bottom: 3px;">( ${settings.showSignatureNames ? (settings.responsibleName || '........................................................') : '........................................................'} )</div>
-                        </div>
-                        ${settings.senderName ? `
-                            <div style="margin-top: 5px; font-size: 10pt;">
-                                <div style="margin-bottom: 2px;">ผู้นำส่ง</div>
-                                <div>( ${settings.senderName} )</div>
-                            </div>
-                        ` : ''}
+                <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 9pt; page-break-inside: avoid;">
+                    <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
+                        <div style="font-weight: bold; margin-bottom: 2px;">รับผิดชอบฝากส่ง</div>
+                        <div style="margin-bottom: 3px;">.........................................</div>
+                        <div>( ${settings.showSignatureNames ? (settings.responsibleName || '..............................') : '..............................'} )</div>
                     </div>
-                    <div style="width: 48%; text-align: center;">
-                        <div style="margin-bottom: 3px;">รับฝากไว้แล้ว</div>
-                        <div style="margin-bottom: 6px;">ลงชื่อ ........................................................</div>
-                        <div style="margin-bottom: 3px;">เจ้าหน้าที่รับฝาก</div>
-                        <div style="margin-top: 3px; font-size: 10pt; font-weight: bold; white-space: nowrap;">${(settings.postOffice && settings.postOffice.trim()) ? settings.postOffice : 'ไปรษณีย์กลาง 10501'}</div>
+                    <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
+                        <div style="font-weight: bold; margin-bottom: 2px;">ผู้นำส่ง</div>
+                        <div style="margin-bottom: 3px;">.........................................</div>
+                        <div>( ${settings.senderName || '..............................'} )</div>
+                    </div>
+                    <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
+                        <div style="font-weight: bold; margin-bottom: 2px;">เจ้าหน้าที่รับฝาก</div>
+                        <div style="margin-bottom: 3px;">.........................................</div>
+                        <div style="font-weight: bold; font-size: 10pt;">${(settings.postOffice && settings.postOffice.trim()) ? settings.postOffice : 'ไปรษณีย์กลาง 10501'}</div>
                     </div>
                 </div>
                 ${generateMeterLineHtml()}
@@ -883,7 +876,6 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     }
     return combinedHtml;
 }
-
 function generateSummarySheet(items, titleSuffix, copies = 1) {
     const groups = {};
     items.forEach(item => {
@@ -891,20 +883,15 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         if (!groups[svc]) groups[svc] = [];
         groups[svc].push(item);
     });
-    
     let rangeRows = '';
     let totalItemsAll = 0;
     let totalFee = 0;
     const priceMap = {};
-    
     for (const [svc, svcItems] of Object.entries(groups)) {
         totalItemsAll += svcItems.length;
-        
-        // Sort and get range
         const sorted = [...svcItems].sort((a, b) => a.trackingFormatted.localeCompare(b.trackingFormatted));
         const start = sorted[0].trackingFormatted;
         const end = sorted[sorted.length - 1].trackingFormatted;
-        
         rangeRows += `
             <tr>
                 <td style="padding: 8px;">${svc}</td>
@@ -914,7 +901,6 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 <td style="padding: 8px;"></td>
             </tr>
         `;
-        
         svcItems.forEach(s => {
             const f = parseFloat(s.fee) || 0;
             totalFee += f;
@@ -922,19 +908,16 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
             priceMap[key] = (priceMap[key] || 0) + 1;
         });
     }
-    
     let priceBreakdownHtml = '';
     for (const [desc, count] of Object.entries(priceMap)) {
         priceBreakdownHtml += `<div style="margin-bottom: 4px;">- ${desc}: <b>${count}</b> ชิ้น</div>`;
     }
-
     const company = settings.company || '......................................';
     const address = settings.address || '............................................................................';
     const phone = settings.phone || '......................................';
     const license = settings.license || 'พ. ...... / 2569';
-
     const singleSheetHtml = `
-        <div class="print-page">
+        <div class="print-page" style="padding: 5mm;">
             ${generateLogoHtml()}
             <center><h2 style="font-size: 18pt;">ใบสรุปการฝากส่งไปรษณียภัณฑ์ชำระค่าฝากส่งเป็น${settings.paymentType || 'เงินเชื่อ'}<br><span style="color: #444; font-size: 16pt;">หมวด: ${titleSuffix}</span></h2></center>
             <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 12pt;">
@@ -951,7 +934,6 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     </div>
                 </div>
             </div>
-            
             <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11.5pt; margin-bottom: 15px;" border="1">
                 <thead style="background: #f0f0f0;">
                     <tr><th colspan="5" style="padding: 8px;">รายการเลขที่สิ่งของ ที่นำมาฝากส่งในวันนี้</th></tr>
@@ -972,13 +954,11 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     </tr>
                 </tbody>
             </table>
-            
             <div style="display: flex; gap: 20px; font-size: 12pt;">
                 <div style="flex: 1;">
                     <table style="width: 100%; border-collapse: collapse; text-align: center;" border="1">
                         <tr><th colspan="2" style="background: #f0f0f0; padding: 8px;">รวมค่าบริการ (บาท)</th></tr>
-                        <tr><td style="text-align: left; padding: 8px 15px;">ยอดยกมา</td><td style="padding: 8px;"></td></tr>
-                        <tr><td style="text-align: left; padding: 8px 15px;">ยอดครั้งนี้</td><td style="padding: 8px;"><b>${totalFee > 0 ? totalFee.toLocaleString(undefined, {minimumFractionDigits: 2}) + ' บาท' : '0.00 บาท'}</b></td></tr>
+                        <tr><td style="text-align: left; padding: 10mm 10mm 8mm 10mm;">ยอดครั้งนี้</td><td style="padding: 8px;"><b>${totalFee > 0 ? totalFee.toLocaleString(undefined, {minimumFractionDigits: 2}) + ' บาท' : '0.00 บาท'}</b></td></tr>
                         <tr><td style="text-align: left; padding: 8px 15px;">ยอดยกไป</td><td style="padding: 8px;"></td></tr>
                     </table>
                 </div>

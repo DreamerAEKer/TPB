@@ -403,7 +403,7 @@ th {
     background: white;
     display: flex;
     flex-direction: column;
-    padding: 18mm 10mm 8mm 10mm; /* Reduced top padding to save space */
+    padding: 10mm 10mm 8mm 10mm; /* Maximum space for beautiful restoration */
     position: relative;
     overflow: hidden; /* Ensure no accidental extra pages */
     line-height: 1.5; /* Ensure Thai vowels don't overlap */
