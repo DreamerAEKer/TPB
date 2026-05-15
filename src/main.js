@@ -707,7 +707,7 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
                 <div style="margin-bottom: 5px; font-size: 11pt;">
                     &nbsp;
                 </div>
-                <div style="flex: 1;">
+                <div style="margin-bottom: 10px;">
                     <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11pt;" border="1">
                         <thead style="background: #f0f0f0;">
                             <tr>
@@ -745,7 +745,7 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
                         </tbody>
                     </table>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 15px; font-size: 11pt;">
+                <div style="display: flex; justify-content: space-between; margin-top: auto; font-size: 11pt;">
                     <div style="width: 45%; text-align: center;">
                         <div style="margin-bottom: 15px;">
                             <div style="margin-bottom: 5px;">รับผิดชอบฝากส่ง</div>
@@ -870,7 +870,7 @@ function generateSummarySheet(items, titleSuffix) {
                 </div>
             </div>
             
-            <div style="display: flex; justify-content: space-between; margin-top: 15px; font-size: 11pt;">
+            <div style="display: flex; justify-content: space-between; margin-top: auto; padding-top: 15px; font-size: 11pt;">
                 <div style="width: 45%; text-align: center;">
                     <div style="margin-bottom: 15px;">
                         <div style="margin-bottom: 5px;">รับผิดชอบฝากส่ง</div>
