@@ -304,7 +304,7 @@ async function updateHistory() {
   // If we are editing, change the dispatch button text to indicate update
   if (editingArchiveId) {
       dispatchBtn.innerHTML = '💾 บันทึกการแก้ไข (Update)';
-      dispatchBtn.style.background = '#0ea5e9';
+      dispatchBtn.style.background = '#10b981';
   } else {
       dispatchBtn.innerHTML = '✅ ปิดยอดและพิมพ์ใบสรุป';
       dispatchBtn.style.background = '#10b981';
@@ -366,7 +366,9 @@ function renderShipments() {
     const isActuallyRemote = isAlwaysRemote || (isIslandPotential && s.isIsland);
 
     const isRemoteActive = s.options?.isRemote || isActuallyRemote;
-    const priceClass = (!isActuallyRemote && !s.options?.isRemote && isPriceNormalWithSurcharge && s.serviceType !== 'CUSTOM') ? 'price-warn' : '';
+    const base = calculateBaseFee(s.serviceType, s.weight, s.options || {});
+    const isPriceNormalWithSurcharge = (!isActuallyRemote && !s.options?.isRemote && (parseFloat(s.fee) === base + 20));
+    const priceClass = (isPriceNormalWithSurcharge && s.serviceType !== 'CUSTOM') ? 'price-warn' : '';
 
     const svcDisplay = s.serviceType === 'CUSTOM' ? (s.customServiceName || 'กำหนดเอง') : s.serviceType;
 
