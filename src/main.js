@@ -779,7 +779,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 const displayFee = isWeightEmpty ? '' : parseFloat(s.fee).toLocaleString(undefined, {minimumFractionDigits: 2});
                 
                 rowsHtml += `
-                    <tr>
+                    <tr style="height: 28px;">
                         <td style="padding: 2px 4px;">${p * ITEMS_PER_PAGE + i + 1}</td>
                         <td style="text-align: left; padding: 2px 4px;">${displayRecipient}</td>
                         <td style="text-align: left; padding: 2px 4px;">${displayDestination}</td>
@@ -790,7 +790,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                     </tr>
                 `;
             } else {
-                rowsHtml += `<tr><td style="padding: 2px 4px;">&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+                rowsHtml += `<tr style="height: 28px;"><td style="padding: 2px 4px;">&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
             }
         }
         
@@ -814,19 +814,16 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                     </div>
                 </div>
                 <div style="margin-bottom: 2px;">
-                    <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11pt;" border="1">
+                    <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11pt; table-layout: fixed;" border="1">
                         <thead style="background: #f0f0f0;">
                             <tr>
-                                <th rowspan="2" style="padding: 4px;">ลำดับที่</th>
-                                <th rowspan="2" style="padding: 4px;">นามผู้รับ</th>
-                                <th rowspan="2" style="padding: 4px;">ปลายทาง<br>รหัสไปรษณีย์</th>
-                                <th rowspan="2" style="padding: 4px; width: 150px;">เลขที่สิ่งของ 13 หลัก</th>
-                                <th colspan="2" style="padding: 4px;">การรับประกัน และค่าบริการ</th>
-                                <th rowspan="2" style="padding: 4px;">หมายเหตุ</th>
-                            </tr>
-                            <tr>
-                                <th style="padding: 4px;">น้ำหนัก<br>(กรัม)</th>
-                                <th style="padding: 4px;">ค่าบริการ<br>(บาท)</th>
+                                <th style="padding: 6px; width: 45px;">ลำดับ</th>
+                                <th style="padding: 6px; width: auto;">นามผู้รับ</th>
+                                <th style="padding: 6px; width: 140px;">ปลายทาง/รหัสฯ</th>
+                                <th style="padding: 6px; width: 155px;">เลขที่สิ่งของ 13 หลัก</th>
+                                <th style="padding: 6px; width: 75px;">น้ำหนัก<br>(กรัม)</th>
+                                <th style="padding: 6px; width: 85px;">ค่าบริการ<br>(บาท)</th>
+                                <th style="padding: 6px; width: 90px;">หมายเหตุ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -939,7 +936,6 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
             </div>
             <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11.5pt; margin-bottom: 15px;" border="1">
                 <thead style="background: #f0f0f0;">
-                    <tr><th colspan="5" style="padding: 8px;">รายการเลขที่สิ่งของ ที่นำมาฝากส่งในวันนี้</th></tr>
                     <tr>
                         <th style="padding: 8px;">บริการ</th>
                         <th style="padding: 8px;">เลขที่เริ่มต้น</th>
