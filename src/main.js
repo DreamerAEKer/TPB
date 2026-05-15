@@ -801,7 +801,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
         const pageHtml = `
             <div class="print-page">
                 ${generateLogoHtml(true)}
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 10mm; margin-bottom: 5px;">
                     <div style="line-height: 1.5;">
                         <div style="font-size: 11pt;">บริษัท <b>${company}</b></div>
                         <div style="font-size: 11pt;">โทรศัพท์ <b>${phone}</b></div>
@@ -917,9 +917,12 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     const phone = settings.phone || '......................................';
     const license = settings.license || 'พ. ...... / 2569';
     const singleSheetHtml = `
-        <div class="print-page" style="padding: 5mm;">
+        <div class="print-page">
             ${generateLogoHtml()}
-            <center><h2 style="font-size: 18pt;">ใบสรุปการฝากส่งไปรษณียภัณฑ์ชำระค่าฝากส่งเป็น${settings.paymentType || 'เงินเชื่อ'}<br><span style="color: #444; font-size: 16pt;">หมวด: ${titleSuffix}</span></h2></center>
+            <div style="margin-top: 10mm; text-align: center;">
+                <h2 style="font-size: 16pt; margin-bottom: 5px;">ใบสรุปการฝากส่งไปรษณียภัณฑ์ชำระค่าฝากส่งเป็น${settings.paymentType || 'เงินเชื่อ'}</h2>
+                <div style="color: #444; font-size: 14pt; font-weight: bold; margin-bottom: 15px;">หมวด: ${titleSuffix}</div>
+            </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 12pt;">
                 <div style="line-height: 1.5;">
                     <div style="font-size: 11pt;">บริษัท <b>${company}</b></div>
@@ -957,9 +960,10 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
             <div style="display: flex; gap: 20px; font-size: 12pt;">
                 <div style="flex: 1;">
                     <table style="width: 100%; border-collapse: collapse; text-align: center;" border="1">
-                        <tr><th colspan="2" style="background: #f0f0f0; padding: 8px;">รวมค่าบริการ (บาท)</th></tr>
-                        <tr><td style="text-align: left; padding: 10mm 10mm 8mm 10mm;">ยอดครั้งนี้</td><td style="padding: 8px;"><b>${totalFee > 0 ? totalFee.toLocaleString(undefined, {minimumFractionDigits: 2}) + ' บาท' : '0.00 บาท'}</b></td></tr>
-                        <tr><td style="text-align: left; padding: 8px 15px;">ยอดยกไป</td><td style="padding: 8px;"></td></tr>
+                        <tr><th colspan="2" style="background: #f0f0f0; padding: 6px;">รวมค่าบริการ (บาท)</th></tr>
+                        <tr><td style="text-align: left; padding: 6px 15px;">ยอดยกมา</td><td style="padding: 6px;">0.00</td></tr>
+                        <tr><td style="text-align: left; padding: 6px 15px;">ยอดครั้งนี้</td><td style="padding: 6px;"><b>${totalFee > 0 ? totalFee.toLocaleString(undefined, {minimumFractionDigits: 2}) + ' บาท' : '0.00 บาท'}</b></td></tr>
+                        <tr><td style="text-align: left; padding: 6px 15px;">ยอดยกไป</td><td style="padding: 6px;">${totalFee > 0 ? totalFee.toLocaleString(undefined, {minimumFractionDigits: 2}) : '0.00'}</td></tr>
                     </table>
                 </div>
                 <div style="flex: 1.5;">
@@ -970,25 +974,21 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </div>
             </div>
             
-            <div style="display: flex; justify-content: space-between; margin-top: auto; padding-top: 10px; font-size: 11pt; page-break-inside: avoid; break-inside: avoid;">
-                <div style="width: 48%; text-align: center;">
-                    <div style="margin-bottom: 12px;">
-                        <div style="margin-bottom: 3px;">รับผิดชอบฝากส่ง</div>
-                        <div style="margin-bottom: 6px;">ลงชื่อ ........................................................</div>
-                        <div style="margin-bottom: 4px;">( ${settings.showSignatureNames ? (settings.responsibleName || '........................................................') : '........................................................'} )</div>
-                    </div>
-                    ${settings.senderName ? `
-                        <div style="margin-top: 5px; font-size: 10pt;">
-                            <div style="margin-bottom: 2px;">ผู้นำส่ง</div>
-                            <div>( ${settings.senderName} )</div>
-                        </div>
-                    ` : ''}
+            <div style="display: flex; justify-content: space-between; margin-top: auto; padding-top: 20px; font-size: 9pt; page-break-inside: avoid;">
+                <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
+                    <div style="font-weight: bold; margin-bottom: 2px;">รับผิดชอบฝากส่ง</div>
+                    <div style="margin-bottom: 3px;">.........................................</div>
+                    <div>( ${settings.showSignatureNames ? (settings.responsibleName || '..............................') : '..............................'} )</div>
                 </div>
-                <div style="width: 48%; text-align: center;">
-                    <div style="margin-bottom: 3px;">รับฝากไว้แล้ว</div>
-                    <div style="margin-bottom: 6px;">ลงชื่อ ........................................................</div>
-                    <div style="margin-bottom: 3px;">เจ้าหน้าที่รับฝาก</div>
-                    <div style="margin-top: 3px; font-size: 10pt; font-weight: bold;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</div>
+                <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
+                    <div style="font-weight: bold; margin-bottom: 2px;">ผู้นำส่ง</div>
+                    <div style="margin-bottom: 3px;">.........................................</div>
+                    <div>( ${settings.senderName || '..............................'} )</div>
+                </div>
+                <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
+                    <div style="font-weight: bold; margin-bottom: 2px;">เจ้าหน้าที่รับฝาก</div>
+                    <div style="margin-bottom: 3px;">.........................................</div>
+                    <div style="font-weight: bold; font-size: 10pt;">${(settings.postOffice && settings.postOffice.trim()) ? settings.postOffice : 'ไปรษณีย์กลาง 10501'}</div>
                 </div>
             </div>
             ${generateMeterLineHtml()}
