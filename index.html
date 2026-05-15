@@ -18,6 +18,7 @@
             <button id="nav-dashboard" style="background: transparent; color: white; border: none; padding: 10px 15px; font-size: 1rem; border-bottom: 3px solid var(--primary-color);">แผงควบคุมหลัก</button>
             <button id="nav-archive" style="background: transparent; color: #cbd5e1; border: none; padding: 10px 15px; font-size: 1rem; border-bottom: 3px solid transparent;">📚 ประวัติและรายงาน</button>
         </div>
+        <div style="margin-left: auto; font-size: 0.75rem; color: #94a3b8; opacity: 0.8;">&copy; MrAEK</div>
     </div>
 
     <!-- App Container -->
@@ -272,8 +273,12 @@
                 <input type="text" id="set-phone" placeholder="02-123-4567">
             </div>
             <div class="form-group" style="margin-bottom: 1rem;">
+                <label>ชื่อที่ทำการไปรษณีย์</label>
+                <input type="text" id="set-post-office" placeholder="ไปรษณีย์กลาง 10501">
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
                 <label>ใบอนุญาตพิเศษที่</label>
-                <input type="text" id="set-license" placeholder="พ. 123 / 2563">
+                <input type="text" id="set-license" placeholder="พ. 123 / 2569">
             </div>
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label>ประเภทการชำระเงิน (หัวใบนำส่ง)</label>
@@ -329,6 +334,21 @@
                     </div>
                 </div>
             </div>
+            <!-- Data Management Section -->
+            <div class="form-group" style="margin-bottom: 1rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                <label>จัดการข้อมูลและสำรองไฟล์ (Backup)</label>
+                <p style="font-size: 0.7rem; color: #666; margin-bottom: 8px;">* แนะนำให้สำรองข้อมูลทุกเดือนเพื่อความปลอดภัยของข้อมูลระยะยาว</p>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" id="export-data-btn" style="background: #0f172a; color: white; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        💾 ส่งออก (.JSON)
+                    </button>
+                    <button type="button" id="import-data-btn" style="background: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        📂 นำเข้าไฟล์สำรอง
+                    </button>
+                </div>
+                <input type="file" id="import-data-file" accept=".json" style="display: none;">
+            </div>
+            
             <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
                 <button id="save-settings-btn" class="btn-primary" style="flex: 1;">บันทึก</button>
                 <button id="close-settings-btn" style="flex: 1; background: #e2e8f0; color: #333;">ยกเลิก</button>

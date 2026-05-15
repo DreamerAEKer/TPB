@@ -64,6 +64,21 @@ async function saveArchive(archive) {
     });
 }
 
+async function loadArchivesByMonth(monthStr) {
+    const db = await initDB();
+    return new Promise((resolve) => {
+        const tx = db.transaction('archives', 'readonly');
+        const store = tx.objectStore('archives');
+        const index = store.index('date');
+        
+        // monthStr is "YYYY-MM"
+        // range from "YYYY-MM-01" to "YYYY-MM-31T..."
+        const range = IDBKeyRange.bound(monthStr + "-01T00:00:00.000Z", monthStr + "-31T23:59:59.999Z");
+        const req = index.getAll(range);
+        req.onsuccess = () => resolve(req.result || []);
+    });
+}
+
 async function loadAllArchives() {
     const db = await initDB();
     return new Promise((resolve) => {
@@ -100,7 +115,7 @@ let shipments = [];
 let history = [];
 let historyIndex = 0;
 let currentServiceTab = 'EMS';
-let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: false, paymentType: 'เงินเชื่อ', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left' };
+let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: false, paymentType: 'เงินเชื่อ', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left', postOffice: 'ไปรษณีย์กลาง 10501' };
 let editingArchiveId = null;
 let currentView = 'dashboard';
 
@@ -636,7 +651,7 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
     const company = settings.company || '......................................';
     const address = settings.address || '........................................';
     const phone = settings.phone || '..................';
-    const license = settings.license || 'พ. ...... / 2563';
+    const license = settings.license || 'พ. ...... / 2569';
     
     for (let p = 0; p < totalPages; p++) {
         const pageItems = itemsToPrint.slice(p * ITEMS_PER_PAGE, (p + 1) * ITEMS_PER_PAGE);
@@ -685,8 +700,8 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
                     <div style="text-align: right;">
                         <h2 style="margin: 0; font-size: 14pt;">ใบนำส่งสิ่งของทางไปรษณีย์ โดยชำระค่าบริการเป็น${settings.paymentType || 'เงินเชื่อ'}</h2>
                         ${titleSuffix ? `<div style="font-size: 12pt; font-weight: bold;">(${titleSuffix})</div>` : ''}
-                        <div style="font-size: 11pt; margin-top: 5px;">ใบอนุญาตพิเศษที่ <b>${license}</b></div>
-                        <div style="font-size: 11pt;">วันที่ ........................................ ฝากส่งครั้งที่ ........... ใบที่ <b>${p + 1} / ${totalPages}</b></div>
+                        <div style="font-size: 11pt; margin-top: 5px;">วันที่ ........................................ ฝากส่งครั้งที่ ........... ใบที่ <b>${p + 1} / ${totalPages}</b></div>
+                        <div style="font-size: 11pt;"><span style="font-weight: bold; font-size: 12pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</span> ใบอนุญาตพิเศษที่ <b>${license}</b></div>
                     </div>
                 </div>
                 <div style="margin-bottom: 5px; font-size: 11pt;">
@@ -748,7 +763,7 @@ function generatePrintPages(itemsToPrint, container, titleSuffix = "") {
                         <div style="margin-bottom: 5px;">รับฝากไว้แล้ว</div>
                         <div style="margin-bottom: 8px;">ลงชื่อ ........................................................</div>
                         <div style="margin-bottom: 5px;">เจ้าหน้าที่รับฝาก</div>
-                        <div style="margin-top: 5px; font-size: 10pt;">ไปรษณีย์กลาง 10501</div>
+                        <div style="margin-top: 5px; font-size: 10pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</div>
                     </div>
                 </div>
             </div>
@@ -801,7 +816,7 @@ function generateSummarySheet(items, titleSuffix) {
         .join('');
         
     const company = settings.company || '......................................';
-    const license = settings.license || '................';
+    const license = settings.license || 'พ. ...... / 2569';
     
     return `
         <div class="print-page">
@@ -810,9 +825,11 @@ function generateSummarySheet(items, titleSuffix) {
             <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 12pt;">
                 <div>
                     <div>บริษัท <b>${company}</b></div>
-                    <div>ใบอนุญาตพิเศษที่ <b>${license}</b></div>
                 </div>
-                <div>วันที่ ........................................</div>
+                <div style="text-align: right;">
+                    <div>วันที่ ........................................</div>
+                    <div style="margin-top: 5px;"><span style="font-weight: bold; font-size: 13pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</span> ใบอนุญาตพิเศษที่ <b>${license}</b></div>
+                </div>
             </div>
             
             <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 12pt; margin-bottom: 20px;" border="1">
@@ -870,6 +887,7 @@ function generateSummarySheet(items, titleSuffix) {
                 <div style="width: 45%; text-align: center;">
                     <div style="margin-bottom: 10px;">ลงชื่อ ........................................................</div>
                     <div style="margin-bottom: 10px;">เจ้าหน้าที่รับฝาก</div>
+                    <div style="margin-top: 5px; font-size: 10pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</div>
                 </div>
             </div>
         </div>
@@ -1292,6 +1310,13 @@ savePrefixBtn.onclick = async () => {
 // Settings Modal
 settingsBtn.onclick = () => settingsModal.style.display = 'flex';
 closeSettingsBtn.onclick = () => settingsModal.style.display = 'none';
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && settingsModal.style.display === 'flex') {
+        settingsModal.style.display = 'none';
+    }
+});
+
 saveSettingsBtn.onclick = async () => {
     settings.company = document.getElementById('set-company').value;
     settings.address = document.getElementById('set-address').value;
@@ -1299,6 +1324,7 @@ saveSettingsBtn.onclick = async () => {
     settings.license = document.getElementById('set-license').value;
     settings.paymentType = document.getElementById('set-payment-type').value;
     settings.fuelSurcharge = setFuelSurcharge.checked;
+    settings.postOffice = document.getElementById('set-post-office').value || 'ไปรษณีย์กลาง 10501';
     
     settings.showSignatureNames = document.getElementById('set-show-sig-names').checked;
     settings.responsibleName = document.getElementById('set-res-name').value;
@@ -1350,6 +1376,105 @@ document.getElementById('set-logo-align').onchange = (e) => {
     else if (val === 'center') container.style.textAlign = 'center';
     else if (val === 'right') container.style.textAlign = 'right';
 };
+
+document.getElementById('export-data-btn').onclick = async () => {
+    const db = await initDB();
+    const archives = await loadAllArchives();
+    const data = await new Promise((resolve) => {
+        const tx = db.transaction('data', 'readonly');
+        const store = tx.objectStore('data');
+        const req = store.getAll();
+        const keysReq = store.getAllKeys();
+        req.onsuccess = () => {
+            keysReq.onsuccess = () => {
+                const result = {};
+                keysReq.result.forEach((key, i) => result[key] = req.result[i]);
+                resolve(result);
+            };
+        };
+    });
+
+    const backup = {
+        version: DB_VERSION,
+        exportDate: new Date().toISOString(),
+        settings: settings,
+        archives: archives,
+        data: data
+    };
+
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ThaiPost_Backup_${new Date().toISOString().substring(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert('ส่งออกข้อมูลสำเร็จ! โปรดเก็บไฟล์นี้ไว้ในที่ปลอดภัย');
+};
+
+document.getElementById('import-data-btn').onclick = () => {
+    document.getElementById('import-data-file').click();
+};
+
+document.getElementById('import-data-file').onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!confirm('คำเตือน: การนำเข้าข้อมูลจะเขียนทับข้อมูลและการตั้งค่าปัจจุบันทั้งหมด!\n\nคุณต้องการดำเนินการต่อหรือไม่?')) {
+        e.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        try {
+            const backup = JSON.parse(event.target.result);
+            
+            // Basic validation
+            if (!backup.archives || !backup.settings || !backup.data) {
+                throw new Error('รูปแบบไฟล์สำรองไม่ถูกต้อง');
+            }
+
+            const db = await initDB();
+            
+            // 1. Clear and Restore 'data' store (settings, shipments, history etc.)
+            const txData = db.transaction('data', 'readwrite');
+            const dataStore = txData.objectStore('data');
+            await new Promise((resolve) => {
+                dataStore.clear().onsuccess = () => {
+                    for (const [key, val] of Object.entries(backup.data)) {
+                        dataStore.put(val, key);
+                    }
+                    // Also explicitly ensure the current 'settings' from JSON are saved
+                    dataStore.put(backup.settings, 'settings');
+                    resolve();
+                };
+            });
+
+            // 2. Clear and Restore 'archives' store
+            const txArchive = db.transaction('archives', 'readwrite');
+            const archiveStore = txArchive.objectStore('archives');
+            await new Promise((resolve) => {
+                archiveStore.clear().onsuccess = () => {
+                    backup.archives.forEach(arc => archiveStore.put(arc));
+                    resolve();
+                };
+            });
+
+            alert('นำเข้าข้อมูลสำเร็จ! ระบบจะทำการรีโหลดหน้าเว็บบูรณะข้อมูลใหม่');
+            location.reload();
+
+        } catch (err) {
+            console.error(err);
+            alert('เกิดข้อผิดพลาดในการนำเข้าข้อมูล: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Reset for next selection
+};
+
 
 function updateLogoPreview() {
     const container = document.getElementById('logo-preview-container');
@@ -1410,10 +1535,8 @@ async function renderArchiveView() {
     const monthStr = reportMonthInput.value; // "YYYY-MM"
     if (!monthStr) return;
     
-    const allArchives = await loadAllArchives();
-    
-    // filter by month
-    const filtered = allArchives.filter(a => a.date.startsWith(monthStr));
+    // Optimized: Only load data for this month from DB index
+    const filtered = await loadArchivesByMonth(monthStr);
     
     // group by day
     const dayGroups = {};
@@ -1586,6 +1709,7 @@ async function initApp() {
     document.getElementById('set-license').value = settings.license || '';
     document.getElementById('set-payment-type').value = settings.paymentType || 'เงินเชื่อ';
     setFuelSurcharge.checked = settings.fuelSurcharge || false;
+    document.getElementById('set-post-office').value = settings.postOffice || 'ไปรษณีย์กลาง 10501';
     
     document.getElementById('set-show-sig-names').checked = settings.showSignatureNames || false;
     document.getElementById('set-res-name').value = settings.responsibleName || '';
