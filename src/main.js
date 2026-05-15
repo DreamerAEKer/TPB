@@ -397,6 +397,7 @@ function renderShipments() {
       <td class="services-cell">
         <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
             <label class="svc-mini" title="ตอบรับ (AR)"><input type="checkbox" ${s.options?.ar ? 'checked' : ''} onchange="toggleRowService(${i}, 'ar', this.checked)"> AR</label>
+            ${s.serviceType === 'REG' ? `<label class="svc-mini" title="ตอบรับ Tracking (8 บาท)"><input type="checkbox" ${s.options?.arTracking ? 'checked' : ''} onchange="toggleRowService(${i}, 'arTracking', this.checked)"> ART</label>` : ''}
             ${s.serviceType === 'EMS' ? `<label class="svc-mini" title="ประกัน"><input type="checkbox" ${s.options?.insurance ? 'checked' : ''} onchange="toggleRowService(${i}, 'insurance', this.checked)"> 🛡️</label>` : ''}
             ${(s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && s.destination.includes('เกาะ')) ? `<label class="svc-mini" title="พื้นที่ห่างไกล"><input type="checkbox" ${s.options?.isRemote ? 'checked' : ''} onchange="toggleRowService(${i}, 'isRemote', this.checked)"> 🏝️</label>` : ''}
         </div>
@@ -469,6 +470,10 @@ window.toggleRowService = async (i, serviceType, checked) => {
     
     if (serviceType === 'ar') {
         s.options.ar = checked;
+        if (checked) s.options.arTracking = false;
+    } else if (serviceType === 'arTracking') {
+        s.options.arTracking = checked;
+        if (checked) s.options.ar = false;
     } else if (serviceType === 'insurance') {
         if (checked) {
             if (v < 2100) {
