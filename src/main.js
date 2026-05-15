@@ -778,7 +778,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 <div style="margin-bottom: 5px; font-size: 11pt;">
                     &nbsp;
                 </div>
-                <div style="margin-bottom: 10px;">
+                <div style="margin-bottom: 5px;">
                     <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11pt;" border="1">
                         <thead style="background: #f0f0f0;">
                             <tr>
@@ -816,25 +816,25 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         </tbody>
                     </table>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-top: auto; font-size: 11pt;">
-                    <div style="width: 45%; text-align: center;">
-                        <div style="margin-bottom: 15px;">
-                            <div style="margin-bottom: 5px;">รับผิดชอบฝากส่ง</div>
-                            <div style="margin-bottom: 8px;">ลงชื่อ ........................................................</div>
-                            <div style="margin-bottom: 8px;">( ${settings.showSignatureNames ? (settings.responsibleName || '........................................................') : '........................................................'} )</div>
+                <div style="display: flex; justify-content: space-between; margin-top: auto; padding-top: 10px; font-size: 11pt; page-break-inside: avoid; break-inside: avoid;">
+                    <div style="width: 48%; text-align: center;">
+                        <div style="margin-bottom: 12px;">
+                            <div style="margin-bottom: 3px;">รับผิดชอบฝากส่ง</div>
+                            <div style="margin-bottom: 6px;">ลงชื่อ ........................................................</div>
+                            <div style="margin-bottom: 4px;">( ${settings.showSignatureNames ? (settings.responsibleName || '........................................................') : '........................................................'} )</div>
                         </div>
                         ${settings.senderName ? `
-                            <div style="margin-top: 10px; font-size: 10pt;">
-                                <div style="margin-bottom: 4px;">ผู้นำส่ง</div>
+                            <div style="margin-top: 5px; font-size: 10pt;">
+                                <div style="margin-bottom: 2px;">ผู้นำส่ง</div>
                                 <div>( ${settings.senderName} )</div>
                             </div>
                         ` : ''}
                     </div>
-                    <div style="width: 45%; text-align: center;">
-                        <div style="margin-bottom: 5px;">รับฝากไว้แล้ว</div>
-                        <div style="margin-bottom: 8px;">ลงชื่อ ........................................................</div>
-                        <div style="margin-bottom: 5px;">เจ้าหน้าที่รับฝาก</div>
-                        <div style="margin-top: 5px; font-size: 10pt; font-weight: bold; white-space: nowrap;">${(settings.postOffice && settings.postOffice.trim()) ? settings.postOffice : 'ไปรษณีย์กลาง 10501'}</div>
+                    <div style="width: 48%; text-align: center;">
+                        <div style="margin-bottom: 3px;">รับฝากไว้แล้ว</div>
+                        <div style="margin-bottom: 6px;">ลงชื่อ ........................................................</div>
+                        <div style="margin-bottom: 3px;">เจ้าหน้าที่รับฝาก</div>
+                        <div style="margin-top: 3px; font-size: 10pt; font-weight: bold; white-space: nowrap;">${(settings.postOffice && settings.postOffice.trim()) ? settings.postOffice : 'ไปรษณีย์กลาง 10501'}</div>
                     </div>
                 </div>
                 ${generateMeterLineHtml()}
@@ -910,7 +910,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </div>
             </div>
             
-            <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 12pt; margin-bottom: 20px;" border="1">
+            <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11.5pt; margin-bottom: 15px;" border="1">
                 <thead style="background: #f0f0f0;">
                     <tr><th colspan="5" style="padding: 8px;">รายการเลขที่สิ่งของ ที่นำมาฝากส่งในวันนี้</th></tr>
                     <tr>
@@ -948,25 +948,25 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </div>
             </div>
             
-            <div style="display: flex; justify-content: space-between; margin-top: auto; padding-top: 15px; font-size: 11pt;">
-                <div style="width: 45%; text-align: center;">
-                    <div style="margin-bottom: 15px;">
-                        <div style="margin-bottom: 5px;">รับผิดชอบฝากส่ง</div>
-                        <div style="margin-bottom: 8px;">ลงชื่อ ........................................................</div>
-                        <div style="margin-bottom: 8px;">( ${settings.showSignatureNames ? (settings.responsibleName || '........................................................') : '........................................................'} )</div>
+            <div style="display: flex; justify-content: space-between; margin-top: auto; padding-top: 10px; font-size: 11pt; page-break-inside: avoid; break-inside: avoid;">
+                <div style="width: 48%; text-align: center;">
+                    <div style="margin-bottom: 12px;">
+                        <div style="margin-bottom: 3px;">รับผิดชอบฝากส่ง</div>
+                        <div style="margin-bottom: 6px;">ลงชื่อ ........................................................</div>
+                        <div style="margin-bottom: 4px;">( ${settings.showSignatureNames ? (settings.responsibleName || '........................................................') : '........................................................'} )</div>
                     </div>
                     ${settings.senderName ? `
-                        <div style="margin-top: 10px; font-size: 10pt;">
-                            <div style="margin-bottom: 4px;">ผู้นำส่ง</div>
+                        <div style="margin-top: 5px; font-size: 10pt;">
+                            <div style="margin-bottom: 2px;">ผู้นำส่ง</div>
                             <div>( ${settings.senderName} )</div>
                         </div>
                     ` : ''}
                 </div>
-                <div style="width: 45%; text-align: center;">
-                    <div style="margin-bottom: 5px;">รับฝากไว้แล้ว</div>
-                    <div style="margin-bottom: 8px;">ลงชื่อ ........................................................</div>
-                    <div style="margin-bottom: 5px;">เจ้าหน้าที่รับฝาก</div>
-                    <div style="margin-top: 5px; font-size: 10pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</div>
+                <div style="width: 48%; text-align: center;">
+                    <div style="margin-bottom: 3px;">รับฝากไว้แล้ว</div>
+                    <div style="margin-bottom: 6px;">ลงชื่อ ........................................................</div>
+                    <div style="margin-bottom: 3px;">เจ้าหน้าที่รับฝาก</div>
+                    <div style="margin-top: 3px; font-size: 10pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</div>
                 </div>
             </div>
             ${generateMeterLineHtml()}
