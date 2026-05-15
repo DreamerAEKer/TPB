@@ -780,17 +780,17 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 
                 rowsHtml += `
                     <tr>
-                        <td style="padding: 3px 4px;">${p * ITEMS_PER_PAGE + i + 1}</td>
-                        <td style="text-align: left; padding: 3px 4px;">${displayRecipient}</td>
-                        <td style="text-align: left; padding: 3px 4px;">${displayDestination}</td>
-                        <td style="font-family: monospace; font-size: 11pt; padding: 3px 4px;">${s.trackingFormatted}</td>
-                        <td style="padding: 3px 4px; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}</td>
-                        <td style="padding: 3px 4px;">${displayFee}</td>
-                        <td style="padding: 3px 4px; font-size: 8pt; text-align: left;">${generateShipmentNote(s)}</td>
+                        <td style="padding: 2px 4px;">${p * ITEMS_PER_PAGE + i + 1}</td>
+                        <td style="text-align: left; padding: 2px 4px;">${displayRecipient}</td>
+                        <td style="text-align: left; padding: 2px 4px;">${displayDestination}</td>
+                        <td style="font-family: monospace; font-size: 11pt; padding: 2px 4px;">${s.trackingFormatted}</td>
+                        <td style="padding: 2px 4px; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}</td>
+                        <td style="padding: 2px 4px;">${displayFee}</td>
+                        <td style="padding: 2px 4px; font-size: 8pt; text-align: left;">${generateShipmentNote(s)}</td>
                     </tr>
                 `;
             } else {
-                rowsHtml += `<tr><td style="padding: 3px 4px;">&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+                rowsHtml += `<tr><td style="padding: 2px 4px;">&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
             }
         }
         
@@ -853,12 +853,12 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         </tbody>
                     </table>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-top: auto; padding-top: 10px; font-size: 11pt; page-break-inside: avoid; break-inside: avoid;">
+                <div style="display: flex; justify-content: space-between; margin-top: 5px; padding-top: 5px; font-size: 11pt; page-break-inside: avoid; break-inside: avoid;">
                     <div style="width: 48%; text-align: center;">
-                        <div style="margin-bottom: 12px;">
-                            <div style="margin-bottom: 3px;">รับผิดชอบฝากส่ง</div>
-                            <div style="margin-bottom: 6px;">ลงชื่อ ........................................................</div>
-                            <div style="margin-bottom: 4px;">( ${settings.showSignatureNames ? (settings.responsibleName || '........................................................') : '........................................................'} )</div>
+                        <div style="margin-bottom: 8px;">
+                            <div style="margin-bottom: 2px;">รับผิดชอบฝากส่ง</div>
+                            <div style="margin-bottom: 4px;">ลงชื่อ ........................................................</div>
+                            <div style="margin-bottom: 3px;">( ${settings.showSignatureNames ? (settings.responsibleName || '........................................................') : '........................................................'} )</div>
                         </div>
                         ${settings.senderName ? `
                             <div style="margin-top: 5px; font-size: 10pt;">
