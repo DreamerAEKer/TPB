@@ -220,6 +220,22 @@ const optInsuranceRow = document.getElementById('opt-insurance-row');
 const optArRow = document.getElementById('opt-ar-row');
 
 // --- HELPERS ---
+const THAI_NUM_MAP = {
+    'ๅ': '1', '/': '2', '-': '3', 'ภ': '4', 'ถ': '5', 'ุ': '6', 'ึ': '7', 'ค': '8', 'ต': '9', 'จ': '0',
+    '๑': '1', '๒': '2', '๓': '3', '๔': '4', '๕': '5', '๖': '6', '๗': '7', '๘': '8', '๙': '9', '๐': '0',
+    '๏': '0', '๚': '1', '๛': '2' // Uncommon but possible
+};
+
+function sanitizeNumeric(val, allowDecimal = false) {
+    let result = '';
+    for (let char of val) {
+        result += THAI_NUM_MAP[char] || char;
+    }
+    if (allowDecimal) {
+        return result.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');
+    }
+    return result.replace(/\D/g, '');
+}
 function getServiceType(p) {
   if (currentServiceTab === 'CUSTOM') return 'CUSTOM';
   p = p.toUpperCase();
@@ -423,7 +439,29 @@ function renderShipments() {
     cell.oninput = async (e) => {
         const field = e.target.dataset.field;
         const idx = e.target.dataset.index;
-        const val = e.target.innerText.replace(' บาท', '').trim();
+        let val = e.target.innerText.replace(' บาท', '').trim();
+        
+        if (field === 'weight' || field === 'fee') {
+            const sanitized = sanitizeNumeric(val, field === 'fee');
+            if (val !== sanitized) {
+                // Save cursor position
+                const selection = window.getSelection();
+                const range = selection.getRangeAt(0);
+                const offset = range.startOffset;
+                
+                e.target.innerText = sanitized;
+                val = sanitized;
+                
+                // Restore cursor (simple approach)
+                try {
+                    const newRange = document.createRange();
+                    newRange.setStart(e.target.childNodes[0], Math.min(offset, sanitized.length));
+                    newRange.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(newRange);
+                } catch(err) {}
+            }
+        }
         shipments[idx][field] = val;
     };
     
@@ -1043,20 +1081,29 @@ prefixInput.oninput = (e) => {
 
 digitsInput.oninput = (e) => {
   if (currentServiceTab !== 'CUSTOM') {
-      e.target.value = e.target.value.replace(/\D/g, '').substring(0, 8);
+      e.target.value = sanitizeNumeric(e.target.value).substring(0, 8);
   }
   updatePreview();
   if (bulkToggle.checked) syncBatchInputs('count');
 };
 
 digitsEndInput.oninput = (e) => {
-    if (currentServiceTab !== 'CUSTOM') e.target.value = e.target.value.replace(/\D/g, '').substring(0, 8);
+    if (currentServiceTab !== 'CUSTOM') e.target.value = sanitizeNumeric(e.target.value).substring(0, 8);
     syncBatchInputs('end');
 };
 
-batchCountInput.oninput = () => syncBatchInputs('count');
-weightInput.oninput = updatePreview;
-feeInput.oninput = updatePreview;
+batchCountInput.oninput = (e) => {
+    e.target.value = sanitizeNumeric(e.target.value);
+    syncBatchInputs('count');
+};
+weightInput.oninput = (e) => {
+    e.target.value = sanitizeNumeric(e.target.value);
+    updatePreview();
+};
+feeInput.oninput = (e) => {
+    e.target.value = sanitizeNumeric(e.target.value, true);
+    updatePreview();
+};
 optAR.onchange = updatePreview;
 optInsurance.onchange = () => {
     if (optInsurance.checked) {
@@ -1065,13 +1112,28 @@ optInsurance.onchange = () => {
     }
     updatePreview();
 };
-insuranceVal.oninput = updatePreview;
+insuranceVal.oninput = (e) => {
+    e.target.value = sanitizeNumeric(e.target.value);
+    updatePreview();
+};
 recipientInput.oninput = updatePreview;
-destInput.oninput = updatePreview;
+destInput.oninput = (e) => {
+    e.target.value = sanitizeNumeric(e.target.value);
+    updatePreview();
+};
 optArTracking.onchange = updatePreview;
-dimW.oninput = updatePreview;
-dimL.oninput = updatePreview;
-dimH.oninput = updatePreview;
+dimW.oninput = (e) => {
+    e.target.value = sanitizeNumeric(e.target.value);
+    updatePreview();
+};
+dimL.oninput = (e) => {
+    e.target.value = sanitizeNumeric(e.target.value);
+    updatePreview();
+};
+dimH.oninput = (e) => {
+    e.target.value = sanitizeNumeric(e.target.value);
+    updatePreview();
+};
 regTypeInput.onchange = updatePreview;
 
 customServiceNameInput.onchange = () => {
@@ -1556,6 +1618,13 @@ saveSettingsBtn.onclick = async () => {
 
 document.getElementById('set-payment-type').onchange = (e) => {
     document.getElementById('meter-settings-fields').style.display = (e.target.value === 'เครื่องประทับไปรษณียากร') ? 'block' : 'none';
+};
+
+document.getElementById('set-meter-desc').oninput = (e) => {
+    e.target.value = sanitizeNumeric(e.target.value, true);
+};
+document.getElementById('set-meter-asc').oninput = (e) => {
+    e.target.value = sanitizeNumeric(e.target.value, true);
 };
 
 document.getElementById('set-show-sig-names').onchange = (e) => {
