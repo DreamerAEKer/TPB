@@ -780,17 +780,17 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 
                 rowsHtml += `
                     <tr style="height: 28px;">
-                        <td style="padding: 2px 4px;">${p * ITEMS_PER_PAGE + i + 1}</td>
-                        <td style="text-align: left; padding: 2px 4px;">${displayRecipient}</td>
-                        <td style="text-align: left; padding: 2px 4px;">${displayDestination}</td>
-                        <td style="font-family: monospace; font-size: 11pt; padding: 2px 4px;">${s.trackingFormatted}</td>
-                        <td style="padding: 2px 4px; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}</td>
-                        <td style="padding: 2px 4px;">${displayFee}</td>
-                        <td style="padding: 2px 4px; font-size: 8pt; text-align: left;">${generateShipmentNote(s)}</td>
+                        <td style="padding: 1px 4px; text-align: center;">${p * ITEMS_PER_PAGE + i + 1}</td>
+                        <td style="text-align: left; padding: 1px 4px;">${displayRecipient}</td>
+                        <td style="text-align: left; padding: 1px 4px;">${displayDestination}</td>
+                        <td style="font-family: monospace; font-size: 11pt; padding: 1px 4px; text-align: center;">${s.trackingFormatted}</td>
+                        <td style="padding: 1px 4px; text-align: center; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}</td>
+                        <td style="padding: 1px 4px; text-align: center;">${displayFee}</td>
+                        <td style="padding: 1px 4px; font-size: 8pt; text-align: center;">${generateShipmentNote(s)}</td>
                     </tr>
                 `;
             } else {
-                rowsHtml += `<tr style="height: 28px;"><td style="padding: 2px 4px;">&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+                rowsHtml += `<tr style="height: 28px;"><td style="padding: 1px 4px; text-align: center;">&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
             }
         }
         
@@ -817,13 +817,13 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                     <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11pt; table-layout: fixed;" border="1">
                         <thead style="background: #f0f0f0;">
                             <tr>
-                                <th style="padding: 6px; width: 45px;">ลำดับ</th>
-                                <th style="padding: 6px; width: auto;">นามผู้รับ</th>
-                                <th style="padding: 6px; width: 140px;">ปลายทาง/รหัสฯ</th>
-                                <th style="padding: 6px; width: 155px;">เลขที่สิ่งของ 13 หลัก</th>
-                                <th style="padding: 6px; width: 75px;">น้ำหนัก<br>(กรัม)</th>
-                                <th style="padding: 6px; width: 85px;">ค่าบริการ<br>(บาท)</th>
-                                <th style="padding: 6px; width: 90px;">หมายเหตุ</th>
+                                <th style="padding: 6px; width: 45px; text-align: center;">ลำดับ</th>
+                                <th style="padding: 6px; width: auto; text-align: center;">ผู้รับ</th>
+                                <th style="padding: 6px; width: 110px; text-align: center;">ปลายทาง</th>
+                                <th style="padding: 6px; width: 155px; text-align: center;">เลขที่สิ่งของ 13 หลัก</th>
+                                <th style="padding: 6px; width: 75px; text-align: center;">น้ำหนัก<br>(กรัม)</th>
+                                <th style="padding: 6px; width: 85px; text-align: center;">ค่าบริการ<br>(บาท)</th>
+                                <th style="padding: 6px; width: 90px; text-align: center;">หมายเหตุ</th>
                             </tr>
                         </thead>
                         <tbody>
