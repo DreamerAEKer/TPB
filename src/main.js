@@ -415,8 +415,9 @@ function renderShipments() {
             <label class="svc-mini" title="ตอบรับ (AR)"><input type="checkbox" ${s.options?.ar ? 'checked' : ''} onchange="toggleRowService(${i}, 'ar', this.checked)"> AR</label>
             ${s.serviceType === 'REG' ? `<label class="svc-mini" title="ตอบรับ Tracking (8 บาท)"><input type="checkbox" ${s.options?.arTracking ? 'checked' : ''} onchange="toggleRowService(${i}, 'arTracking', this.checked)"> AR Track</label>` : ''}
             ${s.serviceType === 'EMS' ? `
+                <div style="display: flex; align-items: center; gap: 4px;">
                     <label class="svc-mini" title="ประกัน"><input type="checkbox" ${s.options?.insurance ? 'checked' : ''} onchange="toggleRowService(${i}, 'insurance', this.checked)"> 🛡️</label>
-                    ${s.options?.insurance ? `<input type="text" class="mini-input ${ (s.options.insuranceVal > 50000) ? 'error-input' : '' }" style="width: 50px; font-size: 0.75rem; padding: 2px;" value="${s.options.insuranceVal || 2000}" oninput="this.value = sanitizeNumeric(this.value); updateRowInsuranceVal(${i}, this.value)" onblur="validateRowInsurance(${i}, this)">` : ''}
+                    ${s.options?.insurance ? `<input type="text" class="mini-input ${ (s.options.insuranceVal > 50000) ? 'error-input' : '' }" style="width: 60px; font-size: 0.75rem; padding: 2px;" value="${(parseFloat(s.options.insuranceVal) || 0).toLocaleString()}" oninput="this.value = sanitizeNumeric(this.value); updateRowInsuranceVal(${i}, this.value)" onblur="validateRowInsurance(${i}, this)">` : ''}
                 </div>
             ` : ''}
             ${(s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && s.destination.includes('เกาะ')) ? `<label class="svc-mini" title="พื้นที่ห่างไกล"><input type="checkbox" ${s.options?.isRemote ? 'checked' : ''} onchange="toggleRowService(${i}, 'isRemote', this.checked)"> 🏝️</label>` : ''}
@@ -598,11 +599,14 @@ window.updateRowInsuranceVal = async (i, val) => {
 };
 
 window.validateRowInsurance = (i, input) => {
-    const val = parseFloat(input.value) || 0;
+    const val = parseFloat(input.value.replace(/,/g, '')) || 0;
     if (val > 50000) {
         alert('⚠️ วงเงินรับประกันสูงสุดคือ 50,000 บาท ระบบจะปรับยอดเป็น 50,000 ให้อัตโนมัติ');
-        input.value = 50000;
+        input.value = "50,000";
         updateRowInsuranceVal(i, 50000);
+    } else {
+        input.value = val.toLocaleString();
+        updateRowInsuranceVal(i, val);
     }
 };
 
@@ -1162,11 +1166,13 @@ insuranceVal.oninput = (e) => {
     updatePreview();
 };
 insuranceVal.onblur = (e) => {
-    const val = parseFloat(e.target.value) || 0;
+    const val = parseFloat(e.target.value.replace(/,/g, '')) || 0;
     if (val > 50000) {
         alert('⚠️ วงเงินรับประกันสูงสุดไม่เกิน 50,000 บาท ระบบจะปรับยอดเป็น 50,000 ให้อัตโนมัติ');
-        e.target.value = 50000;
+        e.target.value = "50,000";
         updatePreview();
+    } else {
+        e.target.value = val.toLocaleString();
     }
 };
 recipientInput.oninput = updatePreview;
