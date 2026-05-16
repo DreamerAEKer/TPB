@@ -2244,7 +2244,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.2.1</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.2.2</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
@@ -2484,7 +2484,7 @@ async function initApp() {
 
 function setupFluentNavigation() {
     const fields = [
-        prefixInput, digitsInput, num8StartInput, batchCountInput,
+        prefixInput, digitsInput, num8StartInput, digitsEndInput, batchCountInput,
         recipientInput, destInput, weightInput, feeInput
     ];
 
@@ -2502,6 +2502,11 @@ function setupFluentNavigation() {
                         return;
                     }
                     if (f === num8StartInput) {
+                        digitsEndInput.focus();
+                        digitsEndInput.select();
+                        return;
+                    }
+                    if (f === digitsEndInput) {
                         batchCountInput.focus();
                         batchCountInput.select();
                         return;
