@@ -153,8 +153,8 @@ let currentView = 'dashboard';
 // --- DOM ELEMENTS ---
 const prefixInput = document.getElementById('prefix');
 const prefixList = document.getElementById('prefix-list');
-const prefixChips = document.getElementById('prefix-chips');
 const savePrefixBtn = document.getElementById('save-prefix-btn');
+const deletePrefixBtn = document.getElementById('delete-prefix-btn');
 const prefixHelpText = document.getElementById('prefix-help-text');
 const digitsInput = document.getElementById('digits');
 const digitsEndInput = document.getElementById('digits-end');
@@ -1644,41 +1644,46 @@ function updatePrefixListUI() {
     let list = settings.defaultPrefixes[currentServiceTab] || [];
     if (!Array.isArray(list)) list = [list];
     
-    // Update Datalist
+    // Update Datalist (Consolidated List)
     prefixList.innerHTML = list.map(p => `<option value="${p}">`).join('');
     
-    // Update Chips (Integrated Selection and Removal)
-    prefixChips.innerHTML = list.map(p => `
-        <div class="prefix-chip">
-            <span class="prefix-chip-text" onclick="selectPrefix('${p}')" title="เลือกหมวดนี้">${p}</span>
-            <button class="prefix-chip-remove" onclick="removePrefix('${p}')" title="ลบออก">×</button>
-        </div>
-    `).join('');
-    
-    // Update Button Visibility: Show only if current input is NOT in the list
+    // Toggle Save/Delete buttons based on current input value
     const currentVal = prefixInput.value.trim().toUpperCase();
-    if (currentVal && !list.includes(currentVal)) {
-        savePrefixBtn.style.display = 'flex';
+    const isInList = list.includes(currentVal);
+    
+    if (currentVal) {
+        savePrefixBtn.style.display = isInList ? 'none' : 'flex';
+        deletePrefixBtn.style.display = isInList ? 'flex' : 'none';
     } else {
         savePrefixBtn.style.display = 'none';
+        deletePrefixBtn.style.display = 'none';
     }
 }
 
-window.removePrefix = async (p) => {
-    if (!settings.defaultPrefixes) return;
+deletePrefixBtn.onclick = async () => {
+    const val = prefixInput.value.trim().toUpperCase();
+    if (!val) return;
+    
+    if (!confirm(`ยืนยันการลบหมวด "${val}" ออกจากรายการโปรด?`)) return;
+    
+    if (!settings.defaultPrefixes) settings.defaultPrefixes = {};
     let list = settings.defaultPrefixes[currentServiceTab] || [];
     if (!Array.isArray(list)) list = [list];
     
-    const index = list.indexOf(p);
+    const index = list.indexOf(val);
     if (index > -1) {
         list.splice(index, 1);
         settings.defaultPrefixes[currentServiceTab] = list;
         await saveToDB('settings', settings);
         updatePrefixListUI();
+        
+        // Visual feedback for deletion
+        prefixInput.style.borderColor = '#ef4444';
+        setTimeout(() => prefixInput.style.borderColor = '', 500);
     }
 };
 
-
+// Simplified selectPrefix (if still used internally)
 window.selectPrefix = (p) => {
     prefixInput.value = p;
     updatePreview();

@@ -43,12 +43,13 @@
                         <div style="display: flex; gap: 5px;">
                             <input type="text" id="prefix" list="prefix-list" placeholder="EJ" maxlength="20" value="EJ" style="font-size: 1.25rem; font-weight: bold; padding: 10px; width: 100%;">
                             <datalist id="prefix-list"></datalist>
-                            <button id="save-prefix-btn" class="btn-icon" title="บันทึกเป็นค่าเริ่มต้นของหมวดนี้" style="background: #e2e8f0; color: #1e293b; border-radius: 6px; padding: 0 10px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">💾</button>
+                            <button id="save-prefix-btn" class="btn-icon" title="บันทึกเข้าในรายการโปรด" style="background: #e2e8f0; color: #1e293b; border-radius: 6px; padding: 0 10px; font-size: 1.2rem; display: none; align-items: center; justify-content: center;">💾</button>
+                            <button id="delete-prefix-btn" class="btn-icon" title="ลบออกจากรายการโปรด" style="background: #fff1f2; color: #ef4444; border-radius: 6px; padding: 0 10px; font-size: 1.2rem; display: none; align-items: center; justify-content: center;">🗑️</button>
                         </div>
                         <div id="prefix-help-text" style="display: none; font-size: 0.75rem; color: #0369a1; margin-top: 6px; background: #e0f2fe; padding: 8px; border-radius: 6px; line-height: 1.4;">
                             💡 <b>คำแนะนำ:</b> โปรดเปลี่ยน 2 ตัวหน้าให้ตรงกับการใช้งาน แล้วกดปุ่ม 💾
                         </div>
-                        <div id="prefix-chips" style="display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap;"></div>
+
                     </div>
                     <div id="tracking-preview" style="display: none;">-</div>
                 </div>
