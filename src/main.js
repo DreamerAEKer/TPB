@@ -1645,7 +1645,12 @@ function updatePrefixListUI() {
     if (!Array.isArray(list)) list = [list];
     
     // Update Datalist (Consolidated List)
-    prefixList.innerHTML = list.map(p => `<option value="${p}">`).join('');
+    prefixList.innerHTML = ''; // Clear first
+    list.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p;
+        prefixList.appendChild(opt);
+    });
     
     // Toggle Save/Delete buttons based on current input value
     const currentVal = prefixInput.value.trim().toUpperCase();
@@ -1702,8 +1707,8 @@ savePrefixBtn.onclick = async () => {
     if (!list.includes(val)) {
         list.unshift(val); // Add to front
         
-        // Limit: 2 for standard, 10 for CUSTOM
-        const max = (currentServiceTab === 'CUSTOM') ? 10 : 2;
+        // Limit: 10 for all services (requested more flexibility)
+        const max = 10;
         if (list.length > max) list = list.slice(0, max);
         
         settings.defaultPrefixes[currentServiceTab] = list;
@@ -2327,5 +2332,8 @@ function setupFluentNavigation() {
         });
     });
 }
+
+// Auto-select text on click for easier prefix switching
+prefixInput.onclick = () => prefixInput.select();
 
 window.onload = initApp;
