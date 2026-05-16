@@ -705,13 +705,13 @@ function updatePreview() {
   }
 
   if (isRemoteAreaZip && !sameGroup) {
-      remoteCheckContainer.classList.remove('hidden');
       if (PARTIAL_REMOTE_ZIPS.includes(zip)) {
+          remoteCheckContainer.classList.remove('hidden');
           remoteLabelHint.textContent = '(เฉพาะพื้นที่ - ติ๊กออกหากไม่ใช่เกาะ)';
           remoteLabelHint.style.color = '#be123c';
       } else {
-          remoteLabelHint.textContent = '(พื้นที่พิเศษ)';
-          remoteLabelHint.style.color = '#64748b';
+          // It's a clear remote area, hide the check container so they can't uncheck it easily
+          remoteCheckContainer.classList.add('hidden');
       }
       
       if (optRemote.checked) {
@@ -1989,7 +1989,7 @@ document.getElementById('export-data-btn').onclick = async () => {
     });
 
     const backup = {
-        version: "5.1.0",
+        version: "5.1.1",
         exportDate: new Date().toISOString(),
         settings: settings,
         archives: archives,
