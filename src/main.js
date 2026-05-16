@@ -1602,8 +1602,9 @@ document.querySelectorAll('.service-tab').forEach(tab => {
         tab.classList.add('active');
         serviceTitle.textContent = `จัดการรายการ: ${currentServiceTab === 'CUSTOM' ? 'อื่นๆ' : currentServiceTab}`;
         
-        if (settings.defaultPrefixes && settings.defaultPrefixes[currentServiceTab]) {
-            const list = Array.isArray(settings.defaultPrefixes[currentServiceTab]) ? settings.defaultPrefixes[currentServiceTab] : [settings.defaultPrefixes[currentServiceTab]];
+        const prefixes = settings.defaultPrefixes?.[currentServiceTab];
+        if (prefixes && (Array.isArray(prefixes) ? prefixes.length > 0 : !!prefixes)) {
+            const list = Array.isArray(prefixes) ? prefixes : [prefixes];
             prefixInput.value = list[0];
             prefixHelpText.style.display = 'none';
         } else {
@@ -1646,9 +1647,12 @@ function updatePrefixListUI() {
     // Update Datalist
     prefixList.innerHTML = list.map(p => `<option value="${p}">`).join('');
     
-    // Update Chips
+    // Update Chips (Integrated Selection and Removal)
     prefixChips.innerHTML = list.map(p => `
-        <button class="chip" onclick="selectPrefix('${p}')" style="background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 0.85rem; font-weight: bold; color: #475569; cursor: pointer; transition: all 0.2s;">${p}</button>
+        <div class="prefix-chip">
+            <span class="prefix-chip-text" onclick="selectPrefix('${p}')" title="เลือกหมวดนี้">${p}</span>
+            <button class="prefix-chip-remove" onclick="removePrefix('${p}')" title="ลบออก">×</button>
+        </div>
     `).join('');
     
     // Update Button Visibility: Show only if current input is NOT in the list
@@ -1659,6 +1663,21 @@ function updatePrefixListUI() {
         savePrefixBtn.style.display = 'none';
     }
 }
+
+window.removePrefix = async (p) => {
+    if (!settings.defaultPrefixes) return;
+    let list = settings.defaultPrefixes[currentServiceTab] || [];
+    if (!Array.isArray(list)) list = [list];
+    
+    const index = list.indexOf(p);
+    if (index > -1) {
+        list.splice(index, 1);
+        settings.defaultPrefixes[currentServiceTab] = list;
+        await saveToDB('settings', settings);
+        updatePrefixListUI();
+    }
+};
+
 
 window.selectPrefix = (p) => {
     prefixInput.value = p;
@@ -2164,8 +2183,9 @@ async function initApp() {
         if (!settings.defaultPrefixes) settings.defaultPrefixes = {};
     }
     
-    if (settings.defaultPrefixes && settings.defaultPrefixes[currentServiceTab]) {
-        const list = Array.isArray(settings.defaultPrefixes[currentServiceTab]) ? settings.defaultPrefixes[currentServiceTab] : [settings.defaultPrefixes[currentServiceTab]];
+    const prefixes = settings.defaultPrefixes?.[currentServiceTab];
+    if (prefixes && (Array.isArray(prefixes) ? prefixes.length > 0 : !!prefixes)) {
+        const list = Array.isArray(prefixes) ? prefixes : [prefixes];
         prefixInput.value = list[0];
         prefixHelpText.style.display = 'none';
     } else {
