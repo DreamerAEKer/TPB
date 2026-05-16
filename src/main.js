@@ -406,8 +406,13 @@ function renderShipments() {
     
     if (trackData) {
         if (prevPrefix !== null) {
-            const step = (s.serviceType === 'REG' && s.options?.arTracking) ? 2 : 1;
-            // Trigger toggle if Prefix changed OR Gap occurred
+            // Logic: Determine step based on service type and options
+            // Step is 2 for EMS+AR and REG+AR Track (as skip numbers are reserved for AR)
+            let step = 1;
+            if (s.serviceType === 'EMS' && s.options?.ar) step = 2;
+            else if (s.serviceType === 'REG' && s.options?.arTracking) step = 2;
+
+            // Trigger toggle if Prefix changed OR Gap occurred (greater than step)
             if (trackData.prefix !== prevPrefix || trackData.num !== prevNum + step) {
                 isIndented = !isIndented;
             }
@@ -917,7 +922,10 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
         
         if (trackData) {
             if (prevPrefixGlobal !== null) {
-                const step = (s.serviceType === 'REG' && s.options?.arTracking) ? 2 : 1;
+                let step = 1;
+                if (s.serviceType === 'EMS' && s.options?.ar) step = 2;
+                else if (s.serviceType === 'REG' && s.options?.arTracking) step = 2;
+
                 if (trackData.prefix !== prevPrefixGlobal || trackData.num !== prevNumGlobal + step) {
                     isIndentedGlobal = !isIndentedGlobal;
                 }
@@ -1800,6 +1808,32 @@ window.toggleWeightUnit = () => {
         btn.textContent = 'สลับเป็น KG';
     }
     updatePreview();
+    updatePrefixListUI();
+};
+
+// --- BULK SERVICE TOGGLE ---
+window.toggleAllService = (type) => {
+    const headerCheck = document.getElementById(`toggle-all-${type}`);
+    const isChecked = headerCheck.checked;
+    
+    // Only affect items in current service tab
+    shipments.forEach(s => {
+        if (s.serviceType === currentServiceTab) {
+            if (!s.options) s.options = {};
+            if (type === 'ar') s.options.ar = isChecked;
+            if (type === 'ar-track') s.options.arTracking = isChecked;
+            if (type === 'ins') s.options.insurance = isChecked;
+            
+            // Recalculate fee
+            const baseFee = calculateBaseFee(s.serviceType, s.weight, s.options);
+            s.fee = baseFee;
+        }
+    });
+    
+    saveToDB();
+    renderShipments();
+    updateSummary();
+    saveHistory();
 };
 
 savePrefixBtn.onclick = async () => {
@@ -1935,7 +1969,7 @@ document.getElementById('export-data-btn').onclick = async () => {
     });
 
     const backup = {
-        version: "5.0.3",
+        "version": "5.0.4",
         exportDate: new Date().toISOString(),
         settings: settings,
         archives: archives,
@@ -2124,7 +2158,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.8rem; color: #64748b;">ยอดรวมปี ${currentYear}</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.0.4</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
