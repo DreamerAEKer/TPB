@@ -963,7 +963,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         <td style="padding: 1px 4px; text-align: center;">${p * ITEMS_PER_PAGE + i + 1}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayRecipient}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayDestination}</td>
-                        <td style="padding: 6px; text-align: left; font-weight: bold;">${s.displayTracking}</td>
+                        <td style="padding: 1px 4px; text-align: left; font-weight: bold;">${s.displayTracking}</td>
                         <td style="padding: 1px 4px; text-align: center; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}</td>
                         <td style="padding: 1px 4px; text-align: center;">${displayFee}</td>
                         <td style="padding: 1px 4px; font-size: 8pt; text-align: center;">${generateShipmentNote(s)}</td>
@@ -2017,7 +2017,7 @@ document.getElementById('export-data-btn').onclick = async () => {
     });
 
     const backup = {
-        version: "5.0.7",
+        version: "5.0.8",
         exportDate: new Date().toISOString(),
         settings: settings,
         archives: archives,
