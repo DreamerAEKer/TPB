@@ -394,34 +394,29 @@ function renderShipments() {
 
   let prevPrefix = null;
   let prevNum = null;
-  let currentIndent = "";
+  let isIndented = false;
 
   filtered.forEach((s, displayIdx) => {
     const i = s.originalIdx;
     
-    // Logic: Indentation for tracking number
+    // Logic: Alternating Indentation (v5.0.0)
     const trackData = parseTracking(s.trackingFormatted);
     const isAR12 = (s.serviceType === 'EMS' && s.options?.ar);
     const isARTrack8 = (s.serviceType === 'REG' && s.options?.arTracking);
     
-    if (isAR12 || isARTrack8) {
-        currentIndent = ""; // Exception: Always Normal
-    } else if (trackData) {
-        if (prevPrefix === null) {
-            currentIndent = ""; // First item: Normal
-        } else if (trackData.prefix !== prevPrefix) {
-            currentIndent = ""; // New Prefix: Return to Normal (Reset Loop)
-        } else {
-            // Same Prefix: Check continuity
+    if (trackData) {
+        if (prevPrefix !== null) {
             const step = (s.serviceType === 'REG' && s.options?.arTracking) ? 2 : 1;
-            if (trackData.num !== prevNum + step) {
-                currentIndent = "  "; // Gap: Add 2 spaces
+            // Trigger toggle if Prefix changed OR Gap occurred
+            if (trackData.prefix !== prevPrefix || trackData.num !== prevNum + step) {
+                isIndented = !isIndented;
             }
-            // If continuous, keep previous indentation
         }
         prevPrefix = trackData.prefix;
         prevNum = trackData.num;
     }
+
+    const currentIndent = (isAR12 || isARTrack8 || !isIndented) ? "" : "  ";
 
     const zipMatch = s.destination.match(/\d{5}/);
     const zip = zipMatch ? zipMatch[0] : null;
@@ -909,6 +904,31 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     const ITEMS_PER_PAGE = 25;
     const totalPages = Math.ceil(itemsToPrint.length / ITEMS_PER_PAGE) || 1;
     let combinedHtml = '';
+
+    // Pre-calculate indentation for all items to maintain consistency across pages
+    let prevPrefixGlobal = null;
+    let prevNumGlobal = null;
+    let isIndentedGlobal = false;
+    
+    const itemsWithIndent = itemsToPrint.map(s => {
+        const trackData = parseTracking(s.trackingFormatted);
+        const isAR12 = (s.serviceType === 'EMS' && s.options?.ar);
+        const isARTrack8 = (s.serviceType === 'REG' && s.options?.arTracking);
+        
+        if (trackData) {
+            if (prevPrefixGlobal !== null) {
+                const step = (s.serviceType === 'REG' && s.options?.arTracking) ? 2 : 1;
+                if (trackData.prefix !== prevPrefixGlobal || trackData.num !== prevNumGlobal + step) {
+                    isIndentedGlobal = !isIndentedGlobal;
+                }
+            }
+            prevPrefixGlobal = trackData.prefix;
+            prevNumGlobal = trackData.num;
+        }
+        
+        const indentStr = (isAR12 || isARTrack8 || !isIndentedGlobal) ? "" : "&nbsp;&nbsp;";
+        return { ...s, indentStr };
+    });
     
     const company = settings.company || '......................................';
     const phone = settings.phone || '......................................';
@@ -916,41 +936,12 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     const license = settings.license || 'พ. ...... / 2569';
     
     for (let p = 0; p < totalPages; p++) {
-        const pageItems = itemsToPrint.slice(p * ITEMS_PER_PAGE, (p + 1) * ITEMS_PER_PAGE);
+        const pageItems = itemsWithIndent.slice(p * ITEMS_PER_PAGE, (p + 1) * ITEMS_PER_PAGE);
         let rowsHtml = '';
-        let prevPrefix = null;
-        let prevNum = null;
-        let currentIndent = "";
-
-        // We need to calculate indentation for all items up to this page to maintain state,
-        // or simpler: just calculate it for the whole itemsToPrint list once.
         
         for (let i = 0; i < ITEMS_PER_PAGE; i++) {
-            const itemIdx = p * ITEMS_PER_PAGE + i;
-            if (itemIdx < itemsToPrint.length) {
-                const s = itemsToPrint[itemIdx];
-                
-                // Logic: Indentation for tracking number
-                const trackData = parseTracking(s.trackingFormatted);
-                const isAR12 = (s.serviceType === 'EMS' && s.options?.ar);
-                const isARTrack8 = (s.serviceType === 'REG' && s.options?.arTracking);
-                
-                if (isAR12 || isARTrack8) {
-                    currentIndent = "";
-                } else if (trackData) {
-                    if (prevPrefix === null) {
-                        currentIndent = "";
-                    } else if (trackData.prefix !== prevPrefix) {
-                        currentIndent = "";
-                    } else {
-                        const step = (s.serviceType === 'REG' && s.options?.arTracking) ? 2 : 1;
-                        if (trackData.num !== prevNum + step) {
-                            currentIndent = "  ";
-                        }
-                    }
-                    prevPrefix = trackData.prefix;
-                    prevNum = trackData.num;
-                }
+            if (i < pageItems.length) {
+                const s = pageItems[i];
                 
                 const displayRecipient = s.recipient || '';
                 const displayDestination = highlightPostcode(s.destination, s.options?.isRemote);
@@ -963,7 +954,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         <td style="padding: 1px 4px; text-align: center;">${p * ITEMS_PER_PAGE + i + 1}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayRecipient}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayDestination}</td>
-                        <td style="padding: 6px; text-align: left; font-weight: bold; white-space: pre;">${currentIndent}${s.trackingFormatted}</td>
+                        <td style="padding: 6px; text-align: left; font-weight: bold;">${s.indentStr}${s.trackingFormatted}</td>
                         <td style="padding: 1px 4px; text-align: center; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}</td>
                         <td style="padding: 1px 4px; text-align: center;">${displayFee}</td>
                         <td style="padding: 1px 4px; font-size: 8pt; text-align: center;">${generateShipmentNote(s)}</td>
@@ -1944,7 +1935,7 @@ document.getElementById('export-data-btn').onclick = async () => {
     });
 
     const backup = {
-        version: "4.9.9",
+        version: "5.0.0",
         exportDate: new Date().toISOString(),
         settings: settings,
         archives: archives,
