@@ -1834,23 +1834,35 @@ window.toggleAllService = (type) => {
             s.fee = calculateBaseFee(s.serviceType, s.weight, s.options);
         });
     } else {
-        // Mode: Unselect
+        // Mode: Unselect (Smart Logic v5.0.6)
         if (bulkBackup[type]) {
-            // 1. Restore from backup
-            currentItems.forEach(s => {
-                const backup = bulkBackup[type].find(b => b.id === s.id);
-                if (backup) {
+            if (confirm(`⚠️ คุณต้องการยกเลิกการเลือกบริการเสริมนี้ในทุกรายการของหมวด ${currentServiceTab} จริงๆ ใช่หรือไม่?\n\n(กด 'ยกเลิก/Cancel' เพื่อคืนค่าที่คุณเคยเลือกไว้ก่อนหน้า)`)) {
+                // User said OK -> Clear All
+                currentItems.forEach(s => {
                     if (!s.options) s.options = {};
-                    if (type === 'ar') s.options.ar = backup.val;
-                    if (type === 'ar-track') s.options.arTracking = backup.val;
-                    if (type === 'ins') s.options.insurance = backup.val;
+                    if (type === 'ar') s.options.ar = false;
+                    if (type === 'ar-track') s.options.arTracking = false;
+                    if (type === 'ins') s.options.insurance = false;
                     s.fee = calculateBaseFee(s.serviceType, s.weight, s.options);
-                }
-            });
-            // 2. Clear backup after restoration
-            bulkBackup[type] = null;
+                });
+                bulkBackup[type] = null; // Clear backup
+            } else {
+                // User said Cancel -> Restore from backup
+                currentItems.forEach(s => {
+                    const backup = bulkBackup[type].find(b => b.id === s.id);
+                    if (backup) {
+                        if (!s.options) s.options = {};
+                        if (type === 'ar') s.options.ar = backup.val;
+                        if (type === 'ar-track') s.options.arTracking = backup.val;
+                        if (type === 'ins') s.options.insurance = backup.val;
+                        s.fee = calculateBaseFee(s.serviceType, s.weight, s.options);
+                    }
+                });
+                bulkBackup[type] = null; // Clear backup after restoration
+                headerCheck.checked = false; // Keep unchecked since it might be a mixed state now
+            }
         } else {
-            // 2. Real Clear All (No backup exists)
+            // No backup exists (e.g. they uncheck a state that was already empty or manually filled)
             if (confirm(`⚠️ คุณต้องการยกเลิกการเลือกบริการเสริมนี้ในทุกรายการของหมวด ${currentServiceTab} จริงๆ ใช่หรือไม่?`)) {
                 currentItems.forEach(s => {
                     if (!s.options) s.options = {};
@@ -1860,7 +1872,6 @@ window.toggleAllService = (type) => {
                     s.fee = calculateBaseFee(s.serviceType, s.weight, s.options);
                 });
             } else {
-                // Revert UI check if cancelled
                 headerCheck.checked = true;
                 return;
             }
@@ -2006,7 +2017,7 @@ document.getElementById('export-data-btn').onclick = async () => {
     });
 
     const backup = {
-        version: "5.0.5",
+        version: "5.0.6",
         exportDate: new Date().toISOString(),
         settings: settings,
         archives: archives,
