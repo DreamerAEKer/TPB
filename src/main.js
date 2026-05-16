@@ -806,7 +806,7 @@ function updatePreview() {
 
       // Rule: If weight is 0 and it's not CUSTOM, fee is empty
       if (w === 0 && activeSvc !== 'CUSTOM') {
-          feeInput.value = `ค่าบริการเริ่มต้น ${total} บาท`;
+          feeInput.value = '';
           feeInput.style.color = '#888';
       } else {
           feeInput.value = total;
@@ -1360,7 +1360,7 @@ addBtn.onclick = async (e) => {
               },
               isIsland: false,
               trackingFormatted: trackingFormatted,
-              fee: (feeInput.value || '0').toString().replace(/[^0-9.]/g, '')
+              fee: (w > 0 || type === 'CUSTOM') ? (feeInput.value || '0').toString().replace(/[^0-9.]/g, '') : '0'
           });
       }
       
@@ -1422,7 +1422,7 @@ addBtn.onclick = async (e) => {
               },
               isIsland: optRemote.checked && REMOTE_ISLAND_ZIPCODES.has(destInput.value.match(/\d{5}/)?.[0]),
               trackingFormatted: trackingFormatted,
-              fee: (feeInput.value || '0').toString().replace(/[^0-9.]/g, '')
+              fee: (w > 0 || type === 'CUSTOM') ? (feeInput.value || '0').toString().replace(/[^0-9.]/g, '') : '0'
           });
       
       if (type !== 'CUSTOM') {
