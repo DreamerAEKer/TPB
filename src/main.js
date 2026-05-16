@@ -569,7 +569,7 @@ window.toggleRowService = async (i, serviceType, checked) => {
 
 window.updateRowInsuranceVal = async (i, val) => {
     const s = shipments[i];
-    const parsed = parseFloat(val) || 0;
+    const parsed = parseFloat(val.toString().replace(/,/g, '')) || 0;
     s.options.insuranceVal = parsed;
     
     // Recalculate fee
@@ -1210,7 +1210,7 @@ addBtn.onclick = async (e) => {
   
   // Insurance Validation
   if (optInsurance.checked && type === 'EMS') {
-      const insV = parseFloat(insuranceVal.value) || 0;
+      const insV = parseFloat(insuranceVal.value.replace(/,/g, '')) || 0;
       if (insV > 50000) {
           alert('⚠️ วงเงินรับประกันสูงสุดคือ 50,000 บาท ระบบจะปรับยอดเป็น 50,000 ให้อัตโนมัติ');
           insuranceVal.value = 50000;
@@ -1275,7 +1275,7 @@ addBtn.onclick = async (e) => {
                 ar: optAR.checked, 
                 arTracking: optArTracking.checked,
                 insurance: optInsurance.checked, 
-                insuranceVal: parseFloat(insuranceVal.value),
+                insuranceVal: parseFloat(insuranceVal.value.replace(/,/g, '')),
                 regType: regTypeInput.value,
                 isLarge: isLarge,
                 useVolWeight: useVolWeight,
@@ -1332,7 +1332,7 @@ addBtn.onclick = async (e) => {
                 ar: optAR.checked, 
                 arTracking: optArTracking.checked,
                 insurance: optInsurance.checked, 
-                insuranceVal: parseFloat(insuranceVal.value),
+                insuranceVal: parseFloat(insuranceVal.value.replace(/,/g, '')),
                 regType: regTypeInput.value,
                 isLarge: isLarge,
                 useVolWeight: useVolWeight,
