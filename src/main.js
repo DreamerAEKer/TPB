@@ -409,7 +409,6 @@ function renderShipments() {
         </div>
       </td>
       <td class="tracking-cell">
-        <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 2px;">${svcDisplay}</div>
         <div style="font-weight: 600;">${s.trackingFormatted}</div>
       </td>
       <td class="services-cell">
