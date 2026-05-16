@@ -415,9 +415,8 @@ function renderShipments() {
             <label class="svc-mini" title="ตอบรับ (AR)"><input type="checkbox" ${s.options?.ar ? 'checked' : ''} onchange="toggleRowService(${i}, 'ar', this.checked)"> AR</label>
             ${s.serviceType === 'REG' ? `<label class="svc-mini" title="ตอบรับ Tracking (8 บาท)"><input type="checkbox" ${s.options?.arTracking ? 'checked' : ''} onchange="toggleRowService(${i}, 'arTracking', this.checked)"> AR Track</label>` : ''}
             ${s.serviceType === 'EMS' ? `
-                <div style="display: flex; align-items: center; gap: 4px;">
                     <label class="svc-mini" title="ประกัน"><input type="checkbox" ${s.options?.insurance ? 'checked' : ''} onchange="toggleRowService(${i}, 'insurance', this.checked)"> 🛡️</label>
-                    ${s.options?.insurance ? `<input type="text" class="mini-input ${ (s.options.insuranceVal > 50000) ? 'error-input' : '' }" style="width: 50px; font-size: 0.75rem; padding: 2px;" value="${s.options.insuranceVal || 2000}" oninput="this.value = sanitizeNumeric(this.value); updateRowInsuranceVal(${i}, this.value)">` : ''}
+                    ${s.options?.insurance ? `<input type="text" class="mini-input ${ (s.options.insuranceVal > 50000) ? 'error-input' : '' }" style="width: 50px; font-size: 0.75rem; padding: 2px;" value="${s.options.insuranceVal || 2000}" oninput="this.value = sanitizeNumeric(this.value); updateRowInsuranceVal(${i}, this.value)" onblur="validateRowInsurance(${i}, this)">` : ''}
                 </div>
             ` : ''}
             ${(s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && s.destination.includes('เกาะ')) ? `<label class="svc-mini" title="พื้นที่ห่างไกล"><input type="checkbox" ${s.options?.isRemote ? 'checked' : ''} onchange="toggleRowService(${i}, 'isRemote', this.checked)"> 🏝️</label>` : ''}
@@ -595,6 +594,15 @@ window.updateRowInsuranceVal = async (i, val) => {
             input.classList.remove('error-input');
             input.title = "";
         }
+    }
+};
+
+window.validateRowInsurance = (i, input) => {
+    const val = parseFloat(input.value) || 0;
+    if (val > 50000) {
+        alert('⚠️ วงเงินรับประกันสูงสุดคือ 50,000 บาท ระบบจะปรับยอดเป็น 50,000 ให้อัตโนมัติ');
+        input.value = 50000;
+        updateRowInsuranceVal(i, 50000);
     }
 };
 
@@ -1156,7 +1164,7 @@ insuranceVal.oninput = (e) => {
 insuranceVal.onblur = (e) => {
     const val = parseFloat(e.target.value) || 0;
     if (val > 50000) {
-        alert('⚠️ คำเตือน: วงเงินรับประกันสูงสุดไม่เกิน 50,000 บาท');
+        alert('⚠️ วงเงินรับประกันสูงสุดไม่เกิน 50,000 บาท ระบบจะปรับยอดเป็น 50,000 ให้อัตโนมัติ');
         e.target.value = 50000;
         updatePreview();
     }
@@ -1197,10 +1205,10 @@ addBtn.onclick = async (e) => {
   // Insurance Validation
   if (optInsurance.checked && type === 'EMS') {
       const insV = parseFloat(insuranceVal.value) || 0;
-      if (insV < 2100 || insV > 50000) {
-          alert('วงเงินรับประกันต้องอยู่ระหว่าง 2,100 - 50,000 บาท');
-          insuranceVal.focus();
-          return;
+      if (insV > 50000) {
+          alert('⚠️ วงเงินรับประกันสูงสุดคือ 50,000 บาท ระบบจะปรับยอดเป็น 50,000 ให้อัตโนมัติ');
+          insuranceVal.value = 50000;
+          updatePreview();
       }
   }
   if (bulkToggle.checked) {
@@ -1420,6 +1428,13 @@ printBtn.onclick = () => {
 
 dispatchBtn.onclick = async () => {
     if (!shipments.length) return alert('ไม่มีรายการให้จัดส่ง/บันทึก');
+    
+    // Final check for insurance limit
+    const invalidItem = shipments.find(s => s.options?.insurance && s.options?.insuranceVal > 50000);
+    if (invalidItem) {
+        alert(`⚠️ ไม่สามารถปิดยอดได้: ตรวจพบรายการ ${invalidItem.trackingFormatted} มีวงเงินรับประกันเกิน 50,000 บาท โปรดแก้ไขให้ถูกต้องก่อน`);
+        return;
+    }
     
     if (editingArchiveId) {
         if (!confirm('ยืนยันการบันทึกการแก้ไขของบิลเก่านี้? ข้อมูลในประวัติและรายงานจะถูกอัปเดต')) return;
