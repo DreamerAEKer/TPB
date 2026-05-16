@@ -416,7 +416,7 @@ function renderShipments() {
         prevNum = trackData.num;
     }
 
-    const currentPrefix = (isAR12 || isARTrack8 || !isIndented) ? "" : ". ";
+    const currentPrefix = (isAR12 || isARTrack8 || !isIndented) ? "" : "● ";
 
     const zipMatch = s.destination.match(/\d{5}/);
     const zip = zipMatch ? zipMatch[0] : null;
@@ -926,7 +926,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
             prevNumGlobal = trackData.num;
         }
         
-        const prefixSym = (isAR12 || isARTrack8 || !isIndentedGlobal) ? "" : ". ";
+        const prefixSym = (isAR12 || isARTrack8 || !isIndentedGlobal) ? "" : "● ";
         return { ...s, prefixSym };
     });
     
@@ -1935,7 +1935,7 @@ document.getElementById('export-data-btn').onclick = async () => {
     });
 
     const backup = {
-        version: "5.0.1",
+        version: "5.0.2",
         exportDate: new Date().toISOString(),
         settings: settings,
         archives: archives,
