@@ -24,7 +24,7 @@
         </div>
         <div style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
             <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.1.1</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.1.2</div>
         </div>
     </div>
 
@@ -148,7 +148,7 @@
                         <label for="weight" style="margin-bottom: 0;">น้ำหนัก (<span id="weight-unit-label">กรัม</span>)</label>
                         <button type="button" id="unit-toggle-btn" onclick="toggleWeightUnit()" style="font-size: 0.7rem; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 4px; color: #475569; cursor: pointer; transition: all 0.2s;">สลับเป็น KG</button>
                     </div>
-                    <input type="text" id="weight" placeholder="1000" oninput="this.value = sanitizeNumeric(this.value, true); updatePreview()">
+                    <input type="text" id="weight" placeholder="โปรดใส่น้ำหนัก" oninput="this.value = sanitizeNumeric(this.value, true); updatePreview()">
                 </div>
 
                 <div class="options-group">
