@@ -119,41 +119,27 @@ const rates = {
   PARCEL: { base: 25, baseWeight: 1000, perKg: 20, ar: 3 }
 };
 
-const REMOTE_ALWAYS_ZIPCODES = new Set([
-  // Northern
-  '50250', '50310', '50350', // Chiang Mai
-  '55130', '55220', // Nan
-  '57170', '57180', '57260', '57310', '57340', // Chiang Rai
-  '58000', '58110', '58120', '58130', '58140', '58150', // Mae Hong Son
-  '63150', '63170', // Tak
-  // Western
-  '71180', '71240', // Kanchanaburi
-  // Southern (Full Area)
-  '83000', '83100', '83110', '83120', '83130', '83150', // Phuket
-  '94000', '94110', '94120', '94130', '94140', '94150', '94160', '94170', '94180', '94190', '94220', '94230', // Pattani
-  '95000', '95110', '95120', '95130', '95140', '95150', '95160', '95170', // Yala
-  '96000', '96110', '96120', '96130', '96140', '96150', '96160', '96170', '96180', '96190', '96210', '96220'  // Narathiwat
-]);
+const REMOTE_AREAS = {
+    "20120": 1, "20150": 2, "21160": 3, "23000": 4, "23120": 5, "23170": 6, "50250": 7, "50310": 7, "50350": 7,
+    "55130": 8, "55220": 8, "57170": 9, "57180": 9, "57260": 9, "57310": 9, "57340": 9, "58000": 10, "58110": 10,
+    "58120": 10, "58130": 10, "58140": 10, "58150": 10, "63150": 11, "63170": 11, "71180": 12, "71240": 12,
+    "81130": 13, "81150": 14, "81210": 15, "82000": 16, "82160": 17, "83000": 18, "83100": 18, "83110": 18,
+    "83120": 18, "83130": 18, "83150": 18, "84140": 19, "84310": 19, "84320": 19, "84330": 19, "84220": 20,
+    "84280": 22, "84360": 23, "85000": 24, "91000": 25, "91110": 27, "92110": 29, "92120": 31,
+    "94000": 32, "94110": 32, "94120": 32, "94130": 32, "94140": 32, "94150": 32, "94160": 32, "94170": 32,
+    "94180": 32, "94190": 32, "94220": 32, "94230": 32, "95000": 33, "95110": 33, "95120": 33, "95130": 33,
+    "95140": 33, "95150": 33, "95160": 33, "95170": 33, "96000": 34, "96110": 34, "96120": 34, "96130": 34,
+    "96140": 34, "96150": 34, "96160": 34, "96170": 34, "96180": 34, "96190": 34, "96210": 34, "96220": 34
+};
 
-const REMOTE_ISLAND_ZIPCODES = new Set([
-  '20120', '20150', // Chonburi (Sichang, Larn)
-  '21160', // Rayong (Samet)
-  '23000', '23120', '23170', // Trat (Kood, Mak, Chang)
-  '81130', '81150', '81210', // Krabi (Siboya, Lanta, Phi Phi)
-  '82000', '82160', // Phang Nga (Panyee, Yao)
-  '84140', '84310', '84320', '84330', // Surat (Samui)
-  '84220', '84280', '84360', // Surat (Phluay, Phangan, Tao)
-  '85000', // Ranong (Phayam)
-  '91000', '91110', // Satun (Sarai, Puyu, Lipe, Bulon)
-  '92110', '92120' // Trang (Libong, Mook, Sukorn)
-]);
+const PARTIAL_REMOTE_ZIPS = ["20150", "21160", "23000", "23120", "81130", "81210", "82000", "84220", "85000", "91000", "91110", "92110", "92120"];
 
 // --- APP STATE ---
 let shipments = [];
 let history = [];
 let historyIndex = 0;
 let currentServiceTab = 'EMS';
-let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: true, paymentType: 'เงินเชื่อ', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left', postOffice: 'ไปรษณีย์กลาง 10501', meterDescending: 0, meterAscending: 0 };
+let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: true, paymentType: 'เงินเชื่อ', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left', postOffice: 'ไปรษณีย์กลาง 10501', meterDescending: 0, meterAscending: 0, homeZip: '' };
 let editingArchiveId = null;
 let currentView = 'dashboard';
 let currentWeightUnit = 'g';
@@ -309,13 +295,17 @@ function calculateBaseFee(type, weight, options = {}) {
             }
         }
     }
+    
+    // Remote Area Surcharge (+20 THB) - v5.1.0
+    if (options.isRemote) {
+        baseFee += 20;
+    }
+
     return baseFee;
 }
 
-function isRemoteArea(zip, isIsland = false) {
-    if (REMOTE_ALWAYS_ZIPCODES.has(zip)) return true;
-    if (REMOTE_ISLAND_ZIPCODES.has(zip) && isIsland) return true;
-    return false;
+function isRemoteArea(zip) {
+    return !!REMOTE_AREAS[zip];
 }
 
 function isEMSGroup(shipment) {
@@ -693,38 +683,46 @@ function updatePreview() {
   const badge = document.getElementById('remote-status-badge');
   
   // Track zip changes to reset manual override
+  const group = zip ? REMOTE_AREAS[zip] : null;
+  const homeGroup = settings.homeZip ? REMOTE_AREAS[settings.homeZip] : null;
+  const isRemoteAreaZip = !!group;
+  const sameGroup = group && homeGroup && group === homeGroup;
+
+  const remoteStatusBadge = document.getElementById('remote-status-badge');
+  const remoteCheckContainer = document.getElementById('remote-check-container');
+  const remoteLabelHint = document.getElementById('remote-label-hint');
+  
   if (zip !== window.lastZipForRemote) {
       window.isManualRemoteOverride = false;
       window.lastZipForRemote = zip;
-  }
-
-  const isAlwaysRemote = zip && REMOTE_ALWAYS_ZIPCODES.has(zip) && canHaveRemote;
-  const isIslandPotential = zip && REMOTE_ISLAND_ZIPCODES.has(zip) && canHaveRemote;
-  const hasIslandText = destInput.value.includes('เกาะ');
-  const remoteMissingWarn = document.getElementById('remote-missing-warn');
-
-  // Logic for warning when "เกาะ" is in text but postcode is not in list
-  if (hasIslandText && zip && !isRemoteArea(zip, true)) {
-      remoteMissingWarn.style.display = 'block';
-  } else {
-      remoteMissingWarn.style.display = 'none';
-  }
-  
-  if (!window.isManualRemoteOverride) {
-      if ((isAlwaysRemote || isIslandPotential) && hasIslandText) {
+      
+      // Auto-set if it's a remote area and NOT same group
+      if (isRemoteAreaZip && !sameGroup) {
           optRemote.checked = true;
-          badge.classList.remove('hidden');
-          badge.querySelector('.badge-text').textContent = isAlwaysRemote ? 'บวกพื้นที่ห่างไกล (+20 บาท)' : 'พบรหัสพื้นที่เกาะ (+20 บาท)';
       } else {
           optRemote.checked = false;
-          badge.classList.add('hidden');
+      }
+  }
+
+  if (isRemoteAreaZip && !sameGroup) {
+      remoteCheckContainer.classList.remove('hidden');
+      if (PARTIAL_REMOTE_ZIPS.includes(zip)) {
+          remoteLabelHint.textContent = '(เฉพาะพื้นที่ - ติ๊กออกหากไม่ใช่เกาะ)';
+          remoteLabelHint.style.color = '#be123c';
+      } else {
+          remoteLabelHint.textContent = '(พื้นที่พิเศษ)';
+          remoteLabelHint.style.color = '#64748b';
+      }
+      
+      if (optRemote.checked) {
+          remoteStatusBadge.classList.remove('hidden');
+          remoteStatusBadge.querySelector('.badge-text').textContent = 'บวกพื้นที่ห่างไกล (+20 บาท)';
+      } else {
+          remoteStatusBadge.classList.add('hidden');
       }
   } else {
-      if (optRemote.checked && hasIslandText) {
-          badge.classList.remove('hidden');
-      } else {
-          badge.classList.add('hidden');
-      }
+      remoteCheckContainer.classList.add('hidden');
+      remoteStatusBadge.classList.add('hidden');
   }
 
   // Fuel Surcharge Note
@@ -1991,7 +1989,7 @@ document.getElementById('export-data-btn').onclick = async () => {
     });
 
     const backup = {
-        version: "5.0.9",
+        version: "5.1.0",
         exportDate: new Date().toISOString(),
         settings: settings,
         archives: archives,

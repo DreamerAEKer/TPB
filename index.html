@@ -24,7 +24,7 @@
         </div>
         <div style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
             <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.0.9</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.1.0</div>
         </div>
     </div>
 
@@ -161,10 +161,16 @@
                         <input type="number" id="insurance-val" value="2000" style="padding: 4px; font-size: 0.9rem;">
                         <span id="ins-warn" style="color: var(--primary-color); font-size: 0.7rem; display: none;">ยอด 2,100 - 50,000 บาทเท่านั้น</span>
                     </div>
-                    <div id="remote-status-badge" class="hidden" style="margin-bottom: 10px; cursor: pointer; border: 1px solid #fee2e2; background: #fff1f2; padding: 5px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px;" onclick="toggleRemoteSurcharge()" title="คลิกเพื่อยกเลิกการบวกเพิ่มพื้นที่ห่างไกล">
+                    <div id="remote-check-container" class="hidden" style="margin-bottom: 10px; background: #fff1f2; padding: 8px; border-radius: 8px; border: 1px solid #fecaca; display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="is-remote-check" onchange="updatePreview()">
+                        <label for="is-remote-check" style="margin: 0; font-size: 0.85rem; cursor: pointer;">
+                            🏝️ พื้นที่ห่างไกล/พิเศษ (+20.-)
+                            <span id="remote-label-hint" style="font-size: 0.7rem; display: block; color: #be123c;"></span>
+                        </label>
+                    </div>
+                    <div id="remote-status-badge" class="hidden" style="margin-bottom: 10px; border: 1px solid #fee2e2; background: #fff1f2; padding: 5px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px;">
                         <span style="font-size: 1.1rem;">🏝️</span>
                         <span class="badge-text">บวกพื้นที่ห่างไกล/เกาะ (+20 บาท)</span>
-                        <span style="font-size: 0.7rem; color: #ef4444; margin-left: 5px;">[ยกเลิก]</span>
                     </div>
                     <div id="fuel-surcharge-badge" class="hidden" style="margin-bottom: 10px; color: #be123c; font-size: 0.85rem; font-weight: 600;">
                         ⛽ มีการบวกเพิ่ม 3บาท ค่า Fuel Charge
@@ -345,6 +351,10 @@
                 <input type="text" id="set-license" placeholder="พ. 123 / 2569">
             </div>
             <div class="form-group" style="margin-bottom: 1rem;">
+                <label>รหัสไปรษณีย์ผู้ฝาก (ใช้เช็คพื้นที่ห่างไกล)</label>
+                <input type="text" id="settings-home-zip" placeholder="เช่น 10501" maxlength="5">
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
                 <label>ประเภทการชำระเงิน (หัวใบนำส่ง)</label>
                 <select id="set-payment-type" style="padding: 10px; border-radius: 6px; border: 1px solid #dee2e6;">
                     <option value="เงินสด">💵 เงินสด</option>
@@ -438,6 +448,6 @@
         <div style="color: #64748b; margin-top: 0.5rem;">กรุณารอสักครู่ (อาจใช้เวลา 1-5 วินาที สำหรับรายการจำนวนมาก)</div>
     </div>
 
-    <script src="src/main.js?v=5.0.9"></script>
+    <script src="src/main.js?v=5.1.0"></script>
 </body>
 </html>
