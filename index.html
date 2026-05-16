@@ -40,12 +40,18 @@
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
                     <div style="flex: 1;">
                         <label for="prefix" style="font-size: 0.8rem; margin-bottom: 2px;">หมวดเลขที่ / บริการ</label>
-                        <div style="display: flex; gap: 5px;">
-                            <input type="text" id="prefix" list="prefix-list" placeholder="EJ" maxlength="20" value="EJ" style="font-size: 1.25rem; font-weight: bold; padding: 10px; width: 100%;">
-                            <datalist id="prefix-list"></datalist>
-                            <button id="save-prefix-btn" class="btn-icon" title="บันทึกเข้าในรายการโปรด" style="background: #e2e8f0; color: #1e293b; border-radius: 6px; padding: 0 10px; font-size: 1.2rem; display: none; align-items: center; justify-content: center;">💾</button>
-                            <button id="delete-prefix-btn" class="btn-icon" title="ลบออกจากรายการโปรด" style="background: #fff1f2; color: #ef4444; border-radius: 6px; padding: 0 10px; font-size: 1.2rem; display: none; align-items: center; justify-content: center;">🗑️</button>
+                        <div style="position: relative; display: flex; flex-direction: column;">
+                            <div style="display: flex; gap: 5px;">
+                                <div style="position: relative; flex: 1;">
+                                    <input type="text" id="prefix" placeholder="EJ" maxlength="20" value="EJ" style="font-size: 1.25rem; font-weight: bold; padding: 10px; width: 100%; padding-right: 45px;">
+                                    <button id="prefix-dropdown-toggle" class="dropdown-toggle-btn" title="ดูรายการโปรด">▼</button>
+                                </div>
+                                <button id="save-prefix-btn" class="btn-icon" title="บันทึกเข้าในรายการโปรด" style="background: #e2e8f0; color: #1e293b; border-radius: 6px; padding: 0 10px; font-size: 1.2rem; display: none; align-items: center; justify-content: center;">💾</button>
+                                <button id="delete-prefix-btn" class="btn-icon" title="ลบออกจากรายการโปรด" style="background: #fff1f2; color: #ef4444; border-radius: 6px; padding: 0 10px; font-size: 1.2rem; display: none; align-items: center; justify-content: center;">🗑️</button>
+                            </div>
+                            <div id="prefix-dropdown-list" class="custom-dropdown" style="display: none;"></div>
                         </div>
+
                         <div id="prefix-help-text" style="display: none; font-size: 0.75rem; color: #0369a1; margin-top: 6px; background: #e0f2fe; padding: 8px; border-radius: 6px; line-height: 1.4;">
                             💡 <b>คำแนะนำ:</b> โปรดเปลี่ยน 2 ตัวหน้าให้ตรงกับการใช้งาน แล้วกดปุ่ม 💾
                         </div>

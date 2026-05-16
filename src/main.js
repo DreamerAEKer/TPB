@@ -150,9 +150,9 @@ let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge
 let editingArchiveId = null;
 let currentView = 'dashboard';
 
-// --- DOM ELEMENTS ---
 const prefixInput = document.getElementById('prefix');
-const prefixList = document.getElementById('prefix-list');
+const prefixDropdownToggle = document.getElementById('prefix-dropdown-toggle');
+const prefixDropdownList = document.getElementById('prefix-dropdown-list');
 const savePrefixBtn = document.getElementById('save-prefix-btn');
 const deletePrefixBtn = document.getElementById('delete-prefix-btn');
 const prefixHelpText = document.getElementById('prefix-help-text');
@@ -1643,13 +1643,14 @@ function updatePrefixListUI() {
     let list = settings.defaultPrefixes[currentServiceTab] || [];
     if (!Array.isArray(list)) list = [list];
     
-    // Update Datalist (Consolidated List)
-    prefixList.innerHTML = ''; // Clear first
-    list.forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p;
-        prefixList.appendChild(opt);
-    });
+    // Update Custom Dropdown (Always shows all favorites)
+    prefixDropdownList.innerHTML = list.map(p => `
+        <div class="dropdown-item" onclick="selectPrefix('${p}')">${p}</div>
+    `).join('');
+    
+    if (list.length === 0) {
+        prefixDropdownList.innerHTML = '<div class="dropdown-item" style="font-size: 0.8rem; color: #94a3b8; font-style: italic;">ไม่มีรายการโปรด</div>';
+    }
     
     // Toggle Save/Delete buttons based on current input value
     const currentVal = prefixInput.value.trim().toUpperCase();
@@ -1663,6 +1664,16 @@ function updatePrefixListUI() {
         deletePrefixBtn.style.display = 'none';
     }
 }
+
+prefixDropdownToggle.onclick = (e) => {
+    e.stopPropagation();
+    const isVisible = prefixDropdownList.style.display === 'block';
+    prefixDropdownList.style.display = isVisible ? 'none' : 'block';
+};
+
+document.addEventListener('click', () => {
+    prefixDropdownList.style.display = 'none';
+});
 
 deletePrefixBtn.onclick = async () => {
     const val = prefixInput.value.trim().toUpperCase();
@@ -1687,9 +1698,9 @@ deletePrefixBtn.onclick = async () => {
     }
 };
 
-// Simplified selectPrefix (if still used internally)
 window.selectPrefix = (p) => {
     prefixInput.value = p;
+    prefixDropdownList.style.display = 'none';
     updatePreview();
     updatePrefixListUI();
 };
