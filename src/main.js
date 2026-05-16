@@ -1265,6 +1265,11 @@ addBtn.onclick = async (e) => {
                   useVolWeight = true;
                   finalWeight = volWeight;
               }
+              
+              // 30kg Limit Warning for EMS
+              if (finalWeight > 30000) {
+                  if (!confirm(`⚠️ รายการนี้มีน้ำหนักรวม (${(finalWeight/1000).toFixed(2)} กก.) เกินมาตรฐาน EMS 30 กก.\nต้องการดำเนินการต่อหรือไม่?`)) return;
+              }
           }
 
           shipments.push({
@@ -1321,6 +1326,11 @@ addBtn.onclick = async (e) => {
           if (volWeight > w) {
               useVolWeight = true;
               finalWeight = volWeight;
+          }
+
+          // 30kg Limit Warning for EMS
+          if (finalWeight > 30000) {
+              if (!confirm(`⚠️ รายการนี้มีน้ำหนักรวม (${(finalWeight/1000).toFixed(2)} กก.) เกินมาตรฐาน EMS 30 กก.\nต้องการดำเนินการต่อหรือไม่?`)) return;
           }
       }
 
