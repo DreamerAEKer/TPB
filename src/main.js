@@ -156,6 +156,7 @@ let currentServiceTab = 'EMS';
 let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: true, paymentType: 'เงินเชื่อ', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left', postOffice: 'ไปรษณีย์กลาง 10501', meterDescending: 0, meterAscending: 0 };
 let editingArchiveId = null;
 let currentView = 'dashboard';
+let currentWeightUnit = 'g';
 
 const prefixInput = document.getElementById('prefix');
 const prefixDropdownToggle = document.getElementById('prefix-dropdown-toggle');
@@ -671,7 +672,8 @@ window.toggleRemoteSurcharge = () => {
 };
 
 function updatePreview() {
-  const w = parseFloat(weightInput.value) || 0;
+  const rawW = parseFloat(weightInput.value) || 0;
+  const w = (currentWeightUnit === 'kg') ? Math.round(rawW * 1000) : rawW;
   
   // Show/Hide sub-type groups based on active tab (currentServiceTab)
   const activeSvc = currentServiceTab;
@@ -1282,7 +1284,8 @@ addBtn.onclick = async (e) => {
   const p = prefixInput.value.trim().toUpperCase();
   const startD = (bulkToggle.checked ? num8StartInput.value : digitsInput.value).trim();
   const type = getServiceType(p);
-  const w = parseFloat(weightInput.value) || 0;
+  const rawW = parseFloat(weightInput.value) || 0;
+  const w = (currentWeightUnit === 'kg') ? Math.round(rawW * 1000) : rawW;
   
   // Insurance Validation
   if (optInsurance.checked && type === 'EMS') {
@@ -1789,21 +1792,23 @@ window.selectPrefix = (p) => {
     updatePrefixListUI();
 };
 
-window.promptWeightKG = () => {
-    const kg = prompt("ระบุน้ำหนักเป็นกิโลกรัม (เช่น 1.5):", "");
-    if (kg !== null && kg.trim() !== "") {
-        const grams = Math.round(parseFloat(kg) * 1000);
-        if (!isNaN(grams) && grams > 0) {
-            weightInput.value = grams;
-            updatePreview();
-            
-            // Visual feedback
-            weightInput.style.backgroundColor = '#f0fdf4';
-            setTimeout(() => weightInput.style.backgroundColor = '', 500);
-        } else {
-            alert("กรุณาระบุตัวเลขน้ำหนักที่ถูกต้อง");
-        }
+window.toggleWeightUnit = () => {
+    const label = document.getElementById('weight-unit-label');
+    const btn = document.getElementById('unit-toggle-btn');
+    let val = parseFloat(weightInput.value) || 0;
+    
+    if (currentWeightUnit === 'g') {
+        currentWeightUnit = 'kg';
+        weightInput.value = (val / 1000);
+        label.textContent = 'กิโลกรัม';
+        btn.textContent = 'สลับเป็น G';
+    } else {
+        currentWeightUnit = 'g';
+        weightInput.value = Math.round(val * 1000);
+        label.textContent = 'กรัม';
+        btn.textContent = 'สลับเป็น KG';
     }
+    updatePreview();
 };
 
 savePrefixBtn.onclick = async () => {
@@ -1939,7 +1944,7 @@ document.getElementById('export-data-btn').onclick = async () => {
     });
 
     const backup = {
-        version: "4.9.8",
+        version: "4.9.9",
         exportDate: new Date().toISOString(),
         settings: settings,
         archives: archives,
