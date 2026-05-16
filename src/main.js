@@ -395,34 +395,30 @@ function renderShipments() {
 
   let prevPrefix = null;
   let prevNum = null;
-  let isIndented = false;
+  let prevStep = 1;
 
   filtered.forEach((s, displayIdx) => {
     const i = s.originalIdx;
-    
-    // Logic: Alternating Indentation (v5.0.0)
-    const trackData = parseTracking(s.trackingFormatted);
-    const isAR12 = (s.serviceType === 'EMS' && s.options?.ar);
-    const isARTrack8 = (s.serviceType === 'REG' && s.options?.arTracking);
-    
+    const trackData = parseTracking(s.tracking);
+    let isNewGroup = false;
+
     if (trackData) {
         if (prevPrefix !== null) {
-            // Logic: Determine step based on service type and options
-            // Step is 2 for EMS+AR and REG+AR Track (as skip numbers are reserved for AR)
-            let step = 1;
-            if (s.serviceType === 'EMS' && s.options?.ar) step = 2;
-            else if (s.serviceType === 'REG' && s.options?.arTracking) step = 2;
-
-            // Trigger toggle if Prefix changed OR Gap occurred (greater than step)
-            if (trackData.prefix !== prevPrefix || trackData.num !== prevNum + step) {
-                isIndented = !isIndented;
+            // Check for prefix change or gap based on PREVIOUS item's step
+            if (trackData.prefix !== prevPrefix || trackData.num !== prevNum + prevStep) {
+                isNewGroup = true;
             }
         }
         prevPrefix = trackData.prefix;
         prevNum = trackData.num;
+        
+        // Determine step for the NEXT item
+        prevStep = 1;
+        if (s.serviceType === 'EMS' && s.options?.ar) prevStep = 2;
+        else if (s.serviceType === 'REG' && s.options?.arTracking) prevStep = 2;
     }
 
-    const displayTracking = (!isIndented) ? s.trackingFormatted : `<u>${s.trackingFormatted.substring(0, 2)}</u>${s.trackingFormatted.substring(2)}`;
+    const displayTracking = (!isNewGroup) ? s.trackingFormatted : `<u>${s.trackingFormatted.substring(0, 2)}</u>${s.trackingFormatted.substring(2)}`;
 
     const zipMatch = s.destination.match(/\d{5}/);
     const zip = zipMatch ? zipMatch[0] : null;
@@ -888,37 +884,15 @@ function generateLogoHtml(show = true) {
             <img src="${settings.logo}" style="width: ${settings.logoWidth}px; max-height: 8mm; object-fit: contain;">
         </div>
     `;
-}
-
-function generateMeterLineHtml() {
-    if (settings.paymentType !== 'เครื่องประทับไปรษณียากร') return '';
-    return `
-        <div style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 11pt;">
-            <div style="font-weight: bold; margin-bottom: 5px;">ตัวเลขจำนวนเงินในเครื่องหลังการส่งครั้งนี้ คือ</div>
-            <div style="margin-left: 20px;">
-                1. แถวบน (คงเหลือ) .......................<b>${(settings.meterDescending || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</b>....................... บาท
-            </div>
-            <div style="margin-left: 20px; margin-top: 5px;">
-                2. แถวล่าง (สะสม) .......................<b>${(settings.meterAscending || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</b>....................... บาท
-            </div>
-        </div>
-    `;
-}
-
 // --- PRINTING LOGIC ---
 function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     const ITEMS_PER_PAGE = 25;
     const totalPages = Math.ceil(itemsToPrint.length / ITEMS_PER_PAGE) || 1;
     let combinedHtml = '';
 
-    // Pre-calculate indentation for all items to maintain consistency across pages
+    // Pre-calculate decorations for all items to maintain consistency across pages
     let prevPrefixGlobal = null;
     let prevNumGlobal = null;
-    let isIndentedGlobal = false;
-    
-    const itemsWithIndent = itemsToPrint.map(s => {
-        const trackData = parseTracking(s.trackingFormatted);
-        const isAR12 = (s.serviceType === 'EMS' && s.options?.ar);
         const isARTrack8 = (s.serviceType === 'REG' && s.options?.arTracking);
         
         if (trackData) {
@@ -2017,7 +1991,7 @@ document.getElementById('export-data-btn').onclick = async () => {
     });
 
     const backup = {
-        version: "5.0.8",
+        version: "5.0.9",
         exportDate: new Date().toISOString(),
         settings: settings,
         archives: archives,
