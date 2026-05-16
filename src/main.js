@@ -157,6 +157,7 @@ let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge
 let editingArchiveId = null;
 let currentView = 'dashboard';
 let currentWeightUnit = 'g';
+let bulkBackup = { ar: null, ins: null, 'ar-track': null };
 
 const prefixInput = document.getElementById('prefix');
 const prefixDropdownToggle = document.getElementById('prefix-dropdown-toggle');
@@ -1811,24 +1812,60 @@ window.toggleWeightUnit = () => {
     updatePrefixListUI();
 };
 
-// --- BULK SERVICE TOGGLE ---
+// --- BULK SERVICE TOGGLE (Smart Logic v5.0.5) ---
 window.toggleAllService = (type) => {
     const headerCheck = document.getElementById(`toggle-all-${type}`);
     const isChecked = headerCheck.checked;
     
-    // Only affect items in current service tab
-    shipments.forEach(s => {
-        if (s.serviceType === currentServiceTab) {
+    // Filter items in current tab
+    const currentItems = shipments.filter(s => s.serviceType === currentServiceTab);
+    
+    if (isChecked) {
+        // Mode: Select All
+        // 1. Backup current states if not already backed up
+        bulkBackup[type] = currentItems.map(s => ({ id: s.id, val: s.options?.[type === 'ar' ? 'ar' : (type === 'ins' ? 'insurance' : 'arTracking')] }));
+        
+        // 2. Apply TRUE to all
+        currentItems.forEach(s => {
             if (!s.options) s.options = {};
-            if (type === 'ar') s.options.ar = isChecked;
-            if (type === 'ar-track') s.options.arTracking = isChecked;
-            if (type === 'ins') s.options.insurance = isChecked;
-            
-            // Recalculate fee
-            const baseFee = calculateBaseFee(s.serviceType, s.weight, s.options);
-            s.fee = baseFee;
+            if (type === 'ar') s.options.ar = true;
+            if (type === 'ar-track') s.options.arTracking = true;
+            if (type === 'ins') s.options.insurance = true;
+            s.fee = calculateBaseFee(s.serviceType, s.weight, s.options);
+        });
+    } else {
+        // Mode: Unselect
+        if (bulkBackup[type]) {
+            // 1. Restore from backup
+            currentItems.forEach(s => {
+                const backup = bulkBackup[type].find(b => b.id === s.id);
+                if (backup) {
+                    if (!s.options) s.options = {};
+                    if (type === 'ar') s.options.ar = backup.val;
+                    if (type === 'ar-track') s.options.arTracking = backup.val;
+                    if (type === 'ins') s.options.insurance = backup.val;
+                    s.fee = calculateBaseFee(s.serviceType, s.weight, s.options);
+                }
+            });
+            // 2. Clear backup after restoration
+            bulkBackup[type] = null;
+        } else {
+            // 2. Real Clear All (No backup exists)
+            if (confirm(`⚠️ คุณต้องการยกเลิกการเลือกบริการเสริมนี้ในทุกรายการของหมวด ${currentServiceTab} จริงๆ ใช่หรือไม่?`)) {
+                currentItems.forEach(s => {
+                    if (!s.options) s.options = {};
+                    if (type === 'ar') s.options.ar = false;
+                    if (type === 'ar-track') s.options.arTracking = false;
+                    if (type === 'ins') s.options.insurance = false;
+                    s.fee = calculateBaseFee(s.serviceType, s.weight, s.options);
+                });
+            } else {
+                // Revert UI check if cancelled
+                headerCheck.checked = true;
+                return;
+            }
         }
-    });
+    }
     
     saveToDB();
     renderShipments();
@@ -1969,7 +2006,7 @@ document.getElementById('export-data-btn').onclick = async () => {
     });
 
     const backup = {
-        "version": "5.0.4",
+        version: "5.0.5",
         exportDate: new Date().toISOString(),
         settings: settings,
         archives: archives,
