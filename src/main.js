@@ -736,8 +736,8 @@ function updatePreview() {
       if (maxSide > 60 || total > 120) isLarge = true;
       jumboBadge.style.display = isLarge ? 'block' : 'none';
 
-      // Volumetric weight calculation (W * L * H / 5 in grams)
-      volWeight = Math.ceil((wDim * lDim * hDim) / 5);
+      // Volumetric weight calculation (W * L * H / 6 in grams)
+      volWeight = Math.ceil((wDim * lDim * hDim) / 6);
       if (volWeight > w) {
           useVolWeight = true;
           calcWeight = volWeight;
@@ -1260,7 +1260,7 @@ addBtn.onclick = async (e) => {
               
               if (maxSide > 60 || total > 120) isLarge = true;
               
-              const volWeight = Math.ceil((wDim * lDim * hDim) / 5);
+              const volWeight = Math.ceil((wDim * lDim * hDim) / 6);
               if (volWeight > w) {
                   useVolWeight = true;
                   finalWeight = volWeight;
@@ -1322,7 +1322,7 @@ addBtn.onclick = async (e) => {
           
           if (maxSide > 60 || total > 120) isLarge = true;
           
-          const volWeight = Math.ceil((wDim * lDim * hDim) / 5);
+          const volWeight = Math.ceil((wDim * lDim * hDim) / 6);
           if (volWeight > w) {
               useVolWeight = true;
               finalWeight = volWeight;
@@ -1713,6 +1713,23 @@ window.selectPrefix = (p) => {
     prefixDropdownList.style.display = 'none';
     updatePreview();
     updatePrefixListUI();
+};
+
+window.promptWeightKG = () => {
+    const kg = prompt("ระบุน้ำหนักเป็นกิโลกรัม (เช่น 1.5):", "");
+    if (kg !== null && kg.trim() !== "") {
+        const grams = Math.round(parseFloat(kg) * 1000);
+        if (!isNaN(grams) && grams > 0) {
+            weightInput.value = grams;
+            updatePreview();
+            
+            // Visual feedback
+            weightInput.style.backgroundColor = '#f0fdf4';
+            setTimeout(() => weightInput.style.backgroundColor = '', 500);
+        } else {
+            alert("กรุณาระบุตัวเลขน้ำหนักที่ถูกต้อง");
+        }
+    }
 };
 
 savePrefixBtn.onclick = async () => {
