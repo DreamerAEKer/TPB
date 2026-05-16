@@ -369,7 +369,7 @@ function updateMeterStatus() {
     
     if (isMeter) {
         statusBar.classList.remove('hidden');
-        descVal.textContent = (settings.meterDescending || 0).toLocaleString(undefined, {minimumFractionDigits: 2}) + ' ฿';
+        descVal.textContent = (settings.meterDescending || 0).toLocaleString();
         lowWarn.style.display = (settings.meterDescending < 1000) ? 'block' : 'none';
     } else {
         statusBar.classList.add('hidden');
@@ -423,8 +423,8 @@ function renderShipments() {
             ${(s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && s.destination.includes('เกาะ')) ? `<label class="svc-mini" title="พื้นที่ห่างไกล"><input type="checkbox" ${s.options?.isRemote ? 'checked' : ''} onchange="toggleRowService(${i}, 'isRemote', this.checked)"> 🏝️</label>` : ''}
         </div>
       </td>
-      <td class="editable-cell" contenteditable="true" data-field="weight" data-index="${i}" style="${s.options?.useVolWeight ? 'font-weight: 800;' : ''}">${s.weight}</td>
-      <td class="editable-cell ${priceClass}" contenteditable="true" data-field="fee" data-index="${i}" title="${priceClass ? 'พื้นที่ปกติ แต่มีการบวกเพิ่ม 20 บาท?' : ''}">${s.fee}</td>
+      <td class="editable-cell" contenteditable="true" data-field="weight" data-index="${i}" style="${s.options?.useVolWeight ? 'font-weight: 800;' : ''}">${parseFloat(s.weight).toLocaleString()}</td>
+      <td class="editable-cell ${priceClass}" contenteditable="true" data-field="fee" data-index="${i}" title="${priceClass ? 'พื้นที่ปกติ แต่มีการบวกเพิ่ม 20 บาท?' : ''}">${parseFloat(s.fee).toLocaleString()}</td>
       <td contenteditable="false"><button class="btn-icon delete-btn" data-index="${i}">ลบ</button></td>
     `;
     shipmentList.appendChild(tr);
@@ -583,7 +583,7 @@ window.updateRowInsuranceVal = async (i, val) => {
     await updateHistory();
     // No full render here to avoid losing focus while typing
     const row = document.querySelector(`td.editable-cell[data-field="fee"][data-index="${i}"]`);
-    if (row) row.innerText = total;
+    if (row) row.innerText = parseFloat(total).toLocaleString();
 };
 
 function applySmartPricing(i) {
@@ -855,7 +855,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 const displayDestination = highlightPostcode(s.destination, s.options?.isRemote);
                 const isWeightEmpty = !s.weight || s.weight == 0;
                 const displayWeight = isWeightEmpty ? '' : s.weight;
-                const displayFee = isWeightEmpty ? '' : parseFloat(s.fee).toLocaleString(undefined, {minimumFractionDigits: 2});
+                const displayFee = isWeightEmpty ? '' : parseFloat(s.fee).toLocaleString();
                 
                 rowsHtml += `
                     <tr style="height: 28px;">
@@ -982,7 +982,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         svcItems.forEach(s => {
             const f = parseFloat(s.fee) || 0;
             totalFee += f;
-            const key = `${svc} @ ${f.toLocaleString()} ฿`;
+            const key = `${svc} @ ${f.toLocaleString()}`;
             priceMap[key] = (priceMap[key] || 0) + 1;
         });
     }
@@ -1038,9 +1038,9 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 <div style="flex: 1;">
                     <table style="width: 100%; border-collapse: collapse; text-align: center;" border="1">
                         <tr><th colspan="2" style="background: #f0f0f0; padding: 6px;">รวมค่าบริการ (บาท)</th></tr>
-                        <tr><td style="text-align: left; padding: 6px 15px;">ยอดยกมา</td><td style="padding: 6px;">0.00</td></tr>
-                        <tr><td style="text-align: left; padding: 6px 15px;">ยอดครั้งนี้</td><td style="padding: 6px;"><b>${totalFee > 0 ? totalFee.toLocaleString(undefined, {minimumFractionDigits: 2}) + ' บาท' : '0.00 บาท'}</b></td></tr>
-                        <tr><td style="text-align: left; padding: 6px 15px;">ยอดยกไป</td><td style="padding: 6px;">${totalFee > 0 ? totalFee.toLocaleString(undefined, {minimumFractionDigits: 2}) : '0.00'}</td></tr>
+                        <tr><td style="text-align: left; padding: 6px 15px;">ยอดยกมา</td><td style="padding: 6px;">0</td></tr>
+                        <tr><td style="text-align: left; padding: 6px 15px;">ยอดครั้งนี้</td><td style="padding: 6px;"><b>${totalFee > 0 ? totalFee.toLocaleString() + ' บาท' : '0 บาท'}</b></td></tr>
+                        <tr><td style="text-align: left; padding: 6px 15px;">ยอดยกไป</td><td style="padding: 6px;">${totalFee > 0 ? totalFee.toLocaleString() : '0'}</td></tr>
                     </table>
                 </div>
                 <div style="flex: 1.5;">
@@ -1140,6 +1140,14 @@ optInsurance.onchange = () => {
 insuranceVal.oninput = (e) => {
     e.target.value = sanitizeNumeric(e.target.value);
     updatePreview();
+};
+insuranceVal.onblur = (e) => {
+    const val = parseFloat(e.target.value) || 0;
+    if (val > 50000) {
+        alert('⚠️ คำเตือน: วงเงินรับประกันสูงสุดไม่เกิน 50,000 บาท');
+        e.target.value = 50000;
+        updatePreview();
+    }
 };
 recipientInput.oninput = updatePreview;
 destInput.oninput = (e) => {
@@ -1881,7 +1889,7 @@ async function renderStats() {
     statsPayment.innerHTML = filteredStats.map(([type, total]) => `
         <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 4px 0;">
             <span style="font-weight: 600;">${type}:</span>
-            <span style="color: #0f766e; font-weight: bold;">${total.toLocaleString(undefined, {minimumFractionDigits: 2})} ฿</span>
+            <span style="color: #0f766e; font-weight: bold;">${total.toLocaleString()}</span>
         </div>
     `).join('');
 
@@ -1897,7 +1905,7 @@ async function renderStats() {
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
             <div style="font-size: 0.8rem; color: #64748b;">ยอดรวมปี ${currentYear}</div>
-            <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString(undefined, {minimumFractionDigits: 2})} ฿</div>
+            <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
     `;
@@ -1967,10 +1975,10 @@ async function renderArchiveView() {
         tr.innerHTML = `
             <td style="text-align: center; padding: 12px; font-weight: 600;">${displayDate}</td>
             <td style="text-align: right; padding: 12px; color: #be123c;">${dayEmsCount.toLocaleString()}</td>
-            <td style="text-align: right; padding: 12px; color: #be123c; border-right: 1px solid #e2e8f0;">${dayEmsFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td style="text-align: right; padding: 12px; color: #be123c; border-right: 1px solid #e2e8f0;">${dayEmsFee.toLocaleString()}</td>
             <td style="text-align: right; padding: 12px; color: #0369a1;">${dayOtherCount.toLocaleString()}</td>
-            <td style="text-align: right; padding: 12px; color: #0369a1; border-right: 1px solid #e2e8f0;">${dayOtherFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-            <td style="text-align: right; padding: 12px; font-weight: bold; color: #0f766e;">${dayTotalFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td style="text-align: right; padding: 12px; color: #0369a1; border-right: 1px solid #e2e8f0;">${dayOtherFee.toLocaleString()}</td>
+            <td style="text-align: right; padding: 12px; font-weight: bold; color: #0f766e;">${dayTotalFee.toLocaleString()}</td>
             <td style="text-align: center; padding: 12px;">
                 <select class="view-batch-select" style="padding: 4px; border-radius: 4px; border: 1px solid #ccc;">
                     <option value="">-- เลือกรายการบิล --</option>
@@ -2024,10 +2032,10 @@ async function renderArchiveView() {
     });
     
     document.getElementById('monthly-ems-count').textContent = totalEmsCount.toLocaleString();
-    document.getElementById('monthly-ems-fee').textContent = totalEmsFee.toLocaleString(undefined, {minimumFractionDigits: 2});
+    document.getElementById('monthly-ems-fee').textContent = totalEmsFee.toLocaleString();
     document.getElementById('monthly-other-count').textContent = totalOtherCount.toLocaleString();
-    document.getElementById('monthly-other-fee').textContent = totalOtherFee.toLocaleString(undefined, {minimumFractionDigits: 2});
-    document.getElementById('monthly-total-fee').textContent = (totalEmsFee + totalOtherFee).toLocaleString(undefined, {minimumFractionDigits: 2});
+    document.getElementById('monthly-other-fee').textContent = totalOtherFee.toLocaleString();
+    document.getElementById('monthly-total-fee').textContent = (totalEmsFee + totalOtherFee).toLocaleString();
 }
 
 exportCsvBtn.onclick = () => {
