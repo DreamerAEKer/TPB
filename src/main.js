@@ -856,12 +856,21 @@ function syncBatchInputs(source) {
 
 function generateShipmentNote(s) {
     const notes = [];
-    if (s.options.ar) notes.push("AR");
-    if (s.options.arTracking) notes.push("AR Track");
-    if (s.options.insurance) notes.push(`🛡️ ${(parseFloat(s.options.insuranceVal)||0).toLocaleString()}`);
-    if (s.options.useVolWeight) notes.push("ขนาดใหญ่");
+    
+    // AR/AR Track logic: show last 4 digits + space + check digit instead of text
+    if (s.options?.ar || s.options?.arTracking) {
+        const track = s.trackingFormatted || '';
+        // Match 4 digits, then 1 digit before TH
+        const match = track.replace(/\s+/g, '').match(/(\d{4})(\d)TH$/);
+        if (match) {
+            notes.push(`${match[1]} ${match[2]}`);
+        }
+    }
+
+    if (s.options?.insurance) notes.push(`🛡️ ${(parseFloat(s.options.insuranceVal)||0).toLocaleString()}`);
+    if (s.options?.useVolWeight) notes.push("ขนาดใหญ่");
     if (s.serviceType === 'REG') {
-        if (s.options.regType === 'BOX') notes.push("หีบห่อ");
+        if (s.options?.regType === 'BOX') notes.push("หีบห่อ");
     }
     return notes.join(", ");
 }
@@ -1930,7 +1939,7 @@ document.getElementById('export-data-btn').onclick = async () => {
     });
 
     const backup = {
-        version: "4.9.7",
+        version: "4.9.8",
         exportDate: new Date().toISOString(),
         settings: settings,
         archives: archives,
