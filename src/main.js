@@ -1269,6 +1269,21 @@ customServiceNameInput.onchange = () => {
     customServiceManualInput.style.display = (customServiceNameInput.value === '') ? 'block' : 'none';
     updatePreview();
 };
+
+// --- ENTER LOGIC: Keyboard Workflow ---
+const handleEnter = (e, nextEl) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        if (nextEl) nextEl.focus();
+        else addBtn.click();
+    }
+};
+
+digitsInput.onkeydown = (e) => handleEnter(e, recipientInput);
+num8StartInput.onkeydown = (e) => handleEnter(e, recipientInput);
+recipientInput.onkeydown = (e) => handleEnter(e, destInput);
+destInput.onkeydown = (e) => handleEnter(e, weightInput);
+weightInput.onkeydown = (e) => handleEnter(e, null); // null means click Add Button
 customServiceManualInput.oninput = updatePreview;
 
 addBtn.onclick = async (e) => {
@@ -1439,9 +1454,8 @@ addBtn.onclick = async (e) => {
       updatePreview();
       
       setTimeout(() => {
-          if (bulkToggle.checked) num8StartInput.focus();
-          else digitsInput.focus();
-      }, 100);
+          recipientInput.focus();
+      }, 50);
   }
 
   if (currentServiceTab !== type) {
@@ -2199,7 +2213,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.0.4</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.1.6</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
