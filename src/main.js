@@ -1271,29 +1271,8 @@ customServiceNameInput.onchange = () => {
 };
 
 // --- ENTER LOGIC: Keyboard Workflow (Fast Entry v5.1.8) ---
-const handleEnter = (e, nextEl) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        if (nextEl) {
-            nextEl.focus();
-            if (nextEl.select) nextEl.select(); 
-        } else {
-            addBtn.click();
-        }
-    }
-};
-
-const setupEnterFlow = () => {
-    prefixInput.addEventListener('keydown', (e) => handleEnter(e, bulkToggle.checked ? num8StartInput : digitsInput));
-    digitsInput.addEventListener('keydown', (e) => handleEnter(e, recipientInput));
-    num8StartInput.addEventListener('keydown', (e) => handleEnter(e, recipientInput));
-    recipientInput.addEventListener('keydown', (e) => handleEnter(e, destInput));
-    destInput.addEventListener('keydown', (e) => handleEnter(e, weightInput));
-    weightInput.addEventListener('keydown', (e) => handleEnter(e, null)); 
-};
-
 // Initial setup
-setupEnterFlow();
+// Keyboard workflow consolidated in setupFluentNavigation() at the end of file
 
 customServiceManualInput.oninput = updatePreview;
 
@@ -2224,7 +2203,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.1.9</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.2.0</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
@@ -2464,8 +2443,8 @@ async function initApp() {
 
 function setupFluentNavigation() {
     const fields = [
-        prefixInput, digitsInput, num8StartInput, digitsEndInput, batchCountInput,
-        recipientInput, destInput, dimW, dimL, dimH, weightInput, optAR, optInsurance, insuranceVal, feeInput
+        prefixInput, digitsInput, num8StartInput, batchCountInput,
+        recipientInput, destInput, weightInput, feeInput
     ];
 
     fields.forEach((f, index) => {
@@ -2476,6 +2455,11 @@ function setupFluentNavigation() {
 
                 // 1. BULK MODE Logic
                 if (bulkToggle.checked) {
+                    if (f === prefixInput) {
+                        num8StartInput.focus();
+                        num8StartInput.select();
+                        return;
+                    }
                     if (f === num8StartInput) {
                         batchCountInput.focus();
                         batchCountInput.select();
@@ -2493,6 +2477,11 @@ function setupFluentNavigation() {
                 } 
                 // 2. SINGLE MODE Logic
                 else {
+                    if (f === prefixInput) {
+                        digitsInput.focus();
+                        digitsInput.select();
+                        return;
+                    }
                     if (f === digitsInput) {
                         recipientInput.focus();
                         return;
@@ -2531,11 +2520,6 @@ function setupFluentNavigation() {
                         return;
                     }
                     nextIdx++;
-                }
-                
-                // If last field, try adding
-                if (f === feeInput || f === insuranceVal) {
-                    addBtn.click();
                 }
             }
         });
