@@ -348,7 +348,7 @@ function updateSummary() {
   const filtered = shipments.filter(s => s.serviceType === currentServiceTab);
   
   const totalItems = filtered.length;
-  const totalFee = filtered.reduce((s, x) => s + parseFloat(x.fee || 0), 0);
+  const totalFee = filtered.reduce((s, x) => s + (parseFloat(x.fee) || 0), 0);
   
   document.getElementById('total-items').textContent = totalItems.toLocaleString();
   document.getElementById('total-fee').textContent = totalFee.toLocaleString() + ' บาท';
@@ -389,7 +389,7 @@ function renderShipments() {
 
   filtered.forEach((s, displayIdx) => {
     const i = s.originalIdx;
-    const trackData = parseTracking(s.tracking);
+    const trackData = parseTracking(s.trackingFormatted);
     let isNewGroup = false;
 
     if (trackData) {
@@ -1047,6 +1047,24 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     }
     return combinedHtml;
 }
+
+function isEMSGroup(s) {
+    if (s.serviceType === 'EMS') return true;
+    if (s.serviceType === 'CUSTOM' && (s.customServiceName || '').toUpperCase().includes('EMS')) return true;
+    return false;
+}
+
+function parseTracking(t) {
+    if (!t) return { prefix: '', num: 0, full: '' };
+    const clean = t.replace(/\s+/g, '');
+    const match = clean.match(/^([A-Z]{2})(\d{8})(\d)([A-Z]{2})$/);
+    if (match) return { prefix: match[1], num: parseInt(match[2]), full: clean };
+    const simpleMatch = clean.match(/^([A-Z]+)(\d+)([A-Z]*)$/);
+    if (simpleMatch) return { prefix: simpleMatch[1], num: parseInt(simpleMatch[2]), full: clean };
+    return { prefix: clean, num: 0, full: clean };
+}
+
+
 function generateSummarySheet(items, titleSuffix, copies = 1) {
     const groups = {};
     items.forEach(item => {
@@ -1054,34 +1072,64 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         if (!groups[svc]) groups[svc] = [];
         groups[svc].push(item);
     });
+
     let rangeRows = '';
-    let totalItemsAll = 0;
+    let totalItemsAll = items.length;
     let totalFee = 0;
     const priceMap = {};
+
     for (const [svc, svcItems] of Object.entries(groups)) {
-        totalItemsAll += svcItems.length;
+        // Group consecutive items within this service
         const sorted = [...svcItems].sort((a, b) => a.trackingFormatted.localeCompare(b.trackingFormatted));
-        const start = sorted[0].trackingFormatted;
-        const end = sorted[sorted.length - 1].trackingFormatted;
-        rangeRows += `
-            <tr>
-                <td style="padding: 8px;">${svc}</td>
-                <td style="padding: 8px;">${start}</td>
-                <td style="padding: 8px;">${end}</td>
-                <td style="padding: 8px;">${svcItems.length} ชิ้น</td>
-                <td style="padding: 8px;"></td>
-            </tr>
-        `;
+        const ranges = [];
+        if (sorted.length > 0) {
+            let currentRange = { start: sorted[0], end: sorted[0], count: 1 };
+            for (let i = 1; i < sorted.length; i++) {
+                const prev = parseTracking(sorted[i-1].trackingFormatted);
+                const curr = parseTracking(sorted[i].trackingFormatted);
+                
+                const isSequential = prev && curr && prev.prefix === curr.prefix && curr.num === prev.num + 1;
+                
+                if (isSequential) {
+                    currentRange.end = sorted[i];
+                    currentRange.count++;
+                } else {
+                    ranges.push(currentRange);
+                    currentRange = { start: sorted[i], end: sorted[i], count: 1 };
+                }
+            }
+            ranges.push(currentRange);
+        }
+
+        ranges.forEach(r => {
+            rangeRows += `
+                <tr>
+                    <td style="padding: 8px;">${svc}</td>
+                    <td style="padding: 8px;">${r.start.trackingFormatted}</td>
+                    <td style="padding: 8px;">${r.end.trackingFormatted}</td>
+                    <td style="padding: 8px;">${r.count} ชิ้น</td>
+                    <td style="padding: 8px;"></td>
+                </tr>
+            `;
+        });
+
         svcItems.forEach(s => {
             const f = parseFloat(s.fee) || 0;
             totalFee += f;
-            const key = `${svc} @ ${f.toLocaleString()}`;
+            const hasAR = s.options?.ar || s.options?.arTracking;
+            const key = `@ ${f.toLocaleString()}${hasAR ? ' (AR)' : ''}`;
             priceMap[key] = (priceMap[key] || 0) + 1;
         });
     }
+
     let priceBreakdownHtml = '';
-    for (const [desc, count] of Object.entries(priceMap)) {
-        priceBreakdownHtml += `<div style="margin-bottom: 4px;">- ${desc}: <b>${count}</b> ชิ้น</div>`;
+    const sortedPrices = Object.keys(priceMap).sort((a, b) => {
+        const valA = parseFloat(a.replace(/[^\d.]/g, '')) || 0;
+        const valB = parseFloat(b.replace(/[^\d.]/g, '')) || 0;
+        return valA - valB;
+    });
+    for (const desc of sortedPrices) {
+        priceBreakdownHtml += `<div style="margin-bottom: 4px;">- ${desc}: <b>${priceMap[desc]}</b> ชิ้น</div>`;
     }
     const company = settings.company || '......................................';
     const address = settings.address || '............................................................................';
@@ -1128,19 +1176,16 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </tbody>
             </table>
             <div style="display: flex; gap: 20px; font-size: 12pt;">
-                <div style="flex: 1;">
-                    <table style="width: 100%; border-collapse: collapse; text-align: center;" border="1">
-                        <tr><th colspan="2" style="background: #f0f0f0; padding: 6px;">รวมค่าบริการ (บาท)</th></tr>
-                        <tr><td style="text-align: left; padding: 6px 15px;">ยอดยกมา</td><td style="padding: 6px;">0</td></tr>
-                        <tr><td style="text-align: left; padding: 6px 15px;">ยอดครั้งนี้</td><td style="padding: 6px;"><b>${totalFee > 0 ? totalFee.toLocaleString() + ' บาท' : '0 บาท'}</b></td></tr>
-                        <tr><td style="text-align: left; padding: 6px 15px;">ยอดยกไป</td><td style="padding: 6px;">${totalFee > 0 ? totalFee.toLocaleString() : '0'}</td></tr>
-                    </table>
-                </div>
                 <div style="flex: 1.5;">
                     <div style="background: #fafafa; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 11pt;">
                         <div style="margin-bottom: 8px;"><b>รายละเอียดชิ้นต่อราคา (อ้างอิง):</b></div>
                         ${priceBreakdownHtml}
                     </div>
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end;">
+                     <div style="font-size: 14pt; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 5px;">
+                        ยอดรวมสุทธิ: ${totalFee > 0 ? totalFee.toLocaleString() : '0'} บาท
+                     </div>
                 </div>
             </div>
             
@@ -1270,10 +1315,6 @@ customServiceNameInput.onchange = () => {
     updatePreview();
 };
 
-// --- ENTER LOGIC: Keyboard Workflow (Fast Entry v5.1.8) ---
-// Initial setup
-// Keyboard workflow consolidated in setupFluentNavigation() at the end of file
-
 customServiceManualInput.oninput = updatePreview;
 
 addBtn.onclick = async (e) => {
@@ -1365,7 +1406,7 @@ addBtn.onclick = async (e) => {
               },
               isIsland: false,
               trackingFormatted: trackingFormatted,
-              fee: (w > 0 || type === 'CUSTOM') ? (feeInput.value || '0').toString().replace(/[^0-9.]/g, '') : '0'
+              fee: (w > 0 || type === 'CUSTOM') ? (feeInput.value || '0').toString().replace(/[^0-9.]/g, '') : ''
           });
       }
       
@@ -1427,7 +1468,7 @@ addBtn.onclick = async (e) => {
               },
               isIsland: optRemote.checked && REMOTE_ISLAND_ZIPCODES.has(destInput.value.match(/\d{5}/)?.[0]),
               trackingFormatted: trackingFormatted,
-              fee: (w > 0 || type === 'CUSTOM') ? (feeInput.value || '0').toString().replace(/[^0-9.]/g, '') : '0'
+              fee: (w > 0 || type === 'CUSTOM') ? (feeInput.value || '0').toString().replace(/[^0-9.]/g, '') : ''
           });
       
       if (type !== 'CUSTOM') {
@@ -2203,7 +2244,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.2.0</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.2.1</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
