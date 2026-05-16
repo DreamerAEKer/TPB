@@ -416,7 +416,7 @@ function renderShipments() {
         prevNum = trackData.num;
     }
 
-    const currentIndent = (isAR12 || isARTrack8 || !isIndented) ? "" : "  ";
+    const currentPrefix = (isAR12 || isARTrack8 || !isIndented) ? "" : ". ";
 
     const zipMatch = s.destination.match(/\d{5}/);
     const zip = zipMatch ? zipMatch[0] : null;
@@ -441,7 +441,7 @@ function renderShipments() {
         </div>
       </td>
       <td class="tracking-cell">
-        <div style="font-weight: 600; white-space: pre;">${currentIndent}${s.trackingFormatted}</div>
+        <div style="font-weight: 600; white-space: pre;">${currentPrefix}${s.trackingFormatted}</div>
       </td>
       <td class="services-cell">
         <div style="display: flex; gap: 8px; flex-wrap: nowrap; justify-content: center;">
@@ -926,8 +926,8 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
             prevNumGlobal = trackData.num;
         }
         
-        const indentStr = (isAR12 || isARTrack8 || !isIndentedGlobal) ? "" : "&nbsp;&nbsp;";
-        return { ...s, indentStr };
+        const prefixSym = (isAR12 || isARTrack8 || !isIndentedGlobal) ? "" : ". ";
+        return { ...s, prefixSym };
     });
     
     const company = settings.company || '......................................';
@@ -954,7 +954,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         <td style="padding: 1px 4px; text-align: center;">${p * ITEMS_PER_PAGE + i + 1}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayRecipient}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayDestination}</td>
-                        <td style="padding: 6px; text-align: left; font-weight: bold;">${s.indentStr}${s.trackingFormatted}</td>
+                        <td style="padding: 6px; text-align: left; font-weight: bold;">${s.prefixSym}${s.trackingFormatted}</td>
                         <td style="padding: 1px 4px; text-align: center; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}</td>
                         <td style="padding: 1px 4px; text-align: center;">${displayFee}</td>
                         <td style="padding: 1px 4px; font-size: 8pt; text-align: center;">${generateShipmentNote(s)}</td>
@@ -1935,7 +1935,7 @@ document.getElementById('export-data-btn').onclick = async () => {
     });
 
     const backup = {
-        version: "5.0.0",
+        version: "5.0.1",
         exportDate: new Date().toISOString(),
         settings: settings,
         archives: archives,
