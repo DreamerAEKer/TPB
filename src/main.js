@@ -425,8 +425,8 @@ function renderShipments() {
             ${(s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && s.destination.includes('เกาะ')) ? `<label class="svc-mini" title="พื้นที่ห่างไกล"><input type="checkbox" ${s.options?.isRemote ? 'checked' : ''} onchange="toggleRowService(${i}, 'isRemote', this.checked)"> 🏝️</label>` : ''}
         </div>
       </td>
-      <td class="editable-cell" contenteditable="true" data-field="weight" data-index="${i}" style="${s.options?.useVolWeight ? 'font-weight: 800;' : ''}">${parseFloat(s.weight).toLocaleString()}</td>
-      <td class="editable-cell ${priceClass}" contenteditable="true" data-field="fee" data-index="${i}" title="${priceClass ? 'พื้นที่ปกติ แต่มีการบวกเพิ่ม 20 บาท?' : ''}">${parseFloat(s.fee).toLocaleString()}</td>
+      <td class="editable-cell" contenteditable="true" data-field="weight" data-index="${i}" style="${s.options?.useVolWeight ? 'font-weight: 800;' : ''}">${parseFloat(s.weight) > 0 ? parseFloat(s.weight).toLocaleString() : ''}</td>
+      <td class="editable-cell ${priceClass}" contenteditable="true" data-field="fee" data-index="${i}" title="${priceClass ? 'พื้นที่ปกติ แต่มีการบวกเพิ่ม 20 บาท?' : ''}">${(parseFloat(s.weight) > 0 || s.serviceType === 'CUSTOM') ? parseFloat(s.fee).toLocaleString() : ''}</td>
       <td contenteditable="false"><button class="btn-icon delete-btn" data-index="${i}">ลบ</button></td>
     `;
     shipmentList.appendChild(tr);
@@ -771,9 +771,9 @@ function updatePreview() {
           total += 3;
       }
 
-      // Rule: If weight is 0 and it's not CUSTOM, fee is 0
+      // Rule: If weight is 0 and it's not CUSTOM, fee is empty
       if (w === 0 && activeSvc !== 'CUSTOM') {
-          feeInput.value = '0';
+          feeInput.value = '';
           feeInput.style.color = '#888';
       } else {
           feeInput.value = total;
