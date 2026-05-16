@@ -140,7 +140,8 @@ input {
 
 input:focus {
   outline: none;
-  border-color: var(--primary-color);
+  border-color: #3b82f6; /* Blue focus instead of Red to avoid "Error" look */
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 #prefix {
