@@ -1509,8 +1509,11 @@ addBtn.onclick = async (e) => {
   if (bulkToggle.checked) {
       syncBatchInputs('count');
       setTimeout(() => {
-          num8StartInput.focus();
-          num8StartInput.select();
+          const startField = document.getElementById('num8-start');
+          if (startField) {
+              startField.focus();
+              startField.select();
+          }
       }, 50);
   }
 };
@@ -2250,7 +2253,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.2.3</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.2.4</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
@@ -2502,27 +2505,27 @@ function setupFluentNavigation() {
 
                 // 1. BULK MODE Logic
                 if (bulkToggle.checked) {
-                    if (f === prefixInput) {
-                        num8StartInput.focus();
-                        num8StartInput.select();
+                    if (f.id === 'prefix-code') {
+                        document.getElementById('num8-start').focus();
+                        document.getElementById('num8-start').select();
                         return;
                     }
-                    if (f === num8StartInput) {
-                        digitsEndInput.focus();
-                        digitsEndInput.select();
+                    if (f.id === 'num8-start') {
+                        document.getElementById('digits-end').focus();
+                        document.getElementById('digits-end').select();
                         return;
                     }
-                    if (f === digitsEndInput) {
-                        batchCountInput.focus();
-                        batchCountInput.select();
+                    if (f.id === 'digits-end') {
+                        document.getElementById('batch-count').focus();
+                        document.getElementById('batch-count').select();
                         return;
                     }
-                    if (f === batchCountInput) {
-                        weightInput.focus();
-                        weightInput.select();
+                    if (f.id === 'batch-count') {
+                        document.getElementById('weight').focus();
+                        document.getElementById('weight').select();
                         return;
                     }
-                    if (f === weightInput) {
+                    if (f.id === 'weight') {
                         addBtn.click();
                         return;
                     }
