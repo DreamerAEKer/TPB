@@ -174,7 +174,7 @@ const shipmentList = document.getElementById('shipment-list');
 const optAR = document.getElementById('opt-ar');
 const optInsurance = document.getElementById('opt-insurance');
 const insuranceVal = document.getElementById('insurance-val');
-const optRemote = document.getElementById('opt-remote');
+const optRemote = document.getElementById('is-remote-check');
 
 const addBtn = document.getElementById('add-btn');
 const undoBtn = document.getElementById('undo-btn');
@@ -706,18 +706,19 @@ function updatePreview() {
 
   if (isRemoteAreaZip && !sameGroup) {
       if (PARTIAL_REMOTE_ZIPS.includes(zip)) {
+          // Partial remote (Island potential) -> Show checkbox (Auto-checked) and hide badge to avoid redundancy
           remoteCheckContainer.classList.remove('hidden');
           remoteLabelHint.textContent = '(เฉพาะพื้นที่ - ติ๊กออกหากไม่ใช่เกาะ)';
-          remoteLabelHint.style.color = '#be123c';
+          remoteStatusBadge.classList.add('hidden');
       } else {
-          // It's a clear remote area, hide the check container so they can't uncheck it easily
+          // Clear remote area -> Hide checkbox, show badge instead
           remoteCheckContainer.classList.add('hidden');
-      }
-      
-      if (optRemote.checked) {
           remoteStatusBadge.classList.remove('hidden');
           remoteStatusBadge.querySelector('.badge-text').textContent = 'บวกพื้นที่ห่างไกล (+20 บาท)';
-      } else {
+      }
+      
+      // Secondary check: if it's partial and user unchecked it, badge should definitely be hidden
+      if (!optRemote.checked) {
           remoteStatusBadge.classList.add('hidden');
       }
   } else {
