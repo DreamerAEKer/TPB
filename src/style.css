@@ -446,6 +446,18 @@ th {
   display: none !important;
 }
 
+.chip:hover {
+    background: #e2e8f0 !important;
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    transform: translateY(-1px);
+}
+
+.chip:active {
+    transform: translateY(0);
+    filter: brightness(0.9);
+}
+
 .mini-input {
     border: 1px solid #cbd5e1;
     border-radius: 4px;

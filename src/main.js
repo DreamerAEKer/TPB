@@ -153,6 +153,7 @@ let currentView = 'dashboard';
 // --- DOM ELEMENTS ---
 const prefixInput = document.getElementById('prefix');
 const prefixList = document.getElementById('prefix-list');
+const prefixChips = document.getElementById('prefix-chips');
 const savePrefixBtn = document.getElementById('save-prefix-btn');
 const prefixHelpText = document.getElementById('prefix-help-text');
 const digitsInput = document.getElementById('digits');
@@ -1645,6 +1646,11 @@ function updatePrefixListUI() {
     // Update Datalist
     prefixList.innerHTML = list.map(p => `<option value="${p}">`).join('');
     
+    // Update Chips
+    prefixChips.innerHTML = list.map(p => `
+        <button class="chip" onclick="selectPrefix('${p}')" style="background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 0.85rem; font-weight: bold; color: #475569; cursor: pointer; transition: all 0.2s;">${p}</button>
+    `).join('');
+    
     // Update Button Visibility: Show only if current input is NOT in the list
     const currentVal = prefixInput.value.trim().toUpperCase();
     if (currentVal && !list.includes(currentVal)) {
@@ -1653,6 +1659,12 @@ function updatePrefixListUI() {
         savePrefixBtn.style.display = 'none';
     }
 }
+
+window.selectPrefix = (p) => {
+    prefixInput.value = p;
+    updatePreview();
+    updatePrefixListUI();
+};
 
 savePrefixBtn.onclick = async () => {
     const val = prefixInput.value.trim().toUpperCase();
