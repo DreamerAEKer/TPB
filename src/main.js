@@ -1707,8 +1707,8 @@ savePrefixBtn.onclick = async () => {
     if (!list.includes(val)) {
         list.unshift(val); // Add to front
         
-        // Limit: 10 for all services (requested more flexibility)
-        const max = 10;
+        // Limit: 2 for standard, 10 for CUSTOM (reverted as requested)
+        const max = (currentServiceTab === 'CUSTOM') ? 10 : 2;
         if (list.length > max) list = list.slice(0, max);
         
         settings.defaultPrefixes[currentServiceTab] = list;
@@ -2332,8 +2332,5 @@ function setupFluentNavigation() {
         });
     });
 }
-
-// Auto-select text on click for easier prefix switching
-prefixInput.onclick = () => prefixInput.select();
 
 window.onload = initApp;
