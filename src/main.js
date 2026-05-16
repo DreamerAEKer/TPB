@@ -152,6 +152,7 @@ let currentView = 'dashboard';
 
 // --- DOM ELEMENTS ---
 const prefixInput = document.getElementById('prefix');
+const prefixList = document.getElementById('prefix-list');
 const savePrefixBtn = document.getElementById('save-prefix-btn');
 const prefixHelpText = document.getElementById('prefix-help-text');
 const digitsInput = document.getElementById('digits');
@@ -1126,6 +1127,7 @@ prefixInput.oninput = (e) => {
       e.target.value = m.replace(/[^a-zA-Z]/g, '').toUpperCase().substring(0, 2);
   }
   updatePreview();
+  updatePrefixListUI();
 };
 
 digitsInput.oninput = (e) => {
@@ -1600,13 +1602,15 @@ document.querySelectorAll('.service-tab').forEach(tab => {
         serviceTitle.textContent = `จัดการรายการ: ${currentServiceTab === 'CUSTOM' ? 'อื่นๆ' : currentServiceTab}`;
         
         if (settings.defaultPrefixes && settings.defaultPrefixes[currentServiceTab]) {
-            prefixInput.value = settings.defaultPrefixes[currentServiceTab];
+            const list = Array.isArray(settings.defaultPrefixes[currentServiceTab]) ? settings.defaultPrefixes[currentServiceTab] : [settings.defaultPrefixes[currentServiceTab]];
+            prefixInput.value = list[0];
             prefixHelpText.style.display = 'none';
         } else {
-            const fallbacks = { 'EMS': 'EX', 'REG': 'RX', 'PARCEL': 'PX', 'ECO': 'OX', 'CUSTOM': 'XX' };
+            const fallbacks = { 'EMS': 'EX', 'REG': 'RX', 'PARCEL': 'PX', 'ECO': 'OX', 'CUSTOM': 'อื่นๆ' };
             prefixInput.value = fallbacks[currentServiceTab] || '';
             prefixHelpText.style.display = 'block';
         }
+        updatePrefixListUI();
         
         customServiceGroup.style.display = (currentServiceTab === 'CUSTOM') ? 'block' : 'none';
         if (currentServiceTab === 'CUSTOM') {
@@ -1633,16 +1637,51 @@ document.querySelectorAll('.service-tab').forEach(tab => {
     };
 });
 
-savePrefixBtn.onclick = async () => {
+function updatePrefixListUI() {
     if (!settings.defaultPrefixes) settings.defaultPrefixes = {};
-    settings.defaultPrefixes[currentServiceTab] = prefixInput.value.trim().toUpperCase();
-    await saveToDB('settings', settings);
+    let list = settings.defaultPrefixes[currentServiceTab] || [];
+    if (!Array.isArray(list)) list = [list];
+    
+    // Update Datalist
+    prefixList.innerHTML = list.map(p => `<option value="${p}">`).join('');
+    
+    // Update Button Visibility: Show only if current input is NOT in the list
+    const currentVal = prefixInput.value.trim().toUpperCase();
+    if (currentVal && !list.includes(currentVal)) {
+        savePrefixBtn.style.display = 'flex';
+    } else {
+        savePrefixBtn.style.display = 'none';
+    }
+}
+
+savePrefixBtn.onclick = async () => {
+    const val = prefixInput.value.trim().toUpperCase();
+    if (!val) return;
+    
+    if (!settings.defaultPrefixes) settings.defaultPrefixes = {};
+    let list = settings.defaultPrefixes[currentServiceTab] || [];
+    if (!Array.isArray(list)) list = [list];
+    
+    // Add to list if not exists
+    if (!list.includes(val)) {
+        list.unshift(val); // Add to front
+        
+        // Limit: 2 for standard, 10 for CUSTOM
+        const max = (currentServiceTab === 'CUSTOM') ? 10 : 2;
+        if (list.length > max) list = list.slice(0, max);
+        
+        settings.defaultPrefixes[currentServiceTab] = list;
+        await saveToDB('settings', settings);
+    }
     
     prefixHelpText.style.display = 'none';
+    updatePrefixListUI();
     
     const oldBg = savePrefixBtn.style.background;
     savePrefixBtn.style.background = '#86efac';
-    setTimeout(() => savePrefixBtn.style.background = oldBg, 500);
+    setTimeout(() => {
+        savePrefixBtn.style.background = oldBg;
+    }, 500);
 };
 
 // Settings Modal
@@ -2114,13 +2153,15 @@ async function initApp() {
     }
     
     if (settings.defaultPrefixes && settings.defaultPrefixes[currentServiceTab]) {
-        prefixInput.value = settings.defaultPrefixes[currentServiceTab];
+        const list = Array.isArray(settings.defaultPrefixes[currentServiceTab]) ? settings.defaultPrefixes[currentServiceTab] : [settings.defaultPrefixes[currentServiceTab]];
+        prefixInput.value = list[0];
         prefixHelpText.style.display = 'none';
     } else {
-        const fallbacks = { 'EMS': 'EX', 'REG': 'RX', 'PARCEL': 'PX', 'ECO': 'OX', 'CUSTOM': 'XX' };
+        const fallbacks = { 'EMS': 'EX', 'REG': 'RX', 'PARCEL': 'PX', 'ECO': 'OX', 'CUSTOM': 'อื่นๆ' };
         prefixInput.value = fallbacks[currentServiceTab] || '';
         prefixHelpText.style.display = 'block';
     }
+    updatePrefixListUI();
     
     document.getElementById('set-license').value = settings.license || '';
     document.getElementById('set-payment-type').value = settings.paymentType || 'เงินเชื่อ';
