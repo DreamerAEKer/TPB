@@ -445,3 +445,27 @@ th {
 .hidden {
   display: none !important;
 }
+
+.mini-input {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.mini-input:focus {
+    border-color: var(--primary-color);
+}
+
+.error-input {
+    border: 2px solid #ed1c24 !important;
+    background-color: #fff1f2 !important;
+    color: #ed1c24 !important;
+    animation: shake 0.5s;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+}

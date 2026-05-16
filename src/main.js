@@ -417,7 +417,7 @@ function renderShipments() {
             ${s.serviceType === 'EMS' ? `
                 <div style="display: flex; align-items: center; gap: 4px;">
                     <label class="svc-mini" title="ประกัน"><input type="checkbox" ${s.options?.insurance ? 'checked' : ''} onchange="toggleRowService(${i}, 'insurance', this.checked)"> 🛡️</label>
-                    ${s.options?.insurance ? `<input type="text" class="mini-input" style="width: 50px; font-size: 0.75rem; padding: 2px;" value="${s.options.insuranceVal || 2000}" oninput="this.value = sanitizeNumeric(this.value); updateRowInsuranceVal(${i}, this.value)">` : ''}
+                    ${s.options?.insurance ? `<input type="text" class="mini-input ${ (s.options.insuranceVal > 50000) ? 'error-input' : '' }" style="width: 50px; font-size: 0.75rem; padding: 2px;" value="${s.options.insuranceVal || 2000}" oninput="this.value = sanitizeNumeric(this.value); updateRowInsuranceVal(${i}, this.value)">` : ''}
                 </div>
             ` : ''}
             ${(s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && s.destination.includes('เกาะ')) ? `<label class="svc-mini" title="พื้นที่ห่างไกล"><input type="checkbox" ${s.options?.isRemote ? 'checked' : ''} onchange="toggleRowService(${i}, 'isRemote', this.checked)"> 🏝️</label>` : ''}
@@ -582,8 +582,20 @@ window.updateRowInsuranceVal = async (i, val) => {
     updateSummary();
     await updateHistory();
     // No full render here to avoid losing focus while typing
-    const row = document.querySelector(`td.editable-cell[data-field="fee"][data-index="${i}"]`);
-    if (row) row.innerText = parseFloat(total).toLocaleString();
+    const feeCell = document.querySelector(`td.editable-cell[data-field="fee"][data-index="${i}"]`);
+    if (feeCell) feeCell.innerText = parseFloat(total).toLocaleString();
+
+    // Highlight input if exceeds limit
+    const input = document.querySelector(`tr td input.mini-input[oninput*="updateRowInsuranceVal(${i},"]`);
+    if (input) {
+        if (parsed > 50000) {
+            input.classList.add('error-input');
+            input.title = "⚠️ วงเงินรับประกันสูงสุดไม่เกิน 50,000 บาท";
+        } else {
+            input.classList.remove('error-input');
+            input.title = "";
+        }
+    }
 };
 
 function applySmartPricing(i) {
