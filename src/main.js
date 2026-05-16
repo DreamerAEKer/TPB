@@ -15,6 +15,13 @@ function formatTrackingNumber(prefix, digits, checkDigit) {
   return `${prefix.toUpperCase()} ${allDigits.substring(0, 4)} ${allDigits.substring(4, 8)} ${allDigits.substring(8, 9)} TH`;
 }
 
+function parseTracking(t) {
+    if (!t) return null;
+    const match = t.replace(/\s+/g, '').match(/^([A-Z]{2})(\d{8})(\d)TH$/);
+    if (!match) return null;
+    return { prefix: match[1], num: parseInt(match[2]) };
+}
+
 // --- DB LOGIC (IndexedDB) ---
 const DB_NAME = 'ThaiPostManifestDB';
 const DB_VERSION = 2; // Incremented for archives store
@@ -384,8 +391,37 @@ function renderShipments() {
   const filtered = shipments.map((s, originalIdx) => ({ ...s, originalIdx }))
                            .filter(s => s.serviceType === currentServiceTab);
 
+  let prevPrefix = null;
+  let prevNum = null;
+  let currentIndent = "";
+
   filtered.forEach((s, displayIdx) => {
     const i = s.originalIdx;
+    
+    // Logic: Indentation for tracking number
+    const trackData = parseTracking(s.trackingFormatted);
+    const isAR12 = (s.serviceType === 'EMS' && s.options?.ar);
+    const isARTrack8 = (s.serviceType === 'REG' && s.options?.arTracking);
+    
+    if (isAR12 || isARTrack8) {
+        currentIndent = ""; // Exception: Always Normal
+    } else if (trackData) {
+        if (prevPrefix === null) {
+            currentIndent = ""; // First item: Normal
+        } else if (trackData.prefix !== prevPrefix) {
+            currentIndent = ""; // New Prefix: Return to Normal (Reset Loop)
+        } else {
+            // Same Prefix: Check continuity
+            const step = (s.serviceType === 'REG' && s.options?.arTracking) ? 2 : 1;
+            if (trackData.num !== prevNum + step) {
+                currentIndent = "  "; // Gap: Add 2 spaces
+            }
+            // If continuous, keep previous indentation
+        }
+        prevPrefix = trackData.prefix;
+        prevNum = trackData.num;
+    }
+
     const zipMatch = s.destination.match(/\d{5}/);
     const zip = zipMatch ? zipMatch[0] : null;
     const isAlwaysRemote = zip && REMOTE_ALWAYS_ZIPCODES.has(zip);
@@ -409,7 +445,7 @@ function renderShipments() {
         </div>
       </td>
       <td class="tracking-cell">
-        <div style="font-weight: 600;">${s.trackingFormatted}</div>
+        <div style="font-weight: 600; white-space: pre;">${currentIndent}${s.trackingFormatted}</div>
       </td>
       <td class="services-cell">
         <div style="display: flex; gap: 8px; flex-wrap: nowrap; justify-content: center;">
@@ -871,10 +907,39 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     for (let p = 0; p < totalPages; p++) {
         const pageItems = itemsToPrint.slice(p * ITEMS_PER_PAGE, (p + 1) * ITEMS_PER_PAGE);
         let rowsHtml = '';
+        let prevPrefix = null;
+        let prevNum = null;
+        let currentIndent = "";
+
+        // We need to calculate indentation for all items up to this page to maintain state,
+        // or simpler: just calculate it for the whole itemsToPrint list once.
         
         for (let i = 0; i < ITEMS_PER_PAGE; i++) {
-            if (i < pageItems.length) {
-                const s = pageItems[i];
+            const itemIdx = p * ITEMS_PER_PAGE + i;
+            if (itemIdx < itemsToPrint.length) {
+                const s = itemsToPrint[itemIdx];
+                
+                // Logic: Indentation for tracking number
+                const trackData = parseTracking(s.trackingFormatted);
+                const isAR12 = (s.serviceType === 'EMS' && s.options?.ar);
+                const isARTrack8 = (s.serviceType === 'REG' && s.options?.arTracking);
+                
+                if (isAR12 || isARTrack8) {
+                    currentIndent = "";
+                } else if (trackData) {
+                    if (prevPrefix === null) {
+                        currentIndent = "";
+                    } else if (trackData.prefix !== prevPrefix) {
+                        currentIndent = "";
+                    } else {
+                        const step = (s.serviceType === 'REG' && s.options?.arTracking) ? 2 : 1;
+                        if (trackData.num !== prevNum + step) {
+                            currentIndent = "  ";
+                        }
+                    }
+                    prevPrefix = trackData.prefix;
+                    prevNum = trackData.num;
+                }
                 
                 const displayRecipient = s.recipient || '';
                 const displayDestination = highlightPostcode(s.destination, s.options?.isRemote);
@@ -887,7 +952,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         <td style="padding: 1px 4px; text-align: center;">${p * ITEMS_PER_PAGE + i + 1}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayRecipient}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayDestination}</td>
-                        <td style="font-family: monospace; font-size: 11pt; padding: 1px 4px; text-align: center;">${s.trackingFormatted}</td>
+                        <td style="padding: 6px; text-align: left; font-weight: bold; white-space: pre;">${currentIndent}${s.trackingFormatted}</td>
                         <td style="padding: 1px 4px; text-align: center; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}</td>
                         <td style="padding: 1px 4px; text-align: center;">${displayFee}</td>
                         <td style="padding: 1px 4px; font-size: 8pt; text-align: center;">${generateShipmentNote(s)}</td>
@@ -1865,7 +1930,7 @@ document.getElementById('export-data-btn').onclick = async () => {
     });
 
     const backup = {
-        version: DB_VERSION,
+        version: "4.9.7",
         exportDate: new Date().toISOString(),
         settings: settings,
         archives: archives,
