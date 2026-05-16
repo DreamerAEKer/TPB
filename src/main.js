@@ -1270,7 +1270,7 @@ customServiceNameInput.onchange = () => {
     updatePreview();
 };
 
-// --- ENTER LOGIC: Keyboard Workflow (Fast Entry v5.1.7) ---
+// --- ENTER LOGIC: Keyboard Workflow (Fast Entry v5.1.8) ---
 const handleEnter = (e, nextEl) => {
     if (e.key === 'Enter') {
         e.preventDefault();
@@ -1283,12 +1283,17 @@ const handleEnter = (e, nextEl) => {
     }
 };
 
-prefixInput.onkeydown = (e) => handleEnter(e, bulkToggle.checked ? num8StartInput : digitsInput);
-digitsInput.onkeydown = (e) => handleEnter(e, recipientInput);
-num8StartInput.onkeydown = (e) => handleEnter(e, recipientInput);
-recipientInput.onkeydown = (e) => handleEnter(e, destInput);
-destInput.onkeydown = (e) => handleEnter(e, weightInput);
-weightInput.onkeydown = (e) => handleEnter(e, null); 
+const setupEnterFlow = () => {
+    prefixInput.addEventListener('keydown', (e) => handleEnter(e, bulkToggle.checked ? num8StartInput : digitsInput));
+    digitsInput.addEventListener('keydown', (e) => handleEnter(e, recipientInput));
+    num8StartInput.addEventListener('keydown', (e) => handleEnter(e, recipientInput));
+    recipientInput.addEventListener('keydown', (e) => handleEnter(e, destInput));
+    destInput.addEventListener('keydown', (e) => handleEnter(e, weightInput));
+    weightInput.addEventListener('keydown', (e) => handleEnter(e, null)); 
+};
+
+// Initial setup
+setupEnterFlow();
 
 customServiceManualInput.oninput = updatePreview;
 
@@ -2219,7 +2224,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.1.7</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.1.8</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
