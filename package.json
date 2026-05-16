@@ -1,7 +1,7 @@
 {
   "name": "thai-post-manifest",
   "private": true,
-  "version": "5.1.1",
+  "version": "5.1.9",
   "type": "module",
   "scripts": {
     "dev": "vite",
