@@ -882,6 +882,21 @@ function generateLogoHtml(show = true) {
             <img src="${settings.logo}" style="width: ${settings.logoWidth}px; max-height: 8mm; object-fit: contain;">
         </div>
     `;
+}
+
+function generateMeterLineHtml() {
+    if (settings.paymentType !== 'เครื่องประทับไปรษณียากร') return '';
+    return `
+        <div style="margin-top: 2mm; border-top: 1px dashed #ccc; padding-top: 1mm; font-size: 10pt; display: flex; justify-content: space-between;">
+            <div>เลขเครื่องประทับ: <b>${settings.license || ''}</b></div>
+            <div style="display: flex; gap: 10mm;">
+                <span>คงเหลือ: <b>${(settings.meterDescending || 0).toLocaleString()}</b> บาท</span>
+                <span>สะสม: <b>${(settings.meterAscending || 0).toLocaleString()}</b> บาท</span>
+            </div>
+        </div>
+    `;
+}
+
 // --- PRINTING LOGIC ---
 function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     const ITEMS_PER_PAGE = 25;
@@ -891,6 +906,10 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     // Pre-calculate decorations for all items to maintain consistency across pages
     let prevPrefixGlobal = null;
     let prevNumGlobal = null;
+    let isIndentedGlobal = false;
+
+    const itemsWithIndent = itemsToPrint.map(s => {
+        const trackData = parseTracking(s.trackingFormatted);
         const isARTrack8 = (s.serviceType === 'REG' && s.options?.arTracking);
         
         if (trackData) {
@@ -1908,6 +1927,7 @@ saveSettingsBtn.onclick = async () => {
     settings.showSignatureNames = document.getElementById('set-show-sig-names').checked;
     settings.responsibleName = document.getElementById('set-res-name').value;
     settings.senderName = document.getElementById('set-sender-name').value;
+    settings.homeZip = document.getElementById('settings-home-zip').value;
 
     settings.logoWidth = parseInt(document.getElementById('set-logo-width').value) || 150;
     settings.logoAlign = document.getElementById('set-logo-align').value;
@@ -2370,10 +2390,12 @@ async function initApp() {
     document.getElementById('set-payment-type').value = settings.paymentType || 'เงินเชื่อ';
     setFuelSurcharge.checked = settings.fuelSurcharge;
     document.getElementById('set-post-office').value = settings.postOffice || 'ไปรษณีย์กลาง 10501';
+    document.getElementById('settings-home-zip').value = settings.homeZip || '';
     
     document.getElementById('set-show-sig-names').checked = settings.showSignatureNames || false;
     document.getElementById('set-res-name').value = settings.responsibleName || '';
     document.getElementById('set-sender-name').value = settings.senderName || '';
+    document.getElementById('settings-home-zip').value = settings.homeZip || '';
     document.getElementById('sig-names-fields').style.display = settings.showSignatureNames ? 'block' : 'none';
 
     // Logo setup
