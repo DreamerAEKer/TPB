@@ -2093,13 +2093,16 @@ toggleViewBtns.forEach(btn => {
         const imgViewer = parentSec.querySelector('.brochure-img-viewer');
         if (imgViewer.style.display === 'none' || !imgViewer.style.display) {
             imgViewer.style.display = 'block';
-            btn.innerHTML = '🙈 ซ่อนรูปภาพแผ่นพับ';
+            if (!btn.dataset.originalHtml) {
+                btn.dataset.originalHtml = btn.innerHTML;
+            }
+            btn.innerHTML = '❌ ซ่อนรูปภาพแผ่นพับ';
             btn.style.backgroundColor = '#fee2e2';
             btn.style.color = '#ef4444';
             btn.style.borderColor = '#fecaca';
         } else {
             imgViewer.style.display = 'none';
-            btn.innerHTML = '📷 ดูโบรชัวร์ต้นฉบับ';
+            btn.innerHTML = btn.dataset.originalHtml || '📷 ดูโบรชัวร์ต้นฉบับ';
             btn.style.backgroundColor = '#eff6ff';
             btn.style.color = '#1d4ed8';
             btn.style.borderColor = '#bfdbfe';
