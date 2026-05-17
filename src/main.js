@@ -1104,11 +1104,11 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         
         qrCodeHtml = `
             <div style="flex: 0.9; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fafafa; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 10pt; box-sizing: border-box; text-align: center; height: 100%;">
-                <div style="font-weight: bold; margin-bottom: 5px; color: #1e3a8a; font-size: 9.5pt;">QR ขนาดพัสดุ EMS (${volWeightItems.length} ชิ้น)</div>
+                <div style="font-weight: bold; margin-bottom: 5px; color: #1e3a8a; font-size: 9.5pt;">QR ขนาด EMS ขนาดใหญ่ (${volWeightItems.length} ชิ้น)</div>
                 <img src="${onlineQrUrl}" 
                      data-qrtext="${safeQrText}" 
                      onerror="this.onerror=null; if(typeof QRious !== 'undefined'){ try { const qr = new QRious({value: this.getAttribute('data-qrtext'), size: 250, level: 'M'}); this.src = qr.toDataURL(); } catch(e){} }" 
-                     style="width: 140px; height: 140px; object-fit: contain; border: 1px solid #eee; padding: 2px; background: white;" 
+                     style="width: 85px; height: 85px; object-fit: contain; border: 1px solid #eee; padding: 2px; background: white;" 
                      alt="QR Code EMS Dimensions">
                 <div style="font-size: 7.5pt; color: #64748b; margin-top: 5px; line-height: 1.2;">สแกนเพื่ออ่านข้อมูล<br>กว้าง*ยาว*สูง</div>
             </div>
@@ -2475,7 +2475,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.3.3</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.3.4</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
