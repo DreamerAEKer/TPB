@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="src/style.css?v=5.2.4">
+    <link rel="stylesheet" href="src/style.css?v=5.2.5">
     <style>
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -24,7 +24,7 @@
         </div>
         <div style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
             <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.2.4</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.2.5</div>
         </div>
     </div>
 
@@ -241,15 +241,15 @@
                         <!-- Target Range -->
                         <div>
                             <label style="display: block; font-size: 0.75rem; font-weight: bold; color: #0369a1; margin-bottom: 4px;">🎯 ขอบเขตรายการ (Target Items)</label>
-                            <div style="display: flex; gap: 8px; align-items: center;">
-                                <select id="batch-range-type" style="flex: 1; padding: 6px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; background: white;">
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <select id="batch-range-type" style="width: 100%; padding: 6px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; background: white;">
                                     <option value="all">ทุกรายการในตาราง (All)</option>
                                     <option value="range">ระบุช่วงลำดับพัสดุ (Range)</option>
                                 </select>
-                                <div id="batch-range-inputs" style="display: none; gap: 4px; align-items: center;">
-                                    <input type="number" id="batch-start-idx" min="1" placeholder="จาก" style="width: 50px; padding: 5px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center;">
-                                    <span style="font-size: 0.8rem; color: #0369a1;">ถึง</span>
-                                    <input type="number" id="batch-end-idx" min="1" placeholder="ถึง" style="width: 50px; padding: 5px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center;">
+                                <div id="batch-range-inputs" style="display: none; gap: 6px; align-items: center; justify-content: space-between; width: 100%;">
+                                    <input type="number" id="batch-start-idx" min="1" placeholder="จาก" style="flex: 1; min-width: 45px; padding: 5px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center;">
+                                    <span style="font-size: 0.8rem; color: #0369a1; font-weight: bold; padding: 0 4px;">ถึง</span>
+                                    <input type="number" id="batch-end-idx" min="1" placeholder="ถึง" style="flex: 1; min-width: 45px; padding: 5px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center;">
                                 </div>
                             </div>
                         </div>
@@ -776,6 +776,6 @@
         <div style="color: #64748b; margin-top: 0.5rem;">กรุณารอสักครู่ (อาจใช้เวลา 1-5 วินาที สำหรับรายการจำนวนมาก)</div>
     </div>
 
-    <script src="src/main.js?v=5.2.4"></script>
+    <script src="src/main.js?v=5.2.5"></script>
 </body>
 </html>

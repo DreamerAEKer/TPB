@@ -696,13 +696,20 @@ function updatePreview() {
   const remoteCheckContainer = document.getElementById('remote-check-container');
   const remoteLabelHint = document.getElementById('remote-label-hint');
   
-  if (zip !== window.lastZipForRemote) {
-      window.isManualRemoteOverride = false;
-      window.lastZipForRemote = zip;
+  if (zip !== window.lastZipForRemote || !window.isManualRemoteOverride) {
+      if (zip !== window.lastZipForRemote) {
+          window.isManualRemoteOverride = false;
+          window.lastZipForRemote = zip;
+      }
       
       // Auto-set if it's a remote area and NOT same group
       if (isRemoteAreaZip && !sameGroup) {
-          optRemote.checked = true;
+          const isIsland = PARTIAL_REMOTE_ZIPS.includes(zip);
+          if (isIsland && ((activeSvc === 'EMS' && settings.excludeIslandEMS) || (activeSvc === 'ECO' && settings.excludeIslandEco))) {
+              optRemote.checked = false;
+          } else {
+              optRemote.checked = true;
+          }
       } else {
           optRemote.checked = false;
       }
@@ -981,7 +988,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 const displayFee = isWeightEmpty ? '' : parseFloat(s.fee).toLocaleString();
                 
                 rowsHtml += `
-                    <tr style="height: 28px;">
+                    <tr style="height: 25px;">
                         <td style="padding: 1px 4px; text-align: center;">${p * ITEMS_PER_PAGE + i + 1}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayRecipient}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayDestination}</td>
@@ -992,7 +999,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                     </tr>
                 `;
             } else {
-                rowsHtml += `<tr style="height: 28px;"><td style="padding: 1px 4px; text-align: center;">&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+                rowsHtml += `<tr style="height: 25px;"><td style="padding: 1px 4px; text-align: center;">&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
             }
         }
         
@@ -1003,7 +1010,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
         const pageHtml = `
             <div class="print-page">
                 ${generateLogoHtml(true)}
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 10mm; margin-bottom: 5px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 6mm; margin-bottom: 4px;">
                     <div style="line-height: 1.5;">
                         <div style="font-size: 11pt;">บริษัท <b>${company}</b></div>
                         <div style="font-size: 11pt;">โทรศัพท์ <b>${phone}</b></div>
@@ -1032,19 +1039,19 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                             ${rowsHtml}
                             ${totalPages > 1 ? `
                             <tr style="background: #fafafa; font-weight: bold;">
-                                <td colspan="3" style="padding: 6px; text-align: right;">รวมหน้านี้</td>
-                                <td style="padding: 6px;">${pageItems.length} ชิ้น</td>
+                                <td colspan="3" style="padding: 4px; text-align: right;">รวมหน้านี้</td>
+                                <td style="padding: 4px;">${pageItems.length} ชิ้น</td>
                                 <td colspan="1"></td>
-                                <td style="padding: 6px;">${pageTotalFee > 0 ? pageTotalFee.toLocaleString() + ' บาท' : ''}</td>
+                                <td style="padding: 4px;">${pageTotalFee > 0 ? pageTotalFee.toLocaleString() + ' บาท' : ''}</td>
                                 <td></td>
                             </tr>
                             ` : ''}
                             ${(p === totalPages - 1) ? `
                             <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #000; font-size: 12pt;">
-                                <td colspan="3" style="padding: 6px; text-align: right;">รวมทั้งสิ้น</td>
-                                <td style="padding: 6px;">${grandTotalItems} ชิ้น</td>
+                                <td colspan="3" style="padding: 4px; text-align: right;">รวมทั้งสิ้น</td>
+                                <td style="padding: 4px;">${grandTotalItems} ชิ้น</td>
                                 <td colspan="1"></td>
-                                <td style="padding: 6px; border-bottom: 3px double #000;">${grandTotalFee > 0 ? grandTotalFee.toLocaleString() + ' บาท' : ''}</td>
+                                <td style="padding: 4px; border-bottom: 3px double #000;">${grandTotalFee > 0 ? grandTotalFee.toLocaleString() + ' บาท' : ''}</td>
                                 <td></td>
                             </tr>
                             ` : ''}
@@ -1053,17 +1060,17 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 9pt; page-break-inside: avoid;">
                     <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
-                        <div style="font-weight: bold; margin-bottom: 2px;">รับผิดชอบฝากส่ง</div>
+                        <div style="font-weight: bold; margin-bottom: 28px;">รับผิดชอบฝากส่ง</div>
                         <div style="margin-bottom: 3px;">.........................................</div>
                         <div>( ${settings.showSignatureNames ? (settings.responsibleName || '..............................') : '..............................'} )</div>
                     </div>
                     <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
-                        <div style="font-weight: bold; margin-bottom: 2px;">ผู้นำส่ง</div>
+                        <div style="font-weight: bold; margin-bottom: 28px;">ผู้นำส่ง</div>
                         <div style="margin-bottom: 3px;">.........................................</div>
                         <div>( ${settings.senderName || '..............................'} )</div>
                     </div>
                     <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
-                        <div style="font-weight: bold; margin-bottom: 2px;">เจ้าหน้าที่รับฝาก</div>
+                        <div style="font-weight: bold; margin-bottom: 28px;">เจ้าหน้าที่รับฝาก</div>
                         <div style="margin-bottom: 3px;">.........................................</div>
                         <div style="font-weight: bold; font-size: 10pt;">${(settings.postOffice && settings.postOffice.trim()) ? settings.postOffice : 'ไปรษณีย์กลาง 10501'}</div>
                     </div>
@@ -1205,17 +1212,17 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
             
             <div style="display: flex; justify-content: space-between; margin-top: auto; padding-top: 20px; font-size: 9pt; page-break-inside: avoid;">
                 <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
-                    <div style="font-weight: bold; margin-bottom: 2px;">รับผิดชอบฝากส่ง</div>
+                    <div style="font-weight: bold; margin-bottom: 28px;">รับผิดชอบฝากส่ง</div>
                     <div style="margin-bottom: 3px;">.........................................</div>
                     <div>( ${settings.showSignatureNames ? (settings.responsibleName || '..............................') : '..............................'} )</div>
                 </div>
                 <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
-                    <div style="font-weight: bold; margin-bottom: 2px;">ผู้นำส่ง</div>
+                    <div style="font-weight: bold; margin-bottom: 28px;">ผู้นำส่ง</div>
                     <div style="margin-bottom: 3px;">.........................................</div>
                     <div>( ${settings.senderName || '..............................'} )</div>
                 </div>
                 <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
-                    <div style="font-weight: bold; margin-bottom: 2px;">เจ้าหน้าที่รับฝาก</div>
+                    <div style="font-weight: bold; margin-bottom: 28px;">เจ้าหน้าที่รับฝาก</div>
                     <div style="margin-bottom: 3px;">.........................................</div>
                     <div style="font-weight: bold; font-size: 10pt;">${(settings.postOffice && settings.postOffice.trim()) ? settings.postOffice : 'ไปรษณีย์กลาง 10501'}</div>
                 </div>
@@ -2133,10 +2140,54 @@ saveSettingsBtn.onclick = async () => {
     settings.meterDescending = parseFloat(document.getElementById('set-meter-desc').value) || 0;
     settings.meterAscending = parseFloat(document.getElementById('set-meter-asc').value) || 0;
 
+    // Recalculate remote surcharge and fees of all active shipments based on new settings
+    for (let s of shipments) {
+        if (!s.options) s.options = {};
+        const zipMatch = s.destination ? s.destination.match(/\d{5}/) : null;
+        const zip = zipMatch ? zipMatch[0] : null;
+        const isRemoteZip = zip && !!REMOTE_AREAS[zip];
+        const homeZipGroup = settings.homeZip ? REMOTE_AREAS[settings.homeZip] : null;
+        const zipGroup = zip ? REMOTE_AREAS[zip] : null;
+        const sameGroup = zipGroup && homeZipGroup && zipGroup === homeZipGroup;
+
+        if (isRemoteZip && !sameGroup) {
+            const isIsland = PARTIAL_REMOTE_ZIPS.includes(zip);
+            if (isIsland && ((s.serviceType === 'EMS' && settings.excludeIslandEMS) || (s.serviceType === 'ECO' && settings.excludeIslandEco))) {
+                s.options.isRemote = false;
+                s.isIsland = true;
+            } else {
+                s.options.isRemote = true;
+                s.isIsland = isIsland;
+            }
+        } else {
+            s.options.isRemote = false;
+            s.isIsland = false;
+        }
+
+        // Recalculate fee
+        let calcW = s.weight;
+        if (s.options.dimensions) {
+            const { w, l, h } = s.options.dimensions;
+            if (w > 0 && l > 0 && h > 0) {
+                const volWeight = Math.ceil((w * l * h) / 6000) * 1000;
+                calcW = Math.max(s.weight, volWeight);
+            }
+        }
+        let base = calculateBaseFee(s.serviceType, calcW, s.options);
+        if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) {
+            base += 3;
+        }
+        s.fee = base;
+    }
+
     await saveToDB('settings', settings);
+    await saveToDB('shipments', shipments);
     settingsModal.style.display = 'none';
     updatePreview();
     updateMeterStatus();
+    renderShipments();
+    updateSummary();
+    renderStats();
     alert('บันทึกการตั้งค่าสำเร็จ');
 };
 
@@ -2395,7 +2446,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.2.4</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.2.5</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
@@ -2776,7 +2827,7 @@ const batchRangeType = document.getElementById('batch-range-type');
 const batchRangeInputs = document.getElementById('batch-range-inputs');
 if (batchRangeType && batchRangeInputs) {
     batchRangeType.onchange = (e) => {
-        batchRangeInputs.style.display = e.target.value === 'range' ? 'inline-flex' : 'none';
+        batchRangeInputs.style.display = e.target.value === 'range' ? 'flex' : 'none';
     };
 }
 
@@ -2809,4 +2860,160 @@ if (batchEnableIns && batchInsInput && batchInsVal) {
         batchInsVal.disabled = !active;
         batchInsVal.style.background = active ? '#ffffff' : '#f1f5f9';
     };
+}
+
+// --- BATCH OPERATIONS HELPER APPLY LOGIC ---
+async function applyBatchChanges() {
+    if (!shipments || shipments.length === 0) {
+        alert('❌ ไม่มีรายการพัสดุในตารางที่จะแก้ไข');
+        return;
+    }
+
+    const enableWeight = document.getElementById('batch-enable-weight').checked;
+    const enableAR = document.getElementById('batch-enable-ar').checked;
+    const enableIns = document.getElementById('batch-enable-ins').checked;
+
+    if (!enableWeight && !enableAR && !enableIns) {
+        alert('⚠️ กรุณาเลือกอย่างน้อยหนึ่งตัวเลือก (น้ำหนัก, AR, หรือ การรับประกัน) เพื่อทำการปรับปรุงข้อมูลแบบกลุ่ม');
+        return;
+    }
+
+    const rangeType = document.getElementById('batch-range-type').value;
+    let startIdx = 1;
+    let endIdx = shipments.length;
+
+    if (rangeType === 'range') {
+        const startVal = parseInt(document.getElementById('batch-start-idx').value);
+        const endVal = parseInt(document.getElementById('batch-end-idx').value);
+
+        if (isNaN(startVal) || isNaN(endVal) || startVal < 1 || endVal < 1 || startVal > endVal) {
+            alert('❌ กรุณาระบุช่วงลำดับพัสดุ (จาก - ถึง) ให้ถูกต้องตามหลักคณิตศาสตร์');
+            return;
+        }
+
+        if (startVal > shipments.length || endVal > shipments.length) {
+            alert(`❌ ลำดับที่คุณระบุเกินจำนวนรายการพัสดุจริงในระบบ (ปัจจุบันมี ${shipments.length} รายการ)`);
+            return;
+        }
+
+        startIdx = startVal;
+        endIdx = endVal;
+    }
+
+    // Parsed options values
+    const newWeight = enableWeight ? parseFloat(document.getElementById('batch-weight-input').value) || 0 : null;
+    const newAR = enableAR ? (document.getElementById('batch-ar-input').value === 'true') : null;
+    const newInsActive = enableIns ? (document.getElementById('batch-ins-input').value === 'true') : null;
+    const newInsVal = enableIns ? parseFloat(document.getElementById('batch-ins-val').value) || 0 : null;
+
+    if (enableWeight && isNaN(newWeight)) {
+        alert('❌ กรุณาระบุน้ำหนักพัสดุให้เป็นตัวเลขที่ถูกต้อง');
+        return;
+    }
+    if (enableIns && newInsActive && isNaN(newInsVal)) {
+        alert('❌ กรุณาระบุวงเงินการรับประกันพัสดุให้เป็นตัวเลขที่ถูกต้อง');
+        return;
+    }
+
+    let updatedCount = 0;
+
+    // Standard arrays are 0-based, range indices are 1-based
+    for (let i = startIdx - 1; i <= endIdx - 1; i++) {
+        const s = shipments[i];
+        if (!s) continue;
+        if (!s.options) s.options = {};
+
+        // 1. Update Weight
+        if (enableWeight) {
+            let calcWeight = newWeight;
+            if (s.options.dimensions) {
+                const { w, l, h } = s.options.dimensions;
+                if (w > 0 && l > 0 && h > 0) {
+                    const volWeight = Math.ceil((w * l * h) / 6000) * 1000;
+                    if (volWeight > newWeight) {
+                        s.options.useVolWeight = true;
+                        calcWeight = volWeight;
+                    } else {
+                        s.options.useVolWeight = false;
+                    }
+                }
+            }
+            s.weight = newWeight;
+        }
+
+        // 2. Update AR
+        if (enableAR) {
+            s.options.ar = newAR;
+            s.options.arTracking = false; // reset tracking-ar to standard
+        }
+
+        // 3. Update Insurance
+        if (enableIns) {
+            const maxIns = s.serviceType === 'EMS' ? 50000 : (s.serviceType === 'ECO' ? 0 : 5000);
+            if (newInsActive && maxIns > 0) {
+                s.options.insurance = true;
+                s.options.insuranceVal = Math.min(newInsVal, maxIns);
+            } else {
+                s.options.insurance = false;
+                s.options.insuranceVal = 0;
+            }
+        }
+
+        // 4. Update remote & island surcharge status
+        const zipMatch = s.destination ? s.destination.match(/\d{5}/) : null;
+        const zip = zipMatch ? zipMatch[0] : null;
+        const isRemoteZip = zip && !!REMOTE_AREAS[zip];
+        const homeZipGroup = settings.homeZip ? REMOTE_AREAS[settings.homeZip] : null;
+        const zipGroup = zip ? REMOTE_AREAS[zip] : null;
+        const sameGroup = zipGroup && homeZipGroup && zipGroup === homeZipGroup;
+
+        if (isRemoteZip && !sameGroup) {
+            const isIsland = PARTIAL_REMOTE_ZIPS.includes(zip);
+            if (isIsland && ((s.serviceType === 'EMS' && settings.excludeIslandEMS) || (s.serviceType === 'ECO' && settings.excludeIslandEco))) {
+                s.options.isRemote = false;
+                s.isIsland = true;
+            } else {
+                s.options.isRemote = true;
+                s.isIsland = isIsland;
+            }
+        } else {
+            s.options.isRemote = false;
+            s.isIsland = false;
+        }
+
+        // 5. Recalculate Fee
+        let calcW = s.weight;
+        if (s.options.dimensions) {
+            const { w, l, h } = s.options.dimensions;
+            if (w > 0 && l > 0 && h > 0) {
+                const volWeight = Math.ceil((w * l * h) / 6000) * 1000;
+                calcW = Math.max(s.weight, volWeight);
+            }
+        }
+
+        let base = calculateBaseFee(s.serviceType, calcW, s.options);
+        
+        // Add fuel surcharge if applicable
+        if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) {
+            base += 3;
+        }
+
+        s.fee = base;
+        updatedCount++;
+    }
+
+    // Save and Refresh
+    await updateHistory();
+    updatePreview();
+    renderShipments();
+    updateSummary();
+    updateMeterStatus();
+    renderStats();
+
+    alert(`🎉 ปรับปรุงข้อมูลแบบกลุ่มสำเร็จเรียบร้อยแล้ว จำนวน ${updatedCount} รายการ!`);
+}
+
+const batchApplyBtn = document.getElementById('batch-apply-btn');
+if (batchApplyBtn) {
+    batchApplyBtn.onclick = applyBatchChanges;
 }
