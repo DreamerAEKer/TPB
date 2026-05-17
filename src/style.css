@@ -425,7 +425,7 @@ th {
     background: white;
     display: flex;
     flex-direction: column;
-    padding: 10mm 10mm 8mm 10mm; /* Maximum space for beautiful restoration */
+    padding: 8mm 10mm 6mm 10mm; /* Optimised space to prevent signature spill */
     position: relative;
     overflow: hidden; /* Ensure no accidental extra pages */
     line-height: 1.5; /* Ensure Thai vowels don't overlap */

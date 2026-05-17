@@ -992,7 +992,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 const displayFee = isWeightEmpty ? '' : parseFloat(s.fee).toLocaleString();
                 
                 rowsHtml += `
-                    <tr style="height: 25px;">
+                    <tr style="height: 24px;">
                         <td style="padding: 1px 4px; text-align: center;">${p * ITEMS_PER_PAGE + i + 1}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayRecipient}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayDestination}</td>
@@ -1003,7 +1003,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                     </tr>
                 `;
             } else {
-                rowsHtml += `<tr style="height: 25px;"><td style="padding: 1px 4px; text-align: center;">&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+                rowsHtml += `<tr style="height: 24px;"><td style="padding: 1px 4px; text-align: center;">&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
             }
         }
         
@@ -1014,7 +1014,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
         const pageHtml = `
             <div class="print-page">
                 ${generateLogoHtml(true)}
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 6mm; margin-bottom: 4px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 4mm; margin-bottom: 4px;">
                     <div style="line-height: 1.5;">
                         <div style="font-size: 11pt;">บริษัท <b>${company}</b></div>
                         <div style="font-size: 11pt;">โทรศัพท์ <b>${phone}</b></div>
@@ -1062,7 +1062,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         </tbody>
                     </table>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 22px; font-size: 9pt; page-break-inside: avoid;">
+                <div style="display: flex; justify-content: space-between; margin-top: 15px; font-size: 9pt; page-break-inside: avoid;">
                     <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
                         <div style="font-weight: bold; margin-bottom: 28px;">รับผิดชอบฝากส่ง</div>
                         <div style="margin-bottom: 3px;">.........................................</div>
@@ -2475,7 +2475,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.3.4</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.3.5</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
