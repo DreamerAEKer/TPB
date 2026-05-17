@@ -427,8 +427,12 @@ function renderShipments() {
 
     const svcDisplay = s.serviceType === 'CUSTOM' ? (s.customServiceName || 'กำหนดเอง') : s.serviceType;
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
+      const isVolWeight = s.options?.useVolWeight && s.options?.dimensions;
+      const volWeightTitle = isVolWeight ? `title="น้ำหนักคิดจากปริมาตร: กว้าง ${s.options.dimensions.w} * ยาว ${s.options.dimensions.l} * สูง ${s.options.dimensions.h} ซม."` : '';
+      const volWeightStyle = isVolWeight ? 'font-weight: 800; text-decoration: underline dotted; cursor: help; color: #1e3a8a;' : '';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
       <td>${displayIdx + 1}</td>
       <td class="editable-cell" contenteditable="true" data-field="recipient" data-index="${i}" data-placeholder="ระบุผู้รับ...">${s.recipient || ''}</td>
       <td class="editable-cell" data-index="${i}">
@@ -452,7 +456,7 @@ function renderShipments() {
             ${(s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && s.destination.includes('เกาะ')) ? `<label class="svc-mini" title="พื้นที่ห่างไกล"><input type="checkbox" ${s.options?.isRemote ? 'checked' : ''} onchange="toggleRowService(${i}, 'isRemote', this.checked)"> 🏝️</label>` : ''}
         </div>
       </td>
-      <td class="editable-cell" contenteditable="true" data-field="weight" data-index="${i}" style="${s.options?.useVolWeight ? 'font-weight: 800;' : ''}">${parseFloat(s.weight) > 0 ? parseFloat(s.weight).toLocaleString() : ''}</td>
+      <td class="editable-cell" contenteditable="true" data-field="weight" data-index="${i}" style="${volWeightStyle}" ${volWeightTitle}>${parseFloat(s.weight) > 0 ? parseFloat(s.weight).toLocaleString() : ''}</td>
       <td class="editable-cell ${priceClass}" contenteditable="true" data-field="fee" data-index="${i}" title="${priceClass ? 'พื้นที่ปกติ แต่มีการบวกเพิ่ม 20 บาท?' : ''}">${(parseFloat(s.weight) > 0 || s.serviceType === 'CUSTOM') ? parseFloat(s.fee).toLocaleString() : ''}</td>
       <td contenteditable="false"><button class="btn-icon delete-btn" data-index="${i}">ลบ</button></td>
     `;
@@ -986,6 +990,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 const isWeightEmpty = !s.weight || s.weight == 0;
                 const displayWeight = isWeightEmpty ? '' : s.weight;
                 const displayFee = isWeightEmpty ? '' : parseFloat(s.fee).toLocaleString();
+                const dimHtml = (s.options?.useVolWeight && s.options?.dimensions) ? `<div style="font-size: 7.5pt; font-weight: normal; line-height: 1.1; margin-top: 1px;">(${s.options.dimensions.w}*${s.options.dimensions.l}*${s.options.dimensions.h})</div>` : '';
                 
                 rowsHtml += `
                     <tr style="height: 25px;">
@@ -993,7 +998,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         <td style="text-align: left; padding: 1px 4px;">${displayRecipient}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayDestination}</td>
                         <td style="padding: 1px 4px; text-align: left; font-weight: bold;">${s.displayTracking}</td>
-                        <td style="padding: 1px 4px; text-align: center; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}</td>
+                        <td style="padding: 1px 4px; text-align: center; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}${dimHtml}</td>
                         <td style="padding: 1px 4px; text-align: center;">${displayFee}</td>
                         <td style="padding: 1px 4px; font-size: 8pt; text-align: center;">${generateShipmentNote(s)}</td>
                     </tr>
@@ -2446,7 +2451,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.2.5</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.2.6</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
