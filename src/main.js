@@ -1181,7 +1181,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         priceBreakdownHtml += `<div style="margin-bottom: 4px;">- ${desc}: <b>${priceMap[desc]}</b> ชิ้น</div>`;
     }
     
-    // Calculate Official Service Stats (v5.4.0)
+    // Calculate Official Service Stats (v5.4.1)
     const summaryStats = {
         ordinary: { count: 0, fee: 0 },
         printed: { count: 0, fee: 0 },
@@ -1189,10 +1189,8 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         certified: { count: 0, fee: 0 },
         insured: { count: 0, fee: 0 },
         parcel: { count: 0, fee: 0 },
-        logispost: { count: 0, fee: 0 },
         postcard: { count: 0, fee: 0 },
         ems: { count: 0, fee: 0 },
-        emsAr: { count: 0, fee: 0 },
         others: { count: 0, fee: 0 }
     };
 
@@ -1205,13 +1203,8 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
             summaryStats.insured.count++;
             summaryStats.insured.fee += fee;
         } else if (type === 'EMS') {
-            if (opt.ar) {
-                summaryStats.emsAr.count++;
-                summaryStats.emsAr.fee += fee;
-            } else {
-                summaryStats.ems.count++;
-                summaryStats.ems.fee += fee;
-            }
+            summaryStats.ems.count++;
+            summaryStats.ems.fee += fee;
         } else if (type === 'REG') {
             summaryStats.registered.count++;
             summaryStats.registered.fee += fee;
@@ -1227,9 +1220,6 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         } else if (type === 'CERTIFIED') {
             summaryStats.certified.count++;
             summaryStats.certified.fee += fee;
-        } else if (type === 'LOGISPOST') {
-            summaryStats.logispost.count++;
-            summaryStats.logispost.fee += fee;
         } else if (type === 'POSTCARD') {
             summaryStats.postcard.count++;
             summaryStats.postcard.fee += fee;
@@ -1301,7 +1291,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </div>
             </div>
             
-            <!-- Official Service Classification Table (v5.4.0) -->
+            <!-- Official Service Classification Table (v5.4.1) -->
             <div style="margin-top: 15px; margin-bottom: 15px; page-break-inside: avoid;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; text-align: center; font-family: 'Sarabun', sans-serif; border: 1.5px solid black;">
                     <thead>
@@ -1368,14 +1358,6 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                             <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.parcel.fee)}</td>
                         </tr>
                         <tr>
-                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">โลจิสโพสต์</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.logispost.count)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.logispost.fee)}</td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.logispost.fee)}</td>
-                        </tr>
-                        <tr>
                             <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">ไปรษณียบัตร</td>
                             <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.postcard.count)}</td>
                             <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.postcard.fee)}</td>
@@ -1390,14 +1372,6 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                             <td style="border: 1px solid black;"></td>
                             <td style="border: 1px solid black;"></td>
                             <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.ems.fee)}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">EMS - AR (ตอบรับ)</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.emsAr.count)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.emsAr.fee)}</td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.emsAr.fee)}</td>
                         </tr>
                         <tr>
                             <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">อื่น ๆ</td>
@@ -2655,7 +2629,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.4.0</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.4.1</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
