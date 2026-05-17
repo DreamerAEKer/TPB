@@ -1062,7 +1062,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         </tbody>
                     </table>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 9pt; page-break-inside: avoid;">
+                <div style="display: flex; justify-content: space-between; margin-top: 22px; font-size: 9pt; page-break-inside: avoid;">
                     <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
                         <div style="font-weight: bold; margin-bottom: 28px;">รับผิดชอบฝากส่ง</div>
                         <div style="margin-bottom: 3px;">.........................................</div>
@@ -1166,7 +1166,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     <td style="padding: 8px;">${svc}</td>
                     <td style="padding: 8px;">${r.start.trackingFormatted}</td>
                     <td style="padding: 8px;">${r.end.trackingFormatted}</td>
-                    <td style="padding: 8px;">${r.count} ชิ้น</td>
+                    <td style="padding: 8px; text-align: center;">${r.count} ชิ้น</td>
                     <td style="padding: 8px;"></td>
                 </tr>
             `;
@@ -1229,7 +1229,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     ${rangeRows}
                     <tr style="font-weight: bold;">
                         <th colspan="3" style="text-align: right; padding: 8px 15px;">รวมทั้งหมด</th>
-                        <th style="padding: 8px;">${totalItemsAll} ชิ้น</th>
+                        <th style="padding: 8px; text-align: center;">${totalItemsAll} ชิ้น</th>
                         <th style="padding: 8px;"></th>
                     </tr>
                 </tbody>
@@ -2485,7 +2485,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.3.1</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.3.2</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
