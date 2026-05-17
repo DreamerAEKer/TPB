@@ -875,17 +875,18 @@ function syncBatchInputs(source) {
         let count = parseInt(batchCountInput.value);
         if (isNaN(count) || count < 1) {
             count = 1;
+            batchCountInput.value = 1; // Sync UI to prevent showing 0 or empty
         }
         
         if (currentServiceTab === 'CUSTOM') {
-             const match = digitsInput.value.match(/(\d+)$/);
+             const match = inputEl.value.match(/(\d+)$/);
              if (match) {
                  const numLen = match[1].length;
-                 const baseStr = digitsInput.value.substring(0, match.index);
+                 const baseStr = inputEl.value.substring(0, match.index);
                  const endN = parseInt(match[1]) + count - 1;
                  digitsEndInput.value = baseStr + endN.toString().padStart(numLen, '0');
              } else {
-                 digitsEndInput.value = digitsInput.value; 
+                 digitsEndInput.value = inputEl.value; 
              }
         } else {
              digitsEndInput.value = (startNum + count - 1).toString().padStart(8, '0');
@@ -2751,19 +2752,60 @@ function setupFluentNavigation() {
                         return;
                     }
                     if (f === digitsEndInput) {
-                        console.log(`[Fluent Navigation] Bulk: digitsEndInput -> batchCountInput`);
-                        batchCountInput.focus();
-                        batchCountInput.select();
+                        if (emsDimGroup && emsDimGroup.style.display !== 'none') {
+                            console.log(`[Fluent Navigation] Bulk: digitsEndInput -> dimW`);
+                            dimW.focus();
+                            dimW.select();
+                        } else {
+                            console.log(`[Fluent Navigation] Bulk: digitsEndInput -> weightInput`);
+                            weightInput.focus();
+                            weightInput.select();
+                        }
                         return;
                     }
                     if (f === batchCountInput) {
-                        console.log(`[Fluent Navigation] Bulk: batchCountInput -> weightInput`);
+                        if (emsDimGroup && emsDimGroup.style.display !== 'none') {
+                            console.log(`[Fluent Navigation] Bulk: batchCountInput -> dimW`);
+                            dimW.focus();
+                            dimW.select();
+                        } else {
+                            console.log(`[Fluent Navigation] Bulk: batchCountInput -> weightInput`);
+                            weightInput.focus();
+                            weightInput.select();
+                        }
+                        return;
+                    }
+                    if (f === dimW) {
+                        console.log(`[Fluent Navigation] Bulk: dimW -> dimL`);
+                        dimL.focus();
+                        dimL.select();
+                        return;
+                    }
+                    if (f === dimL) {
+                        console.log(`[Fluent Navigation] Bulk: dimL -> dimH`);
+                        dimH.focus();
+                        dimH.select();
+                        return;
+                    }
+                    if (f === dimH) {
+                        console.log(`[Fluent Navigation] Bulk: dimH -> weightInput`);
                         weightInput.focus();
                         weightInput.select();
                         return;
                     }
                     if (f === weightInput) {
-                        console.log(`[Fluent Navigation] Bulk: weightInput -> addBtn.click`);
+                        if (currentServiceTab === 'CUSTOM') {
+                            console.log(`[Fluent Navigation] Bulk: weightInput -> feeInput`);
+                            feeInput.focus();
+                            feeInput.select();
+                        } else {
+                            console.log(`[Fluent Navigation] Bulk: weightInput -> addBtn.click`);
+                            addBtn.click();
+                        }
+                        return;
+                    }
+                    if (f === feeInput) {
+                        console.log(`[Fluent Navigation] Bulk: feeInput -> addBtn.click`);
                         addBtn.click();
                         return;
                     }
