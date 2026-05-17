@@ -1570,15 +1570,15 @@ customServiceNameInput.onchange = () => {
     const upcWInput = document.getElementById('ordinary-upc-weight');
     const upcFeeInput = document.getElementById('ordinary-upc-fee');
     
-    if (bkkWInput && bkkWInput.value) {
+    if (bkkWInput) {
         const w = parseFloat(bkkWInput.value) || 0;
         const fee = getOrdinaryMailFee(svc, w);
-        if (fee > 0 && bkkFeeInput) bkkFeeInput.value = fee;
+        if (bkkFeeInput) bkkFeeInput.value = fee > 0 ? fee : '';
     }
-    if (upcWInput && upcWInput.value) {
+    if (upcWInput) {
         const w = parseFloat(upcWInput.value) || 0;
         const fee = getOrdinaryMailFee(svc, w);
-        if (fee > 0 && upcFeeInput) upcFeeInput.value = fee;
+        if (upcFeeInput) upcFeeInput.value = fee > 0 ? fee : '';
     }
     updatePreview();
 };
@@ -1596,8 +1596,8 @@ if (bkkWInput) {
         const w = parseFloat(e.target.value) || 0;
         const svc = customServiceNameInput.value;
         const fee = getOrdinaryMailFee(svc, w);
-        if (fee > 0 && bkkFeeInput) {
-            bkkFeeInput.value = fee;
+        if (bkkFeeInput) {
+            bkkFeeInput.value = fee > 0 ? fee : '';
         }
         updatePreview();
     };
@@ -1608,8 +1608,8 @@ if (upcWInput) {
         const w = parseFloat(e.target.value) || 0;
         const svc = customServiceNameInput.value;
         const fee = getOrdinaryMailFee(svc, w);
-        if (fee > 0 && upcFeeInput) {
-            upcFeeInput.value = fee;
+        if (upcFeeInput) {
+            upcFeeInput.value = fee > 0 ? fee : '';
         }
         updatePreview();
     };
