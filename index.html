@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="src/style.css?v=5.5.0">
+    <link rel="stylesheet" href="src/style.css?v=5.6.0">
     <style>
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -24,7 +24,7 @@
         </div>
         <div style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
             <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.5.0</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.6.0</div>
         </div>
     </div>
 
@@ -37,7 +37,7 @@
 
             <!-- Consolidated Entry Form -->
             <div class="sidebar-form-container">
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
+                <div id="prefix-container-group" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
                     <div style="flex: 1;">
                         <label for="prefix" style="font-size: 0.8rem; margin-bottom: 2px;">หมวดเลขที่ / บริการ</label>
                         <div style="position: relative; display: flex; flex-direction: column;">
@@ -60,7 +60,7 @@
                     <div id="tracking-preview" style="display: none;">-</div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 0.5rem;">
+                <div class="form-group" style="margin-bottom: 0.5rem;" id="bulk-toggle-group">
                     <label class="bulk-toggle-label" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 8px; width: 100%; display: flex; align-items: center; cursor: pointer; transition: all 0.2s;">
                         <input type="checkbox" id="bulk-mode-toggle" style="width: 18px; height: 18px; margin-right: 8px;"> 📋 เพิ่มแบบชุด (Bulk Entry)
                     </label>
@@ -143,7 +143,52 @@
                     <input type="text" id="custom-service-manual" placeholder="ระบุชื่อบริการอื่นๆ..." style="margin-top: 8px; display: none; border-color: #86efac;">
                 </div>
 
-                <div class="form-group">
+                <!-- NEW: Bulk Ordinary Entry Panel (จดหมาย / สิ่งพิมพ์) -->
+                <div id="bulk-ordinary-panel" style="display: none; background: #f0fdf4; padding: 10px; border-radius: 8px; border: 1px solid #bbf7d0; margin-top: 10px; flex-direction: column; gap: 10px;">
+                    <div style="font-weight: bold; color: #166534; font-size: 0.9rem; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">
+                        <span>✍️</span> บันทึกยอดฝากส่งประจำวัน
+                    </div>
+                    
+                    <!-- กรุงเทพฯ และปริมณฑล -->
+                    <div style="border-bottom: 1px dashed #bbf7d0; padding-bottom: 10px;">
+                        <div style="font-weight: bold; font-size: 0.8rem; color: #15803d; margin-bottom: 4px;">📍 กรุงเทพฯ และปริมณฑล</div>
+                        <div style="display: flex; gap: 5px;">
+                            <div style="flex: 1;">
+                                <label style="font-size: 0.7rem; color: #15803d; display: block; margin-bottom: 2px;">น้ำหนัก (กรัม)</label>
+                                <input type="text" id="ordinary-bkk-weight" placeholder="20" style="padding: 6px; font-size: 0.85rem; width: 100%; border-radius: 4px; border: 1px solid #86efac;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="font-size: 0.7rem; color: #15803d; display: block; margin-bottom: 2px;">จำนวน (ฉบับ)</label>
+                                <input type="text" id="ordinary-bkk-qty" placeholder="0" style="padding: 6px; font-size: 0.85rem; width: 100%; border-radius: 4px; border: 1px solid #86efac;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="font-size: 0.7rem; color: #15803d; display: block; margin-bottom: 2px;">ค่าบริการ/ฉบับ</label>
+                                <input type="text" id="ordinary-bkk-fee" placeholder="3" style="padding: 6px; font-size: 0.85rem; width: 100%; border-radius: 4px; border: 1px solid #86efac;">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ต่างจังหวัด -->
+                    <div>
+                        <div style="font-weight: bold; font-size: 0.8rem; color: #15803d; margin-bottom: 4px;">📍 ต่างจังหวัด</div>
+                        <div style="display: flex; gap: 5px;">
+                            <div style="flex: 1;">
+                                <label style="font-size: 0.7rem; color: #15803d; display: block; margin-bottom: 2px;">น้ำหนัก (กรัม)</label>
+                                <input type="text" id="ordinary-upc-weight" placeholder="20" style="padding: 6px; font-size: 0.85rem; width: 100%; border-radius: 4px; border: 1px solid #86efac;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="font-size: 0.7rem; color: #15803d; display: block; margin-bottom: 2px;">จำนวน (ฉบับ)</label>
+                                <input type="text" id="ordinary-upc-qty" placeholder="0" style="padding: 6px; font-size: 0.85rem; width: 100%; border-radius: 4px; border: 1px solid #86efac;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="font-size: 0.7rem; color: #15803d; display: block; margin-bottom: 2px;">ค่าบริการ/ฉบับ</label>
+                                <input type="text" id="ordinary-upc-fee" placeholder="3" style="padding: 6px; font-size: 0.85rem; width: 100%; border-radius: 4px; border: 1px solid #86efac;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" id="weight-group">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                         <label for="weight" style="margin-bottom: 0;">น้ำหนัก (<span id="weight-unit-label">กรัม</span>)</label>
                         <button type="button" id="unit-toggle-btn" onclick="toggleWeightUnit()" style="font-size: 0.7rem; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 4px; color: #475569; cursor: pointer; transition: all 0.2s;">สลับเป็น KG</button>
@@ -180,7 +225,7 @@
                     </div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="fee-group">
                     <label for="fee">ค่าบริการ <span id="fee-unit-label" style="display:none;">ต่อฉบับ</span> (บาท)</label>
                     <input type="text" id="fee" placeholder="32" value="0">
                 </div>

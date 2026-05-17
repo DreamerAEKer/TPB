@@ -672,6 +672,47 @@ function updatePreview() {
   
   // Show/Hide sub-type groups based on active tab (currentServiceTab)
   const activeSvc = currentServiceTab;
+  const selectedCustomSvc = customServiceNameInput.value;
+  const isOrdinary = activeSvc === 'CUSTOM' && (selectedCustomSvc === 'จดหมาย ในประเทศ' || selectedCustomSvc === 'สิ่งพิมพ์ ในประเทศ');
+
+  const bulkOrdinaryPanel = document.getElementById('bulk-ordinary-panel');
+  const prefixContainerGroup = document.getElementById('prefix-container-group');
+  const bulkToggleGroup = document.getElementById('bulk-toggle-group');
+  const weightGroup = document.getElementById('weight-group');
+  const feeGroup = document.getElementById('fee-group');
+  const singleTrackingGroup = document.getElementById('single-tracking-group');
+  const bulkInputs = document.getElementById('bulk-inputs');
+  const optionsGroup = document.querySelector('.options-group');
+  const singleOnlyEls = document.querySelectorAll('.single-only');
+
+  if (isOrdinary) {
+      if (bulkOrdinaryPanel) bulkOrdinaryPanel.style.display = 'flex';
+      if (prefixContainerGroup) prefixContainerGroup.style.display = 'none';
+      if (bulkToggleGroup) bulkToggleGroup.style.display = 'none';
+      if (singleTrackingGroup) singleTrackingGroup.style.display = 'none';
+      if (bulkInputs) bulkInputs.style.display = 'none';
+      singleOnlyEls.forEach(el => el.style.display = 'none');
+      if (weightGroup) weightGroup.style.display = 'none';
+      if (optionsGroup) optionsGroup.style.display = 'none';
+      if (feeGroup) feeGroup.style.display = 'none';
+  } else {
+      if (bulkOrdinaryPanel) bulkOrdinaryPanel.style.display = 'none';
+      if (prefixContainerGroup) prefixContainerGroup.style.display = 'flex';
+      if (bulkToggleGroup) bulkToggleGroup.style.display = '';
+      if (bulkToggle.checked) {
+          if (singleTrackingGroup) singleTrackingGroup.style.display = 'none';
+          if (bulkInputs) bulkInputs.style.display = 'block';
+          singleOnlyEls.forEach(el => el.style.display = 'none');
+      } else {
+          if (singleTrackingGroup) singleTrackingGroup.style.display = 'block';
+          if (bulkInputs) bulkInputs.style.display = 'none';
+          singleOnlyEls.forEach(el => el.style.display = 'block');
+      }
+      if (weightGroup) weightGroup.style.display = '';
+      if (optionsGroup) optionsGroup.style.display = '';
+      if (feeGroup) feeGroup.style.display = '';
+  }
+
   regTypeGroup.style.display = (activeSvc === 'REG') ? 'block' : 'none';
   emsDimGroup.style.display = (activeSvc === 'EMS') ? 'block' : 'none';
   
@@ -988,16 +1029,18 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 const displayRecipient = s.recipient || '';
                 const displayDestination = highlightPostcode(s.destination, s.options?.isRemote);
                 const isWeightEmpty = !s.weight || s.weight == 0;
-                const displayWeight = isWeightEmpty ? '' : s.weight;
-                const displayFee = isWeightEmpty ? '' : parseFloat(s.fee).toLocaleString();
+                
+                const displayWeight = s.isOrdinaryBulk ? `*${s.unitFee}` : (isWeightEmpty ? '' : s.weight);
+                const displayFee = s.isOrdinaryBulk ? (parseFloat(s.fee) || 0).toLocaleString() : (isWeightEmpty ? '' : parseFloat(s.fee).toLocaleString());
+                const trackingCellContent = s.isOrdinaryBulk ? '' : s.displayTracking;
                 
                 rowsHtml += `
                     <tr style="height: 24px;">
                         <td style="padding: 1px 4px; text-align: center;">${p * ITEMS_PER_PAGE + i + 1}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayRecipient}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayDestination}</td>
-                        <td style="padding: 1px 4px; text-align: left; font-weight: bold;">${s.displayTracking}</td>
-                        <td style="padding: 1px 4px; text-align: center;">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}</td>
+                        <td style="padding: 1px 4px; text-align: left; font-weight: bold;">${trackingCellContent}</td>
+                        <td style="padding: 1px 4px; text-align: center;">${s.isOrdinaryBulk ? displayWeight : (displayWeight ? parseFloat(displayWeight).toLocaleString() : '')}</td>
                         <td style="padding: 1px 4px; text-align: center;">${displayFee}</td>
                         <td style="padding: 1px 4px; font-size: 8pt; text-align: center;">${generateShipmentNote(s)}</td>
                     </tr>
@@ -1007,9 +1050,10 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
             }
         }
         
-        const pageTotalFee = pageItems.reduce((sum, item) => sum + ((!item.weight || item.weight == 0) ? 0 : (parseFloat(item.fee) || 0)), 0);
-        const grandTotalItems = itemsToPrint.length;
-        const grandTotalFee = itemsToPrint.reduce((sum, item) => sum + ((!item.weight || item.weight == 0) ? 0 : (parseFloat(item.fee) || 0)), 0);
+        const pageTotalItems = pageItems.reduce((sum, item) => sum + (item.isOrdinaryBulk ? (parseInt(item.quantity) || 1) : 1), 0);
+        const pageTotalFee = pageItems.reduce((sum, item) => sum + ((!item.weight || item.weight == 0) && !item.isOrdinaryBulk ? 0 : (parseFloat(item.fee) || 0)), 0);
+        const grandTotalItems = itemsToPrint.reduce((sum, item) => sum + (item.isOrdinaryBulk ? (parseInt(item.quantity) || 1) : 1), 0);
+        const grandTotalFee = itemsToPrint.reduce((sum, item) => sum + ((!item.weight || item.weight == 0) && !item.isOrdinaryBulk ? 0 : (parseFloat(item.fee) || 0)), 0);
 
         const pageHtml = `
             <div class="print-page">
@@ -1044,7 +1088,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                             ${totalPages > 1 ? `
                             <tr style="background: #fafafa; font-weight: bold;">
                                 <td colspan="3" style="padding: 4px; text-align: right;">รวมหน้านี้</td>
-                                <td style="padding: 4px;">${pageItems.length} ชิ้น</td>
+                                <td style="padding: 4px;">${pageTotalItems} ชิ้น</td>
                                 <td colspan="1"></td>
                                 <td style="padding: 4px;">${pageTotalFee > 0 ? pageTotalFee.toLocaleString() + ' บาท' : ''}</td>
                                 <td></td>
@@ -1123,7 +1167,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     });
 
     let rangeRows = '';
-    let totalItemsAll = items.length;
+    let totalItemsAll = items.reduce((sum, s) => sum + (s.isOrdinaryBulk ? (parseInt(s.quantity) || 1) : 1), 0);
     let totalFee = 0;
     const priceMap = {};
 
@@ -1151,12 +1195,15 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         }
 
         ranges.forEach(r => {
+            const cntStr = r.start.isOrdinaryBulk ? `${r.start.quantity} ชิ้น` : `${r.count} ชิ้น`;
+            const startTrk = r.start.isOrdinaryBulk ? '-' : r.start.trackingFormatted;
+            const endTrk = r.end.isOrdinaryBulk ? '-' : r.end.trackingFormatted;
             rangeRows += `
                 <tr>
                     <td style="padding: 8px;">${svc}</td>
-                    <td style="padding: 8px;">${r.start.trackingFormatted}</td>
-                    <td style="padding: 8px;">${r.end.trackingFormatted}</td>
-                    <td style="padding: 8px; text-align: center;">${r.count} ชิ้น</td>
+                    <td style="padding: 8px;">${startTrk}</td>
+                    <td style="padding: 8px;">${endTrk}</td>
+                    <td style="padding: 8px; text-align: center;">${cntStr}</td>
                     <td style="padding: 8px;"></td>
                 </tr>
             `;
@@ -1166,8 +1213,14 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
             const f = parseFloat(s.fee) || 0;
             totalFee += f;
             const hasAR = s.options?.ar || s.options?.arTracking;
-            const key = `@ ${f.toLocaleString()}${hasAR ? ' (AR)' : ''}`;
-            priceMap[key] = (priceMap[key] || 0) + 1;
+            if (s.isOrdinaryBulk) {
+                const unitF = parseFloat(s.unitFee) || 0;
+                const key = `@ ${unitF.toLocaleString()}`;
+                priceMap[key] = (priceMap[key] || 0) + (parseInt(s.quantity) || 1);
+            } else {
+                const key = `@ ${f.toLocaleString()}${hasAR ? ' (AR)' : ''}`;
+                priceMap[key] = (priceMap[key] || 0) + 1;
+            }
         });
     }
 
@@ -1197,27 +1250,28 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         const type = item.serviceType;
         const name = (item.customServiceName || '').toUpperCase();
         const trk = (item.trackingNum || '').trim().toUpperCase();
+        const cnt = item.isOrdinaryBulk ? (parseInt(item.quantity) || 1) : 1;
 
         if (type === 'ECO' || (type === 'CUSTOM' && (name.includes('ECO') || name.includes('อีโค')))) {
-            summaryStats.eco.count++;
+            summaryStats.eco.count += cnt;
             summaryStats.eco.fee += fee;
         } else if (type === 'CUSTOM' && (name.includes('EPACKET') || name.includes('EPK') || trk.startsWith('L'))) {
-            summaryStats.epacket.count++;
+            summaryStats.epacket.count += cnt;
             summaryStats.epacket.fee += fee;
         } else if (type === 'REG' || (type === 'CUSTOM' && (name.includes('REG') || name.includes('ลงทะเบียน') || trk.startsWith('R')))) {
-            summaryStats.registered.count++;
+            summaryStats.registered.count += cnt;
             summaryStats.registered.fee += fee;
         } else if (type === 'PARCEL' || (type === 'CUSTOM' && (name.includes('PARCEL') || name.includes('พัสดุ') || trk.startsWith('P')))) {
-            summaryStats.parcel.count++;
+            summaryStats.parcel.count += cnt;
             summaryStats.parcel.fee += fee;
-        } else if (type === 'ORD' || (type === 'CUSTOM' && (name.includes('ORD') || name.includes('ธรรมดา')))) {
-            summaryStats.ordinary.count++;
+        } else if (type === 'ORD' || (type === 'CUSTOM' && (name.includes('ORD') || name.includes('ธรรมดา') || name.includes('จดหมาย')))) {
+            summaryStats.ordinary.count += cnt;
             summaryStats.ordinary.fee += fee;
-        } else if (type === 'PRINTED' || (type === 'CUSTOM' && (name.includes('PRINT') || name.includes('สิ่งตีพิมพ์')))) {
-            summaryStats.printed.count++;
+        } else if (type === 'PRINTED' || (type === 'CUSTOM' && (name.includes('PRINT') || name.includes('สิ่งตีพิมพ์') || name.includes('สิ่งพิมพ์')))) {
+            summaryStats.printed.count += cnt;
             summaryStats.printed.fee += fee;
         } else {
-            summaryStats.others.count++;
+            summaryStats.others.count += cnt;
             summaryStats.others.fee += fee;
         }
     });
@@ -1484,15 +1538,155 @@ dimH.oninput = (e) => {
 };
 regTypeInput.onchange = updatePreview;
 
+function getOrdinaryMailFee(serviceName, weight) {
+    if (weight <= 0) return 0;
+    if (serviceName.includes('จดหมาย')) {
+        if (weight <= 10) return 5;
+        if (weight <= 20) return 6;
+        if (weight <= 100) return 11;
+        if (weight <= 250) return 17;
+        if (weight <= 500) return 23;
+        if (weight <= 1000) return 40;
+        if (weight <= 2000) return 62;
+        return 62;
+    } else if (serviceName.includes('สิ่งพิมพ์') || serviceName.includes('สิ่งตีพิมพ์')) {
+        if (weight <= 50) return 4;
+        if (weight <= 100) return 5;
+        if (weight <= 250) return 8;
+        if (weight <= 500) return 11;
+        if (weight <= 1000) return 17;
+        if (weight <= 2000) return 33;
+        const kg = Math.ceil(weight / 1000);
+        return kg * 16;
+    }
+    return 0;
+}
+
 customServiceNameInput.onchange = () => {
     customServiceManualInput.style.display = (customServiceNameInput.value === '') ? 'block' : 'none';
+    const svc = customServiceNameInput.value;
+    const bkkWInput = document.getElementById('ordinary-bkk-weight');
+    const bkkFeeInput = document.getElementById('ordinary-bkk-fee');
+    const upcWInput = document.getElementById('ordinary-upc-weight');
+    const upcFeeInput = document.getElementById('ordinary-upc-fee');
+    
+    if (bkkWInput && bkkWInput.value) {
+        const w = parseFloat(bkkWInput.value) || 0;
+        const fee = getOrdinaryMailFee(svc, w);
+        if (fee > 0 && bkkFeeInput) bkkFeeInput.value = fee;
+    }
+    if (upcWInput && upcWInput.value) {
+        const w = parseFloat(upcWInput.value) || 0;
+        const fee = getOrdinaryMailFee(svc, w);
+        if (fee > 0 && upcFeeInput) upcFeeInput.value = fee;
+    }
     updatePreview();
 };
+
+const bkkWInput = document.getElementById('ordinary-bkk-weight');
+const bkkQtyInput = document.getElementById('ordinary-bkk-qty');
+const bkkFeeInput = document.getElementById('ordinary-bkk-fee');
+const upcWInput = document.getElementById('ordinary-upc-weight');
+const upcQtyInput = document.getElementById('ordinary-upc-qty');
+const upcFeeInput = document.getElementById('ordinary-upc-fee');
+
+if (bkkWInput) {
+    bkkWInput.oninput = (e) => {
+        e.target.value = sanitizeNumeric(e.target.value);
+        const w = parseFloat(e.target.value) || 0;
+        const svc = customServiceNameInput.value;
+        const fee = getOrdinaryMailFee(svc, w);
+        if (fee > 0 && bkkFeeInput) {
+            bkkFeeInput.value = fee;
+        }
+        updatePreview();
+    };
+}
+if (upcWInput) {
+    upcWInput.oninput = (e) => {
+        e.target.value = sanitizeNumeric(e.target.value);
+        const w = parseFloat(e.target.value) || 0;
+        const svc = customServiceNameInput.value;
+        const fee = getOrdinaryMailFee(svc, w);
+        if (fee > 0 && upcFeeInput) {
+            upcFeeInput.value = fee;
+        }
+        updatePreview();
+    };
+}
+if (bkkQtyInput) bkkQtyInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
+if (bkkFeeInput) bkkFeeInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
+if (upcQtyInput) upcQtyInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
+if (upcFeeInput) upcFeeInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
 
 customServiceManualInput.oninput = updatePreview;
 
 addBtn.onclick = async (e) => {
   e.preventDefault();
+
+  const selectedCustomSvc = customServiceNameInput.value;
+  const isOrdinary = currentServiceTab === 'CUSTOM' && (selectedCustomSvc === 'จดหมาย ในประเทศ' || selectedCustomSvc === 'สิ่งพิมพ์ ในประเทศ');
+
+  if (isOrdinary) {
+      const bkkW = parseFloat(document.getElementById('ordinary-bkk-weight').value) || 0;
+      const bkkQty = parseInt(document.getElementById('ordinary-bkk-qty').value) || 0;
+      const bkkFee = parseFloat(document.getElementById('ordinary-bkk-fee').value) || 0;
+
+      const upcW = parseFloat(document.getElementById('ordinary-upc-weight').value) || 0;
+      const upcQty = parseInt(document.getElementById('ordinary-upc-qty').value) || 0;
+      const upcFee = parseFloat(document.getElementById('ordinary-upc-fee').value) || 0;
+
+      if (bkkQty === 0 && upcQty === 0) {
+          alert('กรุณากรอกจำนวนฉบับอย่างน้อย 1 รายการ');
+          return;
+      }
+
+      if (bkkQty > 0) {
+          shipments.push({
+              recipient: 'กรุงเทพฯ และปริมณฑล',
+              destination: 'กรุงเทพฯ และปริมณฑล',
+              serviceType: 'CUSTOM',
+              customServiceName: selectedCustomSvc,
+              weight: bkkW,
+              isOrdinaryBulk: true,
+              quantity: bkkQty,
+              unitFee: bkkFee,
+              trackingFormatted: '-',
+              fee: bkkQty * bkkFee,
+              options: {}
+          });
+      }
+
+      if (upcQty > 0) {
+          shipments.push({
+              recipient: 'ต่างจังหวัด',
+              destination: 'ต่างจังหวัด',
+              serviceType: 'CUSTOM',
+              customServiceName: selectedCustomSvc,
+              weight: upcW,
+              isOrdinaryBulk: true,
+              quantity: upcQty,
+              unitFee: upcFee,
+              trackingFormatted: '-',
+              fee: upcQty * upcFee,
+              options: {}
+          });
+      }
+
+      // Reset inputs
+      document.getElementById('ordinary-bkk-weight').value = '';
+      document.getElementById('ordinary-bkk-qty').value = '';
+      document.getElementById('ordinary-bkk-fee').value = '';
+      document.getElementById('ordinary-upc-weight').value = '';
+      document.getElementById('ordinary-upc-qty').value = '';
+      document.getElementById('ordinary-upc-fee').value = '';
+
+      updateHistory();
+      renderTable();
+      updatePreview();
+      return;
+  }
+
   const p = prefixInput.value.trim().toUpperCase();
   const startD = (bulkToggle.checked ? num8StartInput.value : digitsInput.value).trim();
   const type = getServiceType(p);
