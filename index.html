@@ -149,6 +149,9 @@
                         <button type="button" id="unit-toggle-btn" onclick="toggleWeightUnit()" style="font-size: 0.7rem; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 4px; color: #475569; cursor: pointer; transition: all 0.2s;">สลับเป็น KG</button>
                     </div>
                     <input type="text" id="weight" placeholder="โปรดใส่น้ำหนัก" oninput="this.value = sanitizeNumeric(this.value, true); updatePreview()">
+                    <div id="volumetric-weight-status" style="display: none; color: #0284c7; font-weight: bold; font-size: 0.8rem; margin-top: 5px;">
+                        📦 ระบบกำลังคำนวณและใช้ "น้ำหนักปริมาตร" ในการจัดส่ง
+                    </div>
                 </div>
 
                 <div class="options-group">
@@ -194,6 +197,7 @@
                         <p id="service-title" style="color: #888;">จัดการรายการ: EMS</p>
                     </div>
                     <button id="settings-btn" class="btn-icon" title="ตั้งค่าข้อมูลบริษัท" style="font-size: 1.5rem;">⚙️</button>
+                    <button id="postal-guide-btn" class="btn-icon" title="คู่มืออัตราค่าบริการและพิกัดน้ำหนัก" style="font-size: 1.5rem;">📖</button>
                 </div>
                 <div id="meter-status-bar" class="hidden" style="flex: 1; margin: 0 2rem; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.5rem 1rem; border-radius: 8px; display: flex; align-items: center; gap: 1rem; font-size: 0.9rem;">
                     <div style="font-weight: bold; color: #166534;">📠 ยอดคงเหลือในเครื่อง:</div>
@@ -323,6 +327,222 @@
 
     <div id="print-section">
         <!-- Print content will be generated dynamically here -->
+    </div>
+
+    <!-- Postal Service Guide Modal -->
+    <div id="postal-guide-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1050; justify-content: center; align-items: center; backdrop-filter: blur(4px); transition: all 0.3s ease;">
+        <div style="background: white; padding: 2rem; border-radius: 12px; width: 750px; max-width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; gap: 1.5rem;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.75rem;">
+                <h2 style="color: var(--primary-color); margin: 0; display: flex; align-items: center; gap: 10px; font-size: 1.5rem;">
+                    📖 คู่มืออัตราค่าบริการและข้อกำหนดพิกัดน้ำหนัก
+                </h2>
+                <button id="close-guide-btn" style="background: none; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#64748b'">✕</button>
+            </div>
+
+            <!-- Modal Navigation Tabs -->
+            <div style="display: flex; gap: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px;">
+                <button type="button" class="guide-tab active" data-guide="domestic" style="padding: 10px 16px; border: none; background: none; font-weight: bold; border-bottom: 3px solid var(--primary-color); color: var(--primary-color); cursor: pointer; transition: all 0.2s;">🇹🇭 ส่งในประเทศ</button>
+                <button type="button" class="guide-tab" data-guide="international" style="padding: 10px 16px; border: none; background: none; font-weight: bold; border-bottom: 3px solid transparent; color: #64748b; cursor: pointer; transition: all 0.2s;">🌐 ส่งต่างประเทศ</button>
+                <button type="button" class="guide-tab" data-guide="tariff" style="padding: 10px 16px; border: none; background: none; font-weight: bold; border-bottom: 3px solid transparent; color: #64748b; cursor: pointer; transition: all 0.2s;">📄 ตารางค่าส่งในประเทศ</button>
+            </div>
+
+            <!-- Modal Contents -->
+            <div id="guide-content-area" style="flex: 1; overflow-y: auto;">
+                
+                <!-- Domestic Guide Section -->
+                <div id="guide-sec-domestic" class="guide-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span style="font-size: 0.85rem; color: #64748b;">📊 เปรียบเทียบ 8 บริการภายในประเทศที่คุ้มค่าที่สุด</span>
+                        <button type="button" class="toggle-view-btn" data-img="brochure_domestic.jpg" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">📷 ดูโบรชัวร์ต้นฉบับ</button>
+                    </div>
+                    
+                    <div class="brochure-img-viewer" style="display: none; text-align: center; margin-bottom: 1.5rem; background: #f8fafc; border: 1px dashed #cbd5e1; padding: 10px; border-radius: 8px;">
+                        <img src="src/assets/brochure_domestic.jpg" style="max-width: 100%; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                    </div>
+
+                    <table class="guide-table" style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid #cbd5e1;">
+                                <th style="padding: 8px; font-weight: bold; color: #1e293b;">บริการ</th>
+                                <th style="padding: 8px; font-weight: bold; color: #1e293b;">น้ำหนักสูงสุด</th>
+                                <th style="padding: 8px; font-weight: bold; color: #1e293b;">ความเร็วส่ง</th>
+                                <th style="padding: 8px; font-weight: bold; color: #1e293b;">การรับประกันสินค้า</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 8px; font-weight: bold; color: #0284c7;">🚀 EMS (ด่วนพิเศษ)</td>
+                                <td style="padding: 8px; font-weight: bold; color: #be123c;">ไม่เกิน 20 กก. ⚠️</td>
+                                <td style="padding: 8px;">1-2 วัน</td>
+                                <td style="padding: 8px;">ตามจริงไม่เกิน 2,000 บ. (ซื้อประกันเพิ่มได้สูงสุด 50,000 บ.)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                <td style="padding: 8px; font-weight: bold; color: #0f766e;">🌱 eCo-Post (อีโค-โพสต์)</td>
+                                <td style="padding: 8px; font-weight: bold;">ไม่เกิน 10 กก.</td>
+                                <td style="padding: 8px;">2-5 วัน</td>
+                                <td style="padding: 8px;">ตามจริงไม่เกิน 1,500 บ. (ซื้อประกันเพิ่มไม่ได้)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 8px; font-weight: bold; color: #b45309;">✉️ ลงทะเบียน (Registered)</td>
+                                <td style="padding: 8px; font-weight: bold;">ไม่เกิน 2 กก.</td>
+                                <td style="padding: 8px;">2-5 วัน</td>
+                                <td style="padding: 8px;">ซองไม่เกิน 300 บ. / กล่องไม่เกิน 500 บ. (ซื้อเพิ่มสูงสุด 5,000 บ.)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                <td style="padding: 8px; font-weight: bold; color: #4d7c0f;">📦 พัสดุไปรษณีย์ (Parcel)</td>
+                                <td style="padding: 8px; font-weight: bold;">ไม่เกิน 20 กก.</td>
+                                <td style="padding: 8px;">3-5 วัน</td>
+                                <td style="padding: 8px;">ตามจริงไม่เกิน 1,000 บ. (เปลี่ยนรับประกันได้สูงสุด 5,000 บ.)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 8px; font-weight: bold; color: #0284c7;">⚡ Prompt Post (พร้อมส่ง)</td>
+                                <td style="padding: 8px; font-weight: bold;">ไม่เกิน 3 กก.</td>
+                                <td style="padding: 8px;">1-2 วัน</td>
+                                <td style="padding: 8px;">ตามจริงไม่เกิน 2,000 บ. (ซื้อประกันเพิ่มไม่ได้)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                <td style="padding: 8px; font-weight: bold; color: #1e1b4b;">🐘 Logispost (ชิ้นใหญ่)</td>
+                                <td style="padding: 8px; font-weight: bold; color: #be123c;">20 - 200 กก.</td>
+                                <td style="padding: 8px;">5-7 วัน</td>
+                                <td style="padding: 8px;">ตามจริงไม่เกิน 3,000 บ. (ซื้อเพิ่มสูงสุด 200,000 บ.)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- International Guide Section -->
+                <div id="guide-sec-international" class="guide-section" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span style="font-size: 0.85rem; color: #64748b;">🌐 พิกัดส่งของไปต่างประเทศอย่างเป็นทางการ</span>
+                        <button type="button" class="toggle-view-btn" data-img="brochure_international.jpg" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">📷 ดูโบรชัวร์ต้นฉบับ</button>
+                    </div>
+                    
+                    <div class="brochure-img-viewer" style="display: none; text-align: center; margin-bottom: 1.5rem; background: #f8fafc; border: 1px dashed #cbd5e1; padding: 10px; border-radius: 8px;">
+                        <img src="src/assets/brochure_international.jpg" style="max-width: 100%; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                    </div>
+
+                    <table class="guide-table" style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid #cbd5e1;">
+                                <th style="padding: 8px; font-weight: bold; color: #1e293b;">บริการ</th>
+                                <th style="padding: 8px; font-weight: bold; color: #1e293b;">น้ำหนักสูงสุด</th>
+                                <th style="padding: 8px; font-weight: bold; color: #1e293b;">ความเร็วส่ง</th>
+                                <th style="padding: 8px; font-weight: bold; color: #1e293b;">การชดใช้สูงสุด / ประกันภัย</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 8px; font-weight: bold; color: #6366f1;">💎 Courier Post</td>
+                                <td style="padding: 8px; font-weight: bold;">ไม่เกิน 30 กก.</td>
+                                <td style="padding: 8px;">2-3 วัน (ด่วนพิเศษสุด)</td>
+                                <td style="padding: 8px;">ซอง 5,000 บ. / กล่อง 10,000 บ. (ซื้อเพิ่มสูงสุด 1,000 SDR)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                <td style="padding: 8px; font-weight: bold; color: #dc2626;">🔥 EMS World</td>
+                                <td style="padding: 8px; font-weight: bold;">20 - 30 กก.</td>
+                                <td style="padding: 8px;">3-7 วัน</td>
+                                <td style="padding: 8px;">ซอง 3,000 บ. / กล่อง 7,000 บ. (ซื้อเพิ่มไม่ได้)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 8px; font-weight: bold; color: #2563eb;">🚀 ePacket</td>
+                                <td style="padding: 8px; font-weight: bold;">ไม่เกิน 2 กก.</td>
+                                <td style="padding: 8px;">3-9 วัน</td>
+                                <td style="padding: 8px;">ชดเชยสูงสุด 1,500 บาท เมื่อซื้อออปชัน ePacket Plus</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                <td style="padding: 8px; font-weight: bold; color: #0d9488;">📦 Parcel Post</td>
+                                <td style="padding: 8px; font-weight: bold;">ไม่เกิน 30 กก.</td>
+                                <td style="padding: 8px;">10-14 วัน (แอร์)</td>
+                                <td style="padding: 8px;">ไม่เกิน 4.5 SDR + 40 SDR / ชิ้น (ซื้อเพิ่มสูงสุด 1,000 SDR)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 8px; font-weight: bold; color: #4f46e5;">✉️ ลงทะเบียนต่างประเทศ</td>
+                                <td style="padding: 8px; font-weight: bold;">ไม่เกิน 2 กก.</td>
+                                <td style="padding: 8px;">10-14 วัน</td>
+                                <td style="padding: 8px;">ชดเชยสูงสุดไม่เกิน 30 SDR / ชิ้น (ซื้อเพิ่มไม่ได้)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Basic Tariff Guide Section -->
+                <div id="guide-sec-tariff" class="guide-section" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span style="font-size: 0.85rem; color: #64748b;">📄 ตารางพิกัดน้ำหนักและอัตราค่าส่งขั้นพื้นฐาน (ในประเทศ)</span>
+                        <button type="button" class="toggle-view-btn" data-img="brochure_domestic_basic.jpg" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">📷 ดูโบรชัวร์ต้นฉบับ</button>
+                    </div>
+                    
+                    <div class="brochure-img-viewer" style="display: none; text-align: center; margin-bottom: 1.5rem; background: #f8fafc; border: 1px dashed #cbd5e1; padding: 10px; border-radius: 8px;">
+                        <img src="src/assets/brochure_domestic_basic.jpg" style="max-width: 100%; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                    </div>
+
+                    <table class="guide-table" style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid #cbd5e1;">
+                                <th style="padding: 8px; font-weight: bold; color: #1e293b;">ช่วงน้ำหนักพัสดุ</th>
+                                <th style="padding: 8px; font-weight: bold; color: #1e293b;">ลงทะเบียน (R)</th>
+                                <th style="padding: 8px; font-weight: bold; color: #1e293b;">eCo-Post (O)</th>
+                                <th style="padding: 8px; font-weight: bold; color: #1e293b;">พัสดุ (P)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 8px;">ไม่เกิน 10 กรัม</td>
+                                <td style="padding: 8px; font-weight: bold; color: #475569;">18 บาท</td>
+                                <td style="padding: 8px; font-weight: bold; color: #475569;" rowspan="4">20 บาท</td>
+                                <td style="padding: 8px; font-weight: bold; color: #0284c7;" rowspan="7">25 บาท<br><span style="font-size:0.7rem; font-weight:normal; color:#64748b;">(น้ำหนักไม่เกิน 1 กิโลกรัม)</span></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                <td style="padding: 8px;">10 กรัม - 20 กรัม</td>
+                                <td style="padding: 8px; font-weight: bold; color: #475569;">19 บาท</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 8px;">20 กรัม - 100 กรัม</td>
+                                <td style="padding: 8px; font-weight: bold; color: #475569;">24 บาท</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                <td style="padding: 8px;">100 กรัม - 250 กรัม</td>
+                                <td style="padding: 8px; font-weight: bold; color: #475569;">30 บาท</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 8px;">250 กรัม - 500 กรัม</td>
+                                <td style="padding: 8px; font-weight: bold; color: #475569;">36 บาท</td>
+                                <td style="padding: 8px; font-weight: bold; color: #475569;">30 บาท</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                <td style="padding: 8px;">500 กรัม - 1,000 กรัม</td>
+                                <td style="padding: 8px; font-weight: bold; color: #475569;">53 บาท</td>
+                                <td style="padding: 8px; font-weight: bold; color: #475569;">40 บาท</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 8px;">1,000 กรัม - 2,000 กรัม</td>
+                                <td style="padding: 8px; font-weight: bold; color: #475569;">75 บาท</td>
+                                <td style="padding: 8px; font-weight: bold; color: #475569;">60 บาท</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                <td style="padding: 8px;">2,000 กรัม - 4,000 กรัม</td>
+                                <td style="padding: 8px; color: #94a3b8;">- (เกิน 2 กก.)</td>
+                                <td style="padding: 8px; font-weight: bold; color: #475569;">80 บาท</td>
+                                <td style="padding: 8px; font-weight: bold; color: #0284c7;" rowspan="3">คิด กิโลกรัมละ<br>20 บาท ⚠️</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 8px;">4,000 กรัม - 6,000 กรัม</td>
+                                <td style="padding: 8px; color: #94a3b8;">-</td>
+                                <td style="padding: 8px; font-weight: bold; color: #475569;">120 บาท</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                <td style="padding: 8px;">6,000 กรัม - 10,000 กรัม</td>
+                                <td style="padding: 8px; color: #94a3b8;">-</td>
+                                <td style="padding: 8px; font-weight: bold; color: #475569;">160 บาท</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </div>
     </div>
 
     <!-- Settings Modal -->

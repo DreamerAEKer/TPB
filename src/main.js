@@ -16,10 +16,13 @@ function formatTrackingNumber(prefix, digits, checkDigit) {
 }
 
 function parseTracking(t) {
-    if (!t) return null;
-    const match = t.replace(/\s+/g, '').match(/^([A-Z]{2})(\d{8})(\d)TH$/);
-    if (!match) return null;
-    return { prefix: match[1], num: parseInt(match[2]) };
+    if (!t) return { prefix: '', num: 0, full: '' };
+    const clean = t.replace(/\s+/g, '');
+    const match = clean.match(/^([A-Z]{2})(\d{8})(\d)([A-Z]{2})$/);
+    if (match) return { prefix: match[1], num: parseInt(match[2]), full: clean };
+    const simpleMatch = clean.match(/^([A-Z]+)(\d+)([A-Z]*)$/);
+    if (simpleMatch) return { prefix: simpleMatch[1], num: parseInt(simpleMatch[2]), full: clean };
+    return { prefix: clean, num: 0, full: clean };
 }
 
 // --- DB LOGIC (IndexedDB) ---
@@ -210,6 +213,7 @@ const dimW = document.getElementById('dim-w');
 const dimL = document.getElementById('dim-l');
 const dimH = document.getElementById('dim-h');
 const jumboBadge = document.getElementById('jumbo-badge');
+const volumetricWeightStatus = document.getElementById('volumetric-weight-status');
 const setFuelSurcharge = document.getElementById('set-fuel-surcharge');
 const optArTracking = document.getElementById('opt-ar-tracking');
 const optArTrackingRow = document.getElementById('opt-ar-tracking-row');
@@ -412,8 +416,8 @@ function renderShipments() {
 
     const zipMatch = s.destination.match(/\d{5}/);
     const zip = zipMatch ? zipMatch[0] : null;
-    const isAlwaysRemote = zip && REMOTE_ALWAYS_ZIPCODES.has(zip);
-    const isIslandPotential = zip && REMOTE_ISLAND_ZIPCODES.has(zip);
+    const isAlwaysRemote = zip && !!REMOTE_AREAS[zip] && !PARTIAL_REMOTE_ZIPS.includes(zip);
+    const isIslandPotential = zip && PARTIAL_REMOTE_ZIPS.includes(zip);
     const isActuallyRemote = isAlwaysRemote || (isIslandPotential && s.isIsland);
 
     const isRemoteActive = s.options?.isRemote || isActuallyRemote;
@@ -772,9 +776,12 @@ function updatePreview() {
 
       // Volumetric weight calculation (W * L * H / 6 in grams)
       volWeight = Math.ceil((wDim * lDim * hDim) / 6);
-      if (volWeight > w) {
+      if (volWeight > w && volWeight > 0) {
           useVolWeight = true;
           calcWeight = volWeight;
+          if (volumetricWeightStatus) volumetricWeightStatus.style.display = 'block';
+      } else {
+          if (volumetricWeightStatus) volumetricWeightStatus.style.display = 'none';
       }
       
       const volWarnBadge = document.getElementById('vol-warn-badge');
@@ -787,6 +794,8 @@ function updatePreview() {
       if (dimLimitBadge) {
           dimLimitBadge.style.display = (total > 240) ? 'block' : 'none';
       }
+  } else {
+      if (volumetricWeightStatus) volumetricWeightStatus.style.display = 'none';
   }
 
   if (activeSvc !== 'CUSTOM') {
@@ -812,6 +821,27 @@ function updatePreview() {
           feeInput.value = total;
           feeInput.style.color = 'inherit';
       }
+  }
+
+  let isWeightOverLimit = false;
+  if (activeSvc === 'REG' && calcWeight > 2000) {
+      isWeightOverLimit = true;
+  } else if (activeSvc === 'ECO' && calcWeight > 10000) {
+      isWeightOverLimit = true;
+  } else if (activeSvc === 'PARCEL' && calcWeight > 20000) {
+      isWeightOverLimit = true;
+  } else if (activeSvc === 'EMS' && calcWeight > 30000) {
+      isWeightOverLimit = true;
+  } else if (activeSvc === 'CUSTOM' && calcWeight > 30000) {
+      isWeightOverLimit = true;
+  }
+
+  if (isWeightOverLimit && w > 0) {
+      weightInput.style.borderColor = '#ef4444';
+      weightInput.style.backgroundColor = '#fef2f2';
+  } else {
+      weightInput.style.borderColor = '';
+      weightInput.style.backgroundColor = '';
   }
 }
 
@@ -1048,22 +1078,6 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     return combinedHtml;
 }
 
-function isEMSGroup(s) {
-    if (s.serviceType === 'EMS') return true;
-    if (s.serviceType === 'CUSTOM' && (s.customServiceName || '').toUpperCase().includes('EMS')) return true;
-    return false;
-}
-
-function parseTracking(t) {
-    if (!t) return { prefix: '', num: 0, full: '' };
-    const clean = t.replace(/\s+/g, '');
-    const match = clean.match(/^([A-Z]{2})(\d{8})(\d)([A-Z]{2})$/);
-    if (match) return { prefix: match[1], num: parseInt(match[2]), full: clean };
-    const simpleMatch = clean.match(/^([A-Z]+)(\d+)([A-Z]*)$/);
-    if (simpleMatch) return { prefix: simpleMatch[1], num: parseInt(simpleMatch[2]), full: clean };
-    return { prefix: clean, num: 0, full: clean };
-}
-
 
 function generateSummarySheet(items, titleSuffix, copies = 1) {
     const groups = {};
@@ -1218,15 +1232,6 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
 }
 
 // --- EVENT HANDLERS ---
-function toggleBulkMode() {
-    const isBulk = bulkToggle.checked;
-    batchEndGroup.style.display = isBulk ? 'block' : 'none';
-    feeUnitLabel.style.display = isBulk ? 'inline' : 'none';
-    document.querySelectorAll('.single-only').forEach(el => el.style.display = isBulk ? 'none' : 'block');
-    if (isBulk) syncBatchInputs('count');
-}
-
-bulkToggle.addEventListener('change', toggleBulkMode);
 
 prefixInput.oninput = (e) => {
   if (currentServiceTab !== 'CUSTOM') {
@@ -1381,9 +1386,35 @@ addBtn.onclick = async (e) => {
                   finalWeight = volWeight;
               }
               
-              // 30kg Limit Warning for EMS
+              // 30kg Limit Hard Block for EMS
               if (finalWeight > 30000) {
-                  if (!confirm(`⚠️ รายการนี้มีน้ำหนักรวม (${(finalWeight/1000).toFixed(2)} กก.) เกินมาตรฐาน EMS 30 กก.\nต้องการดำเนินการต่อหรือไม่?`)) return;
+                  alert(`⚠️ ไม่สามารถดำเนินการต่อได้: บริการ EMS มีน้ำหนักสูงสุดได้ไม่เกิน 30 กิโลกรัม`);
+                  return;
+              }
+          } else if (type === 'REG') {
+              // 2kg Limit Hard Block for Register
+              if (finalWeight > 2000) {
+                  alert(`⚠️ ไม่สามารถดำเนินการต่อได้: บริการลงทะเบียน (R) มีน้ำหนักสูงสุดได้ไม่เกิน 2 กิโลกรัม`);
+                  return;
+              }
+          } else if (type === 'ECO') {
+              // 10kg Limit Hard Block for eCo-Post
+              if (finalWeight > 10000) {
+                  alert(`⚠️ ไม่สามารถดำเนินการต่อได้: บริการ eCo-post มีน้ำหนักสูงสุดได้ไม่เกิน 10 กิโลกรัม`);
+                  return;
+              }
+          } else if (type === 'PARCEL') {
+              // 20kg Limit Hard Block for Parcel
+              if (finalWeight > 20000) {
+                  alert(`⚠️ ไม่สามารถดำเนินการต่อได้: บริการพัสดุไปรษณีย์ (P) มีน้ำหนักสูงสุดได้ไม่เกิน 20 กิโลกรัม`);
+                  return;
+              }
+          } else if (type === 'CUSTOM') {
+              // Warning but allow for CUSTOM if weight > 30kg
+              if (finalWeight > 30000) {
+                  if (!confirm(`⚠️ คำเตือน: รายการนี้มีน้ำหนักรวม (${(finalWeight/1000).toFixed(2)} กก.) เกิน 30 กก. ต้องการดำเนินการต่อหรือไม่?`)) {
+                      return;
+                  }
               }
           }
 
@@ -1411,7 +1442,10 @@ addBtn.onclick = async (e) => {
       }
       
       if (type !== 'CUSTOM') {
-          digitsInput.value = (parseInt(startD) + (count * step)).toString().padStart(8, '0');
+          const nextStartD = (parseInt(startD) + (count * step)).toString().padStart(8, '0');
+          num8StartInput.value = nextStartD;
+          digitsInput.value = nextStartD;
+          num8StartInput.dispatchEvent(new Event('input'));
       }
   } else {
       if (!startD) return alert('กรุณากรอกข้อมูลเลขที่');
@@ -1443,9 +1477,35 @@ addBtn.onclick = async (e) => {
               finalWeight = volWeight;
           }
 
-          // 30kg Limit Warning for EMS
+          // 30kg Limit Hard Block for EMS
           if (finalWeight > 30000) {
-              if (!confirm(`⚠️ รายการนี้มีน้ำหนักรวม (${(finalWeight/1000).toFixed(2)} กก.) เกินมาตรฐาน EMS 30 กก.\nต้องการดำเนินการต่อหรือไม่?`)) return;
+              alert(`⚠️ ไม่สามารถดำเนินการต่อได้: บริการ EMS มีน้ำหนักสูงสุดได้ไม่เกิน 30 กิโลกรัม`);
+              return;
+          }
+      } else if (type === 'REG') {
+          // 2kg Limit Hard Block for Register
+          if (finalWeight > 2000) {
+              alert(`⚠️ ไม่สามารถดำเนินการต่อได้: บริการลงทะเบียน (R) มีน้ำหนักสูงสุดได้ไม่เกิน 2 กิโลกรัม`);
+              return;
+          }
+      } else if (type === 'ECO') {
+          // 10kg Limit Hard Block for eCo-Post
+          if (finalWeight > 10000) {
+              alert(`⚠️ ไม่สามารถดำเนินการต่อได้: บริการ eCo-post มีน้ำหนักสูงสุดได้ไม่เกิน 10 กิโลกรัม`);
+              return;
+          }
+      } else if (type === 'PARCEL') {
+          // 20kg Limit Hard Block for Parcel
+          if (finalWeight > 20000) {
+              alert(`⚠️ ไม่สามารถดำเนินการต่อได้: บริการพัสดุไปรษณีย์ (P) มีน้ำหนักสูงสุดได้ไม่เกิน 20 กิโลกรัม`);
+              return;
+          }
+      } else if (type === 'CUSTOM') {
+          // Warning but allow for CUSTOM if weight > 30kg
+          if (finalWeight > 30000) {
+              if (!confirm(`⚠️ คำเตือน: รายการนี้มีน้ำหนักรวม (${(finalWeight/1000).toFixed(2)} กก.) เกิน 30 กก. ต้องการดำเนินการต่อหรือไม่?`)) {
+                  return;
+              }
           }
       }
 
@@ -1466,7 +1526,7 @@ addBtn.onclick = async (e) => {
                 dimensions: { w: parseFloat(dimW.value), l: parseFloat(dimL.value), h: parseFloat(dimH.value) },
                 isRemote: optRemote.checked
               },
-              isIsland: optRemote.checked && REMOTE_ISLAND_ZIPCODES.has(destInput.value.match(/\d{5}/)?.[0]),
+              isIsland: optRemote.checked && PARTIAL_REMOTE_ZIPS.includes(destInput.value.match(/\d{5}/)?.[0]),
               trackingFormatted: trackingFormatted,
               fee: (w > 0 || type === 'CUSTOM') ? (feeInput.value || '0').toString().replace(/[^0-9.]/g, '') : ''
           });
@@ -1711,6 +1771,7 @@ bulkToggle.onchange = () => {
     const isBulk = bulkToggle.checked;
     bulkInputsGroup.style.display = isBulk ? 'block' : 'none';
     singleTrackingGroup.style.display = isBulk ? 'none' : 'block';
+    feeUnitLabel.style.display = isBulk ? 'inline' : 'none';
     document.querySelectorAll('.single-only').forEach(el => el.style.display = isBulk ? 'none' : 'block');
     
     if (isBulk) {
@@ -1968,6 +2029,82 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && settingsModal.style.display === 'flex') {
         settingsModal.style.display = 'none';
     }
+});
+
+// Postal Service Guide Modal Initialization
+const postalGuideBtn = document.getElementById('postal-guide-btn');
+const postalGuideModal = document.getElementById('postal-guide-modal');
+const closeGuideBtn = document.getElementById('close-guide-btn');
+
+postalGuideBtn.onclick = () => {
+    postalGuideModal.style.display = 'flex';
+};
+
+closeGuideBtn.onclick = () => {
+    postalGuideModal.style.display = 'none';
+};
+
+postalGuideModal.onclick = (e) => {
+    if (e.target === postalGuideModal) {
+        postalGuideModal.style.display = 'none';
+    }
+};
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && postalGuideModal.style.display === 'flex') {
+        postalGuideModal.style.display = 'none';
+    }
+});
+
+// Guide Modal Tabs Navigation
+const guideTabs = document.querySelectorAll('.guide-tab');
+const guideSections = document.querySelectorAll('.guide-section');
+
+guideTabs.forEach(tab => {
+    tab.onclick = () => {
+        // Remove active class from all tabs
+        guideTabs.forEach(t => {
+            t.classList.remove('active');
+            t.style.borderBottomColor = 'transparent';
+            t.style.color = '#64748b';
+        });
+        
+        // Add active class to clicked tab
+        tab.classList.add('active');
+        tab.style.borderBottomColor = 'var(--primary-color)';
+        tab.style.color = 'var(--primary-color)';
+        
+        // Hide all sections
+        guideSections.forEach(sec => sec.style.display = 'none');
+        
+        // Show selected section
+        const targetSec = document.getElementById(`guide-sec-${tab.dataset.guide}`);
+        if (targetSec) {
+            targetSec.style.display = 'block';
+        }
+    };
+});
+
+// Brochure Toggle View Image Handler
+const toggleViewBtns = document.querySelectorAll('.toggle-view-btn');
+toggleViewBtns.forEach(btn => {
+    btn.onclick = () => {
+        const parentSec = btn.closest('.guide-section');
+        const imgViewer = parentSec.querySelector('.brochure-img-viewer');
+        if (imgViewer.style.display === 'none' || !imgViewer.style.display) {
+            imgViewer.style.display = 'block';
+            btn.innerHTML = '🙈 ซ่อนรูปภาพแผ่นพับ';
+            btn.style.backgroundColor = '#fee2e2';
+            btn.style.color = '#ef4444';
+            btn.style.borderColor = '#fecaca';
+        } else {
+            imgViewer.style.display = 'none';
+            btn.innerHTML = '📷 ดูโบรชัวร์ต้นฉบับ';
+            btn.style.backgroundColor = '#eff6ff';
+            btn.style.color = '#1d4ed8';
+            btn.style.borderColor = '#bfdbfe';
+        }
+    };
 });
 
 saveSettingsBtn.onclick = async () => {
@@ -2494,7 +2631,7 @@ async function initApp() {
 function setupFluentNavigation() {
     const fields = [
         prefixInput, digitsInput, num8StartInput, digitsEndInput, batchCountInput,
-        recipientInput, destInput, weightInput, feeInput
+        recipientInput, destInput, dimW, dimL, dimH, weightInput, feeInput
     ];
 
     fields.forEach((f, index) => {
@@ -2505,27 +2642,32 @@ function setupFluentNavigation() {
 
                 // 1. BULK MODE Logic
                 if (bulkToggle.checked) {
-                    if (f.id === 'prefix-code') {
-                        document.getElementById('num8-start').focus();
-                        document.getElementById('num8-start').select();
+                    if (f === prefixInput) {
+                        console.log(`[Fluent Navigation] Bulk: prefixInput -> num8StartInput`);
+                        num8StartInput.focus();
+                        num8StartInput.select();
                         return;
                     }
-                    if (f.id === 'num8-start') {
-                        document.getElementById('digits-end').focus();
-                        document.getElementById('digits-end').select();
+                    if (f === num8StartInput) {
+                        console.log(`[Fluent Navigation] Bulk: num8StartInput -> digitsEndInput`);
+                        digitsEndInput.focus();
+                        digitsEndInput.select();
                         return;
                     }
-                    if (f.id === 'digits-end') {
-                        document.getElementById('batch-count').focus();
-                        document.getElementById('batch-count').select();
+                    if (f === digitsEndInput) {
+                        console.log(`[Fluent Navigation] Bulk: digitsEndInput -> batchCountInput`);
+                        batchCountInput.focus();
+                        batchCountInput.select();
                         return;
                     }
-                    if (f.id === 'batch-count') {
-                        document.getElementById('weight').focus();
-                        document.getElementById('weight').select();
+                    if (f === batchCountInput) {
+                        console.log(`[Fluent Navigation] Bulk: batchCountInput -> weightInput`);
+                        weightInput.focus();
+                        weightInput.select();
                         return;
                     }
-                    if (f.id === 'weight') {
+                    if (f === weightInput) {
+                        console.log(`[Fluent Navigation] Bulk: weightInput -> addBtn.click`);
                         addBtn.click();
                         return;
                     }
@@ -2533,33 +2675,58 @@ function setupFluentNavigation() {
                 // 2. SINGLE MODE Logic
                 else {
                     if (f === prefixInput) {
+                        console.log(`[Fluent Navigation] Single: prefixInput -> digitsInput`);
                         digitsInput.focus();
                         digitsInput.select();
                         return;
                     }
                     if (f === digitsInput) {
+                        console.log(`[Fluent Navigation] Single: digitsInput -> recipientInput`);
                         recipientInput.focus();
                         return;
                     }
                     if (f === recipientInput) {
+                        console.log(`[Fluent Navigation] Single: recipientInput -> destInput`);
                         destInput.focus();
                         return;
                     }
                     if (f === destInput) {
+                        console.log(`[Fluent Navigation] Single: destInput -> weightInput`);
+                        weightInput.focus();
+                        weightInput.select();
+                        return;
+                    }
+                    if (f === dimW) {
+                        console.log(`[Fluent Navigation] Single: dimW -> dimL`);
+                        dimL.focus();
+                        dimL.select();
+                        return;
+                    }
+                    if (f === dimL) {
+                        console.log(`[Fluent Navigation] Single: dimL -> dimH`);
+                        dimH.focus();
+                        dimH.select();
+                        return;
+                    }
+                    if (f === dimH) {
+                        console.log(`[Fluent Navigation] Single: dimH -> weightInput`);
                         weightInput.focus();
                         weightInput.select();
                         return;
                     }
                     if (f === weightInput) {
                         if (currentServiceTab === 'CUSTOM') {
+                            console.log(`[Fluent Navigation] Single: weightInput -> feeInput`);
                             feeInput.focus();
                             feeInput.select();
                         } else {
+                            console.log(`[Fluent Navigation] Single: weightInput -> addBtn.click`);
                             addBtn.click();
                         }
                         return;
                     }
                     if (f === feeInput) {
+                        console.log(`[Fluent Navigation] Single: feeInput -> addBtn.click`);
                         addBtn.click();
                         return;
                     }
