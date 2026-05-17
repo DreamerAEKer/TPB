@@ -2485,7 +2485,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.3.0</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.3.1</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
@@ -2746,33 +2746,21 @@ function setupFluentNavigation() {
                         return;
                     }
                     if (f === num8StartInput) {
-                        console.log(`[Fluent Navigation] Bulk: num8StartInput -> digitsEndInput`);
-                        digitsEndInput.focus();
-                        digitsEndInput.select();
+                        console.log(`[Fluent Navigation] Bulk: num8StartInput -> batchCountInput`);
+                        batchCountInput.focus();
+                        batchCountInput.select();
                         return;
                     }
                     if (f === digitsEndInput) {
-                        if (emsDimGroup && emsDimGroup.style.display !== 'none') {
-                            console.log(`[Fluent Navigation] Bulk: digitsEndInput -> dimW`);
-                            dimW.focus();
-                            dimW.select();
-                        } else {
-                            console.log(`[Fluent Navigation] Bulk: digitsEndInput -> weightInput`);
-                            weightInput.focus();
-                            weightInput.select();
-                        }
+                        console.log(`[Fluent Navigation] Bulk: digitsEndInput -> weightInput`);
+                        weightInput.focus();
+                        weightInput.select();
                         return;
                     }
                     if (f === batchCountInput) {
-                        if (emsDimGroup && emsDimGroup.style.display !== 'none') {
-                            console.log(`[Fluent Navigation] Bulk: batchCountInput -> dimW`);
-                            dimW.focus();
-                            dimW.select();
-                        } else {
-                            console.log(`[Fluent Navigation] Bulk: batchCountInput -> weightInput`);
-                            weightInput.focus();
-                            weightInput.select();
-                        }
+                        console.log(`[Fluent Navigation] Bulk: batchCountInput -> weightInput`);
+                        weightInput.focus();
+                        weightInput.select();
                         return;
                     }
                     if (f === dimW) {
