@@ -1181,48 +1181,41 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         priceBreakdownHtml += `<div style="margin-bottom: 4px;">- ${desc}: <b>${priceMap[desc]}</b> ชิ้น</div>`;
     }
     
-    // Calculate Official Service Stats (v5.4.1)
+    // Calculate Official Service Stats (v5.5.0)
     const summaryStats = {
         ordinary: { count: 0, fee: 0 },
         printed: { count: 0, fee: 0 },
         registered: { count: 0, fee: 0 },
-        certified: { count: 0, fee: 0 },
-        insured: { count: 0, fee: 0 },
+        eco: { count: 0, fee: 0 },
+        epacket: { count: 0, fee: 0 },
         parcel: { count: 0, fee: 0 },
-        postcard: { count: 0, fee: 0 },
-        ems: { count: 0, fee: 0 },
         others: { count: 0, fee: 0 }
     };
 
     items.forEach(item => {
         const fee = parseFloat(item.fee) || 0;
         const type = item.serviceType;
-        const opt = item.options || {};
+        const name = (item.customServiceName || '').toUpperCase();
+        const trk = (item.trackingNum || '').trim().toUpperCase();
 
-        if (opt.insurance) {
-            summaryStats.insured.count++;
-            summaryStats.insured.fee += fee;
-        } else if (type === 'EMS') {
-            summaryStats.ems.count++;
-            summaryStats.ems.fee += fee;
-        } else if (type === 'REG') {
+        if (type === 'ECO' || (type === 'CUSTOM' && (name.includes('ECO') || name.includes('อีโค')))) {
+            summaryStats.eco.count++;
+            summaryStats.eco.fee += fee;
+        } else if (type === 'CUSTOM' && (name.includes('EPACKET') || name.includes('EPK') || trk.startsWith('L'))) {
+            summaryStats.epacket.count++;
+            summaryStats.epacket.fee += fee;
+        } else if (type === 'REG' || (type === 'CUSTOM' && (name.includes('REG') || name.includes('ลงทะเบียน') || trk.startsWith('R')))) {
             summaryStats.registered.count++;
             summaryStats.registered.fee += fee;
-        } else if (type === 'PARCEL') {
+        } else if (type === 'PARCEL' || (type === 'CUSTOM' && (name.includes('PARCEL') || name.includes('พัสดุ') || trk.startsWith('P')))) {
             summaryStats.parcel.count++;
             summaryStats.parcel.fee += fee;
-        } else if (type === 'ORD') {
+        } else if (type === 'ORD' || (type === 'CUSTOM' && (name.includes('ORD') || name.includes('ธรรมดา')))) {
             summaryStats.ordinary.count++;
             summaryStats.ordinary.fee += fee;
-        } else if (type === 'PRINTED') {
+        } else if (type === 'PRINTED' || (type === 'CUSTOM' && (name.includes('PRINT') || name.includes('สิ่งตีพิมพ์')))) {
             summaryStats.printed.count++;
             summaryStats.printed.fee += fee;
-        } else if (type === 'CERTIFIED') {
-            summaryStats.certified.count++;
-            summaryStats.certified.fee += fee;
-        } else if (type === 'POSTCARD') {
-            summaryStats.postcard.count++;
-            summaryStats.postcard.fee += fee;
         } else {
             summaryStats.others.count++;
             summaryStats.others.fee += fee;
@@ -1291,7 +1284,8 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </div>
             </div>
             
-            <!-- Official Service Classification Table (v5.4.1) -->
+            <!-- Official Service Classification Table (v5.5.0) -->
+            ${titleSuffix !== 'กลุ่ม EMS' ? `
             <div style="margin-top: 15px; margin-bottom: 15px; page-break-inside: avoid;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; text-align: center; font-family: 'Sarabun', sans-serif; border: 1.5px solid black;">
                     <thead>
@@ -1334,20 +1328,20 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                             <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.registered.fee)}</td>
                         </tr>
                         <tr>
-                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">รับรอง</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.certified.count)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.certified.fee)}</td>
+                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">eCo-Post (ในประเทศ)</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.eco.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.eco.fee)}</td>
                             <td style="border: 1px solid black;"></td>
                             <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.certified.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.eco.fee)}</td>
                         </tr>
                         <tr>
-                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">รับประกัน</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.insured.count)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.insured.fee)}</td>
+                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">ePacket (ต่างประเทศ)</td>
                             <td style="border: 1px solid black;"></td>
                             <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.insured.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.epacket.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.epacket.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.epacket.fee)}</td>
                         </tr>
                         <tr>
                             <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">พัสดุไปรษณีย์</td>
@@ -1356,22 +1350,6 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                             <td style="border: 1px solid black;"></td>
                             <td style="border: 1px solid black;"></td>
                             <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.parcel.fee)}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">ไปรษณียบัตร</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.postcard.count)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.postcard.fee)}</td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.postcard.fee)}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">EMS</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.ems.count)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.ems.fee)}</td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.ems.fee)}</td>
                         </tr>
                         <tr>
                             <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">อื่น ๆ</td>
@@ -1383,15 +1361,16 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                         </tr>
                         <tr style="background: #fafafa; font-weight: bold; font-size: 9.5pt;">
                             <td style="padding: 3px 5px; text-align: left; border: 1.5px solid black;">ยอดรวม</td>
-                            <td style="border: 1.5px solid black;">${totalItemsAll}</td>
-                            <td style="border: 1.5px solid black;">${totalFee > 0 ? totalFee.toLocaleString() : '0'}</td>
-                            <td style="border: 1.5px solid black;">0</td>
-                            <td style="border: 1.5px solid black;">0</td>
+                            <td style="border: 1.5px solid black;">${valStr(summaryStats.ordinary.count + summaryStats.printed.count + summaryStats.registered.count + summaryStats.eco.count + summaryStats.parcel.count)}</td>
+                            <td style="border: 1.5px solid black;">${feeStr(summaryStats.ordinary.fee + summaryStats.printed.fee + summaryStats.registered.fee + summaryStats.eco.fee + summaryStats.parcel.fee)}</td>
+                            <td style="border: 1.5px solid black;">${valStr(summaryStats.epacket.count)}</td>
+                            <td style="border: 1.5px solid black;">${feeStr(summaryStats.epacket.fee)}</td>
                             <td style="border: 1.5px solid black;">${totalFee > 0 ? totalFee.toLocaleString() : '0'}</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            ` : ''}
             
             <div style="display: flex; justify-content: space-between; margin-top: auto; padding-top: 20px; font-size: 9pt; page-break-inside: avoid;">
                 <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
@@ -2629,7 +2608,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.4.1</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.5.0</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
