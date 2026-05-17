@@ -1180,6 +1180,68 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     for (const desc of sortedPrices) {
         priceBreakdownHtml += `<div style="margin-bottom: 4px;">- ${desc}: <b>${priceMap[desc]}</b> ชิ้น</div>`;
     }
+    
+    // Calculate Official Service Stats (v5.4.0)
+    const summaryStats = {
+        ordinary: { count: 0, fee: 0 },
+        printed: { count: 0, fee: 0 },
+        registered: { count: 0, fee: 0 },
+        certified: { count: 0, fee: 0 },
+        insured: { count: 0, fee: 0 },
+        parcel: { count: 0, fee: 0 },
+        logispost: { count: 0, fee: 0 },
+        postcard: { count: 0, fee: 0 },
+        ems: { count: 0, fee: 0 },
+        emsAr: { count: 0, fee: 0 },
+        others: { count: 0, fee: 0 }
+    };
+
+    items.forEach(item => {
+        const fee = parseFloat(item.fee) || 0;
+        const type = item.serviceType;
+        const opt = item.options || {};
+
+        if (opt.insurance) {
+            summaryStats.insured.count++;
+            summaryStats.insured.fee += fee;
+        } else if (type === 'EMS') {
+            if (opt.ar) {
+                summaryStats.emsAr.count++;
+                summaryStats.emsAr.fee += fee;
+            } else {
+                summaryStats.ems.count++;
+                summaryStats.ems.fee += fee;
+            }
+        } else if (type === 'REG') {
+            summaryStats.registered.count++;
+            summaryStats.registered.fee += fee;
+        } else if (type === 'PARCEL') {
+            summaryStats.parcel.count++;
+            summaryStats.parcel.fee += fee;
+        } else if (type === 'ORD') {
+            summaryStats.ordinary.count++;
+            summaryStats.ordinary.fee += fee;
+        } else if (type === 'PRINTED') {
+            summaryStats.printed.count++;
+            summaryStats.printed.fee += fee;
+        } else if (type === 'CERTIFIED') {
+            summaryStats.certified.count++;
+            summaryStats.certified.fee += fee;
+        } else if (type === 'LOGISPOST') {
+            summaryStats.logispost.count++;
+            summaryStats.logispost.fee += fee;
+        } else if (type === 'POSTCARD') {
+            summaryStats.postcard.count++;
+            summaryStats.postcard.fee += fee;
+        } else {
+            summaryStats.others.count++;
+            summaryStats.others.fee += fee;
+        }
+    });
+
+    const valStr = (v) => v > 0 ? v.toLocaleString() : '';
+    const feeStr = (f) => f > 0 ? f.toLocaleString() : '';
+
     const company = settings.company || '......................................';
     const address = settings.address || '............................................................................';
     const phone = settings.phone || '......................................';
@@ -1237,6 +1299,124 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                         ยอดรวมสุทธิ: ${totalFee > 0 ? totalFee.toLocaleString() : '0'} บาท
                      </div>
                 </div>
+            </div>
+            
+            <!-- Official Service Classification Table (v5.4.0) -->
+            <div style="margin-top: 15px; margin-bottom: 15px; page-break-inside: avoid;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; text-align: center; font-family: 'Sarabun', sans-serif; border: 1.5px solid black;">
+                    <thead>
+                        <tr style="background: #f8fafc; font-weight: bold;">
+                            <th rowspan="2" style="padding: 4px; width: 30%; text-align: left; border: 1.5px solid black; font-size: 9pt;">รายการ</th>
+                            <th colspan="2" style="padding: 4px; width: 28%; border: 1.5px solid black; font-size: 9pt;">ในประเทศ</th>
+                            <th colspan="2" style="padding: 4px; width: 28%; border: 1.5px solid black; font-size: 9pt;">ต่างประเทศ</th>
+                            <th rowspan="2" style="padding: 4px; width: 14%; border: 1.5px solid black; font-size: 9pt;">รวมเงินทั้งสิ้น<br>(1) + (2)</th>
+                        </tr>
+                        <tr style="background: #f8fafc; font-weight: bold;">
+                            <th style="padding: 4px; width: 10%; border: 1.5px solid black;">ชิ้น</th>
+                            <th style="padding: 4px; width: 18%; border: 1.5px solid black;">เงิน (1)</th>
+                            <th style="padding: 4px; width: 10%; border: 1.5px solid black;">ชิ้น</th>
+                            <th style="padding: 4px; width: 18%; border: 1.5px solid black;">เงิน (2)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">จดหมายธรรมดา</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.ordinary.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.ordinary.fee)}</td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.ordinary.fee)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">สิ่งตีพิมพ์</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.printed.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.printed.fee)}</td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.printed.fee)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">ลงทะเบียน</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.registered.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.registered.fee)}</td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.registered.fee)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">รับรอง</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.certified.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.certified.fee)}</td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.certified.fee)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">รับประกัน</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.insured.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.insured.fee)}</td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.insured.fee)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">พัสดุไปรษณีย์</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.parcel.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.parcel.fee)}</td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.parcel.fee)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">โลจิสโพสต์</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.logispost.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.logispost.fee)}</td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.logispost.fee)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">ไปรษณียบัตร</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.postcard.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.postcard.fee)}</td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.postcard.fee)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">EMS</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.ems.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.ems.fee)}</td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.ems.fee)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">EMS - AR (ตอบรับ)</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.emsAr.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.emsAr.fee)}</td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.emsAr.fee)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">อื่น ๆ</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.others.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.others.fee)}</td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black;"></td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.others.fee)}</td>
+                        </tr>
+                        <tr style="background: #fafafa; font-weight: bold; font-size: 9.5pt;">
+                            <td style="padding: 3px 5px; text-align: left; border: 1.5px solid black;">ยอดรวม</td>
+                            <td style="border: 1.5px solid black;">${totalItemsAll}</td>
+                            <td style="border: 1.5px solid black;">${totalFee > 0 ? totalFee.toLocaleString() : '0'}</td>
+                            <td style="border: 1.5px solid black;">0</td>
+                            <td style="border: 1.5px solid black;">0</td>
+                            <td style="border: 1.5px solid black;">${totalFee > 0 ? totalFee.toLocaleString() : '0'}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
             
             <div style="display: flex; justify-content: space-between; margin-top: auto; padding-top: 20px; font-size: 9pt; page-break-inside: avoid;">
@@ -2475,7 +2655,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.3.5</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.4.0</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
