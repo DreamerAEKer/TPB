@@ -226,6 +226,76 @@
                     <div class="service-tab" data-service="PARCEL">พัสดุ <span class="tab-count" id="count-parcel">0</span></div>
                     <div class="service-tab" data-service="CUSTOM">อื่นๆ (กำหนดเอง) <span class="tab-count" id="count-custom">0</span></div>
                 </div>
+                
+                <!-- Batch Helper Toggle Toolbar -->
+                <div style="background: #f8fafc; padding: 8px 16px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                    <span style="font-size: 0.8rem; color: #64748b; font-weight: 500;">📋 รายการนำส่งพัสดุในระบบ</span>
+                    <button type="button" id="toggle-batch-btn" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                        ⚡ เครื่องมือช่วยแก้ไขข้อมูลแบบกลุ่ม (Batch Helper)
+                    </button>
+                </div>
+
+                <!-- Batch Helper Panel -->
+                <div id="batch-helper-panel" style="display: none; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-bottom: 1px solid #bae6fd; padding: 12px 16px; transition: all 0.2s;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end;">
+                        <!-- Target Range -->
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: bold; color: #0369a1; margin-bottom: 4px;">🎯 ขอบเขตรายการ (Target Items)</label>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <select id="batch-range-type" style="flex: 1; padding: 6px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; background: white;">
+                                    <option value="all">ทุกรายการในตาราง (All)</option>
+                                    <option value="range">ระบุช่วงลำดับพัสดุ (Range)</option>
+                                </select>
+                                <div id="batch-range-inputs" style="display: none; gap: 4px; align-items: center;">
+                                    <input type="number" id="batch-start-idx" min="1" placeholder="จาก" style="width: 50px; padding: 5px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center;">
+                                    <span style="font-size: 0.8rem; color: #0369a1;">ถึง</span>
+                                    <input type="number" id="batch-end-idx" min="1" placeholder="ถึง" style="width: 50px; padding: 5px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Weight -->
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: bold; color: #0369a1; margin-bottom: 4px; cursor: pointer;">
+                                <input type="checkbox" id="batch-enable-weight" style="margin-right: 4px;"> ⚖️ ปรับน้ำหนัก (กรัม)
+                            </label>
+                            <input type="number" id="batch-weight-input" placeholder="ตัวอย่าง: 500" disabled style="width: 100%; padding: 6px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #f1f5f9;">
+                        </div>
+
+                        <!-- AR -->
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: bold; color: #0369a1; margin-bottom: 4px; cursor: pointer;">
+                                <input type="checkbox" id="batch-enable-ar" style="margin-right: 4px;"> 📩 บริการตอบรับ (AR)
+                            </label>
+                            <select id="batch-ar-input" disabled style="width: 100%; padding: 6px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #f1f5f9;">
+                                <option value="true">เปิดใช้งาน AR</option>
+                                <option value="false">ปิดการใช้งาน AR</option>
+                            </select>
+                        </div>
+
+                        <!-- Insurance -->
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: bold; color: #0369a1; margin-bottom: 4px; cursor: pointer;">
+                                <input type="checkbox" id="batch-enable-ins" style="margin-right: 4px;"> 🛡️ ปรับการรับประกัน
+                            </label>
+                            <div style="display: flex; gap: 6px;">
+                                <select id="batch-ins-input" disabled style="flex: 1; padding: 6px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #f1f5f9;">
+                                    <option value="true">เปิดรับประกัน</option>
+                                    <option value="false">ปิดรับประกัน</option>
+                                </select>
+                                <input type="number" id="batch-ins-val" placeholder="วงเงิน (บ.)" disabled style="flex: 1.2; padding: 6px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #f1f5f9;">
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div>
+                            <button type="button" id="batch-apply-btn" style="width: 100%; background: #0284c7; color: white; border: none; padding: 7px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.2s;">
+                                ⚡ ยืนยันปรับปรุง (Apply)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div style="flex: 1; overflow-y: auto; border-top: 1px solid #e2e8f0;">
                     <table id="shipment-table" style="font-size: 0.9rem;">
                         <thead style="position: sticky; top: 0; z-index: 10; background: #f1f3f5;">
@@ -639,6 +709,15 @@
                     <label style="font-size: 0.8rem;">ชื่อผู้จัดส่ง</label>
                     <input type="text" id="set-sender-name" placeholder="ระบุชื่อ...">
                 </div>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 1rem; flex-direction: row; align-items: center; gap: 10px; background: #f0f9ff; padding: 10px; border-radius: 8px; border: 1px solid #bae6fd;">
+                <input type="checkbox" id="set-exclude-island-ems" style="width: 20px; height: 20px;">
+                <label for="set-exclude-island-ems" style="color: #0369a1; margin: 0; cursor: pointer;">🏝️ ยกเว้นค่าพื้นที่เกาะ สำหรับ EMS</label>
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem; flex-direction: row; align-items: center; gap: 10px; background: #f0f9ff; padding: 10px; border-radius: 8px; border: 1px solid #bae6fd;">
+                <input type="checkbox" id="set-exclude-island-eco" style="width: 20px; height: 20px;">
+                <label for="set-exclude-island-eco" style="color: #0369a1; margin: 0; cursor: pointer;">🏝️ ยกเว้นค่าพื้นที่เกาะ สำหรับ eCo-Post</label>
             </div>
             
             <!-- Logo Settings Section -->

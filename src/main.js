@@ -2123,6 +2123,8 @@ saveSettingsBtn.onclick = async () => {
     settings.responsibleName = document.getElementById('set-res-name').value;
     settings.senderName = document.getElementById('set-sender-name').value;
     settings.homeZip = document.getElementById('settings-home-zip').value;
+    settings.excludeIslandEMS = document.getElementById('set-exclude-island-ems').checked;
+    settings.excludeIslandEco = document.getElementById('set-exclude-island-eco').checked;
 
     settings.logoWidth = parseInt(document.getElementById('set-logo-width').value) || 150;
     settings.logoAlign = document.getElementById('set-logo-align').value;
@@ -2592,6 +2594,8 @@ async function initApp() {
     document.getElementById('set-sender-name').value = settings.senderName || '';
     document.getElementById('settings-home-zip').value = settings.homeZip || '';
     document.getElementById('sig-names-fields').style.display = settings.showSignatureNames ? 'block' : 'none';
+    document.getElementById('set-exclude-island-ems').checked = settings.excludeIslandEMS || false;
+    document.getElementById('set-exclude-island-eco').checked = settings.excludeIslandEco || false;
 
     // Logo setup
     document.getElementById('set-logo-width').value = settings.logoWidth || 150;
@@ -2752,3 +2756,57 @@ function setupFluentNavigation() {
 }
 
 window.onload = initApp;
+
+// --- BATCH OPERATIONS HELPER EVENT LISTENERS ---
+const toggleBatchBtn = document.getElementById('toggle-batch-btn');
+const batchHelperPanel = document.getElementById('batch-helper-panel');
+
+if (toggleBatchBtn && batchHelperPanel) {
+    toggleBatchBtn.onclick = () => {
+        const isHidden = batchHelperPanel.style.display === 'none';
+        batchHelperPanel.style.display = isHidden ? 'block' : 'none';
+        toggleBatchBtn.style.background = isHidden ? '#eff6ff' : '#f8fafc';
+        toggleBatchBtn.style.color = isHidden ? '#1d4ed8' : '#64748b';
+        toggleBatchBtn.style.borderColor = isHidden ? '#bfdbfe' : '#cbd5e1';
+    };
+}
+
+// Range selection toggle
+const batchRangeType = document.getElementById('batch-range-type');
+const batchRangeInputs = document.getElementById('batch-range-inputs');
+if (batchRangeType && batchRangeInputs) {
+    batchRangeType.onchange = (e) => {
+        batchRangeInputs.style.display = e.target.value === 'range' ? 'inline-flex' : 'none';
+    };
+}
+
+// Enable/Disable input triggers
+const checkboxesWithInputs = [
+    { cb: 'batch-enable-weight', input: 'batch-weight-input' },
+    { cb: 'batch-enable-ar', input: 'batch-ar-input' }
+];
+
+checkboxesWithInputs.forEach(({ cb, input }) => {
+    const cbEl = document.getElementById(cb);
+    const inputEl = document.getElementById(input);
+    if (cbEl && inputEl) {
+        cbEl.onchange = (e) => {
+            inputEl.disabled = !e.target.checked;
+            inputEl.style.background = e.target.checked ? '#ffffff' : '#f1f5f9';
+        };
+    }
+});
+
+// Insurance enable/disable trigger
+const batchEnableIns = document.getElementById('batch-enable-ins');
+const batchInsInput = document.getElementById('batch-ins-input');
+const batchInsVal = document.getElementById('batch-ins-val');
+if (batchEnableIns && batchInsInput && batchInsVal) {
+    batchEnableIns.onchange = (e) => {
+        const active = e.target.checked;
+        batchInsInput.disabled = !active;
+        batchInsInput.style.background = active ? '#ffffff' : '#f1f5f9';
+        batchInsVal.disabled = !active;
+        batchInsVal.style.background = active ? '#ffffff' : '#f1f5f9';
+    };
+}
