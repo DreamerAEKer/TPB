@@ -907,7 +907,6 @@ function generateShipmentNote(s) {
     }
 
     if (s.options?.insurance) notes.push(`🛡️ ${(parseFloat(s.options.insuranceVal)||0).toLocaleString()}`);
-    if (s.options?.useVolWeight) notes.push("ขนาดใหญ่");
     if (s.serviceType === 'REG') {
         if (s.options?.regType === 'BOX') notes.push("หีบห่อ");
     }
@@ -990,7 +989,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 const isWeightEmpty = !s.weight || s.weight == 0;
                 const displayWeight = isWeightEmpty ? '' : s.weight;
                 const displayFee = isWeightEmpty ? '' : parseFloat(s.fee).toLocaleString();
-                const dimHtml = (s.options?.useVolWeight && s.options?.dimensions) ? `<div style="font-size: 7.5pt; font-weight: normal; line-height: 1.1; margin-top: 1px;">(${s.options.dimensions.w}*${s.options.dimensions.l}*${s.options.dimensions.h})</div>` : '';
+                const dimHtml = (s.options?.useVolWeight && s.options?.dimensions) ? `<div style="font-size: 6.5pt; font-weight: normal; line-height: 1; margin-top: 1px; color: #475569;">(${s.options.dimensions.w}*${s.options.dimensions.l}*${s.options.dimensions.h})</div>` : '';
                 
                 rowsHtml += `
                     <tr style="height: 25px;">
@@ -998,7 +997,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         <td style="text-align: left; padding: 1px 4px;">${displayRecipient}</td>
                         <td style="text-align: left; padding: 1px 4px;">${displayDestination}</td>
                         <td style="padding: 1px 4px; text-align: left; font-weight: bold;">${s.displayTracking}</td>
-                        <td style="padding: 1px 4px; text-align: center; ${s.options?.useVolWeight ? 'font-weight: bold;' : ''}">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}${dimHtml}</td>
+                        <td style="padding: 1px 4px; text-align: center;">${displayWeight ? parseFloat(displayWeight).toLocaleString() : ''}${dimHtml}</td>
                         <td style="padding: 1px 4px; text-align: center;">${displayFee}</td>
                         <td style="padding: 1px 4px; font-size: 8pt; text-align: center;">${generateShipmentNote(s)}</td>
                     </tr>
@@ -2451,7 +2450,7 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.2.6</div>
+            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.2.7</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
