@@ -526,6 +526,10 @@ function renderShipments() {
   });
 
   document.querySelectorAll('.editable-cell[contenteditable="true"]').forEach(cell => {
+    cell.onfocus = (e) => {
+        e.target.setAttribute('data-old-val', e.target.innerText.trim());
+    };
+
     cell.oninput = async (e) => {
         const field = e.target.dataset.field;
         const idx = e.target.dataset.index;
@@ -592,15 +596,32 @@ function renderShipments() {
             needsRender = true;
         } else if (field === 'trackingFormatted') {
             let raw = (s.trackingFormatted || '').replace(/\s+/g, '').toUpperCase();
+            let parsedTracking = '';
             const match = raw.match(/^([A-Z]{2})(\d{8})(\d)([A-Z]{2})$/);
             if (match) {
-                s.trackingFormatted = formatTrackingNumber(match[1], match[2], match[3]);
+                parsedTracking = formatTrackingNumber(match[1], match[2], match[3]);
             } else {
                 const simpleMatch = raw.match(/^([A-Z]{2})(\d{8})([A-Z]{2})$/);
                 if (simpleMatch) {
                     const cd = calculateCheckDigit(simpleMatch[2]);
-                    s.trackingFormatted = formatTrackingNumber(simpleMatch[1], simpleMatch[2], cd);
+                    parsedTracking = formatTrackingNumber(simpleMatch[1], simpleMatch[2], cd);
                 }
+            }
+            
+            if (parsedTracking) {
+                // Check if this new formatted tracking number is already used in shipments (excluding the current index idx)
+                const isDup = shipments.some((ship, sIdx) => sIdx !== parseInt(idx) && ship.trackingFormatted === parsedTracking);
+                if (isDup) {
+                    alert(`⚠️ ไม่สามารถใช้เลขที่สิ่งของนี้ได้ เนื่องจากมีการใช้งานเลขนี้ในระบบแล้วเพื่อป้องกันการซ้ำกัน!`);
+                    s.trackingFormatted = e.target.getAttribute('data-old-val') || s.trackingFormatted;
+                    renderShipments();
+                    return;
+                }
+                s.trackingFormatted = parsedTracking;
+            } else {
+                s.trackingFormatted = e.target.getAttribute('data-old-val') || s.trackingFormatted;
+                renderShipments();
+                return;
             }
             
             const promptVal = prompt(
@@ -1740,7 +1761,10 @@ feeInput.oninput = (e) => {
     e.target.value = sanitizeNumeric(e.target.value, true);
     updatePreview();
 };
-optAR.onchange = updatePreview;
+optAR.onchange = () => {
+    adjustSidebarTrackingNumberForStep();
+    updatePreview();
+};
 optInsurance.onchange = () => {
     if (optInsurance.checked) {
         const currentVal = parseFloat(insuranceVal.value) || 0;
@@ -1767,7 +1791,10 @@ destInput.oninput = (e) => {
     e.target.value = sanitizeNumeric(e.target.value);
     updatePreview();
 };
-optArTracking.onchange = updatePreview;
+optArTracking.onchange = () => {
+    adjustSidebarTrackingNumberForStep();
+    updatePreview();
+};
 dimW.oninput = (e) => {
     e.target.value = sanitizeNumeric(e.target.value);
     updatePreview();
@@ -1865,6 +1892,42 @@ if (upcFeeInput) upcFeeInput.oninput = (e) => { e.target.value = sanitizeNumeric
 
 customServiceManualInput.oninput = updatePreview;
 
+// --- UNIQUE TRACKING NUMBER GENERATOR & ADJUSTER (v5.8.2) ---
+function getNextAvailableTrackingNumber(prefix, startD, activeStep) {
+    let num = parseInt(startD);
+    if (isNaN(num)) num = 0;
+    while (true) {
+        const d = num.toString().padStart(8, '0');
+        const cd = calculateCheckDigit(d);
+        const trackingFormatted = formatTrackingNumber(prefix, d, cd);
+        
+        // Check if this tracking number is already in shipments
+        const isDup = shipments.some(s => s.trackingFormatted === trackingFormatted);
+        if (!isDup) {
+            return { d, cd, trackingFormatted };
+        }
+        
+        // If duplicated, increment by activeStep
+        num += activeStep;
+    }
+}
+
+function adjustSidebarTrackingNumberForStep() {
+    const p = prefixInput.value.trim().toUpperCase();
+    const type = getServiceType(p);
+    if (type === 'CUSTOM') return;
+    
+    const startD = (bulkToggle.checked ? num8StartInput.value : digitsInput.value).trim();
+    if (startD.length !== 8) return;
+    
+    const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
+    const nextAvail = getNextAvailableTrackingNumber(p, startD, step);
+    
+    num8StartInput.value = nextAvail.d;
+    digitsInput.value = nextAvail.d;
+    num8StartInput.dispatchEvent(new Event('input'));
+}
+
 addBtn.onclick = async (e) => {
   e.preventDefault();
 
@@ -1956,6 +2019,9 @@ addBtn.onclick = async (e) => {
       if (count > 100 && !confirm(`คุณกำลังจะเพิ่ม ${count} รายการ ต้องการดำเนินการต่อหรือไม่?`)) return;
 
       const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
+      let currentNum = parseInt(startD);
+      let lastGeneratedD = startD;
+
       for (let i = 0; i < count; i++) {
           let trackingFormatted = '';
           if (type === 'CUSTOM') {
@@ -1969,10 +2035,10 @@ addBtn.onclick = async (e) => {
                  trackingFormatted = startD + (i > 0 ? `-${i}` : ''); 
               }
           } else {
-              const currentNum = parseInt(startD) + (i * step);
-              const d = currentNum.toString().padStart(8, '0');
-              const cd = calculateCheckDigit(d);
-              trackingFormatted = formatTrackingNumber(p, d, cd);
+              const nextAvail = getNextAvailableTrackingNumber(p, currentNum.toString().padStart(8, '0'), step);
+              trackingFormatted = nextAvail.trackingFormatted;
+              lastGeneratedD = nextAvail.d;
+              currentNum = parseInt(nextAvail.d) + step;
           }
           
           let isLarge = false;
@@ -2051,7 +2117,7 @@ addBtn.onclick = async (e) => {
       }
       
       if (type !== 'CUSTOM') {
-          const nextStartD = (parseInt(startD) + (count * step)).toString().padStart(8, '0');
+          const nextStartD = (parseInt(lastGeneratedD) + step).toString().padStart(8, '0');
           num8StartInput.value = nextStartD;
           digitsInput.value = nextStartD;
           num8StartInput.dispatchEvent(new Event('input'));
@@ -2060,12 +2126,11 @@ addBtn.onclick = async (e) => {
       if (!startD) return alert('กรุณากรอกข้อมูลเลขที่');
       if (type !== 'CUSTOM' && (p.length !== 2 || startD.length !== 8)) return alert('รูปแบบเลข 8 หลักไม่ถูกต้อง');
       
-      let trackingFormatted = '';
-      if (type === 'CUSTOM') {
-          trackingFormatted = p + startD;
-      } else {
-          const cd = calculateCheckDigit(startD);
-          trackingFormatted = formatTrackingNumber(p, startD, cd);
+      if (type !== 'CUSTOM') {
+          const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
+          const nextAvail = getNextAvailableTrackingNumber(p, startD, step);
+          finalD = nextAvail.d;
+          trackingFormatted = nextAvail.trackingFormatted;
       }
       
       let isLarge = false;
@@ -2144,7 +2209,9 @@ addBtn.onclick = async (e) => {
       
       if (type !== 'CUSTOM') {
           const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
-          digitsInput.value = (parseInt(startD) + step).toString().padStart(8, '0');
+          const nextAvail = getNextAvailableTrackingNumber(p, (parseInt(finalD) + step).toString().padStart(8, '0'), step);
+          digitsInput.value = nextAvail.d;
+          num8StartInput.value = nextAvail.d;
       }
       recipientInput.value = '';
       destInput.value = '';
@@ -2351,8 +2418,13 @@ dispatchBtn.onclick = async () => {
 nextNumBtn.onclick = () => {
   const v = digitsInput.value;
   if (currentServiceTab !== 'CUSTOM' && v.length === 8) {
-    const nextVal = (parseInt(v) + 1) % 100000000;
-    digitsInput.value = nextVal.toString().padStart(8, '0');
+    const p = prefixInput.value.trim().toUpperCase();
+    const type = getServiceType(p);
+    const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
+    const startVal = (parseInt(v) + step) % 100000000;
+    const nextAvail = getNextAvailableTrackingNumber(p, startVal.toString().padStart(8, '0'), step);
+    digitsInput.value = nextAvail.d;
+    num8StartInput.value = nextAvail.d;
     updatePreview();
     if (bulkToggle.checked) syncBatchInputs('count');
   }
@@ -2439,6 +2511,7 @@ document.querySelectorAll('.service-tab').forEach(tab => {
         
         renderShipments();
         updateSummary();
+        adjustSidebarTrackingNumberForStep(); // Adjust number on tab switch
         updatePreview(); // Fix: Ensure UI fields hide/show immediately on tab change
     };
 });
