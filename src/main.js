@@ -1889,7 +1889,7 @@ addBtn.onclick = async (e) => {
       
       if (count > 100 && !confirm(`คุณกำลังจะเพิ่ม ${count} รายการ ต้องการดำเนินการต่อหรือไม่?`)) return;
 
-      const step = (type === 'REG' && optArTracking.checked) ? 2 : 1;
+      const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
       for (let i = 0; i < count; i++) {
           let trackingFormatted = '';
           if (type === 'CUSTOM') {
@@ -2077,7 +2077,7 @@ addBtn.onclick = async (e) => {
           });
       
       if (type !== 'CUSTOM') {
-          const step = (type === 'REG' && optArTracking.checked) ? 2 : 1;
+          const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
           digitsInput.value = (parseInt(startD) + step).toString().padStart(8, '0');
       }
       recipientInput.value = '';
