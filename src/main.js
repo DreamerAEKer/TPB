@@ -574,11 +574,15 @@ function renderShipments() {
             // If weight was changed, recalculate fee first
             if (field === 'weight') {
                 const w = parseFloat(s.weight) || 0;
-                const base = calculateBaseFee(s.serviceType, w, s.options || {});
-                let total = base;
-                if (s.options?.isRemote) total += 20;
-                if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
-                s.fee = total;
+                if (w > 0) {
+                    const base = calculateBaseFee(s.serviceType, w, s.options || {});
+                    let total = base;
+                    if (s.options?.isRemote) total += 20;
+                    if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
+                    s.fee = total;
+                } else {
+                    s.fee = '';
+                }
             }
             
             applySmartPricing(idx);
@@ -701,16 +705,19 @@ window.toggleRowService = async (i, serviceType, checked) => {
     }
     
     // Recalculate fee
-    const base = calculateBaseFee(s.serviceType, s.weight, s.options);
-    let total = base;
-    if (s.options.isRemote) total += 20;
-    if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
+    if (s.serviceType === 'CUSTOM' || parseFloat(s.weight) > 0) {
+        const base = calculateBaseFee(s.serviceType, s.weight, s.options);
+        let total = base;
+        if (s.options.isRemote) total += 20;
+        if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
+        s.fee = total;
+    } else {
+        s.fee = '';
+    }
     
     // Store metadata for bolding in manifest
     s.isVolumetric = !!s.useVolWeight;
     s.isRemoteBold = !!s.optRemote;
-    
-    s.fee = total;
     
     if (isARChange) {
         const msg = checked
@@ -743,17 +750,21 @@ window.updateRowInsuranceVal = async (i, val) => {
     s.options.insuranceVal = parsed;
     
     // Recalculate fee
-    const base = calculateBaseFee(s.serviceType, s.weight, s.options);
-    let total = base;
-    if (s.options.isRemote) total += 20;
-    if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
-    s.fee = total;
+    if (s.serviceType === 'CUSTOM' || parseFloat(s.weight) > 0) {
+        const base = calculateBaseFee(s.serviceType, s.weight, s.options);
+        let total = base;
+        if (s.options.isRemote) total += 20;
+        if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
+        s.fee = total;
+    } else {
+        s.fee = '';
+    }
 
     updateSummary();
     await updateHistory();
     // No full render here to avoid losing focus while typing
     const feeCell = document.querySelector(`td.editable-cell[data-field="fee"][data-index="${i}"]`);
-    if (feeCell) feeCell.innerText = parseFloat(total).toLocaleString();
+    if (feeCell) feeCell.innerText = (s.fee !== '') ? parseFloat(s.fee).toLocaleString() : '';
 
     // Highlight input if exceeds limit
     const input = document.querySelector(`tr td input.mini-input[oninput*="updateRowInsuranceVal(${i},"]`);
@@ -783,6 +794,11 @@ window.validateRowInsurance = (i, input) => {
 function applySmartPricing(i) {
     const s = shipments[i];
     if(s.serviceType === 'CUSTOM') return;
+    
+    if (!(parseFloat(s.weight) > 0)) {
+        s.fee = '';
+        return;
+    }
     
     const zipMatch = s.destination.match(/\d{5}/);
     const zip = zipMatch ? zipMatch[0] : null;
@@ -2483,7 +2499,7 @@ window.toggleAllService = (type) => {
             if (type === 'ar') s.options.ar = true;
             if (type === 'ar-track') s.options.arTracking = true;
             if (type === 'ins') s.options.insurance = true;
-            s.fee = calculateBaseFee(s.serviceType, s.weight, s.options);
+            s.fee = (s.serviceType === 'CUSTOM' || parseFloat(s.weight) > 0) ? calculateBaseFee(s.serviceType, s.weight, s.options) : '';
         });
     } else {
         // Mode: Unselect (Smart Logic v5.0.6)
@@ -2495,7 +2511,7 @@ window.toggleAllService = (type) => {
                     if (type === 'ar') s.options.ar = false;
                     if (type === 'ar-track') s.options.arTracking = false;
                     if (type === 'ins') s.options.insurance = false;
-                    s.fee = calculateBaseFee(s.serviceType, s.weight, s.options);
+                    s.fee = (s.serviceType === 'CUSTOM' || parseFloat(s.weight) > 0) ? calculateBaseFee(s.serviceType, s.weight, s.options) : '';
                 });
                 bulkBackup[type] = null; // Clear backup
             } else {
@@ -2507,7 +2523,7 @@ window.toggleAllService = (type) => {
                         if (type === 'ar') s.options.ar = backup.val;
                         if (type === 'ar-track') s.options.arTracking = backup.val;
                         if (type === 'ins') s.options.insurance = backup.val;
-                        s.fee = calculateBaseFee(s.serviceType, s.weight, s.options);
+                        s.fee = (s.serviceType === 'CUSTOM' || parseFloat(s.weight) > 0) ? calculateBaseFee(s.serviceType, s.weight, s.options) : '';
                     }
                 });
                 bulkBackup[type] = null; // Clear backup after restoration
@@ -2521,7 +2537,7 @@ window.toggleAllService = (type) => {
                     if (type === 'ar') s.options.ar = false;
                     if (type === 'ar-track') s.options.arTracking = false;
                     if (type === 'ins') s.options.insurance = false;
-                    s.fee = calculateBaseFee(s.serviceType, s.weight, s.options);
+                    s.fee = (s.serviceType === 'CUSTOM' || parseFloat(s.weight) > 0) ? calculateBaseFee(s.serviceType, s.weight, s.options) : '';
                 });
             } else {
                 headerCheck.checked = true;
@@ -2723,7 +2739,7 @@ saveSettingsBtn.onclick = async () => {
         if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) {
             base += 3;
         }
-        s.fee = base;
+        s.fee = (s.serviceType === 'CUSTOM' || parseFloat(s.weight) > 0) ? base : '';
     }
 
     await saveToDB('settings', settings);
@@ -3630,7 +3646,7 @@ async function applyBatchChanges() {
             base += 3;
         }
 
-        s.fee = base;
+        s.fee = (s.serviceType === 'CUSTOM' || parseFloat(s.weight) > 0) ? base : '';
         updatedCount++;
     }
 
