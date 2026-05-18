@@ -494,9 +494,7 @@ function renderShipments() {
             ${highlightPostcode(s.destination, isRemoteActive)}
         </div>
       </td>
-      <td class="tracking-cell">
-        <div style="font-weight: 600; white-space: pre;">${displayTracking}</div>
-      </td>
+      <td class="editable-cell tracking-cell" contenteditable="true" data-field="trackingFormatted" data-index="${i}" style="font-weight: 600; white-space: pre; outline: none;">${displayTracking}</td>
       <td class="services-cell">
         <div style="display: flex; gap: 8px; flex-wrap: nowrap; justify-content: center;">
             <label class="svc-mini" title="ตอบรับ (AR)"><input type="checkbox" ${s.options?.ar ? 'checked' : ''} onchange="toggleRowService(${i}, 'ar', this.checked)"> AR</label>
@@ -588,6 +586,19 @@ function renderShipments() {
         } else if (field === 'destination') {
             if (s.serviceType !== 'CUSTOM') applySmartPricing(idx);
             needsRender = true;
+        } else if (field === 'trackingFormatted') {
+            let raw = (s.trackingFormatted || '').replace(/\s+/g, '').toUpperCase();
+            const match = raw.match(/^([A-Z]{2})(\d{8})(\d)([A-Z]{2})$/);
+            if (match) {
+                s.trackingFormatted = formatTrackingNumber(match[1], match[2], match[3]);
+            } else {
+                const simpleMatch = raw.match(/^([A-Z]{2})(\d{8})([A-Z]{2})$/);
+                if (simpleMatch) {
+                    const cd = calculateCheckDigit(simpleMatch[2]);
+                    s.trackingFormatted = formatTrackingNumber(simpleMatch[1], simpleMatch[2], cd);
+                }
+            }
+            needsRender = true;
         }
         
         updateSummary();
@@ -611,10 +622,20 @@ window.toggleRowService = async (i, serviceType, checked) => {
     
     if (serviceType === 'ar') {
         s.options.ar = checked;
-        if (checked) s.options.arTracking = false;
+        if (checked) {
+            s.options.arTracking = false;
+            alert("⚠️ เมื่อเปิดใช้งานบริการตอบรับ (AR) รายการนี้จะใช้เลขที่พัสดุถัดไปด้วยสำหรับใบตอบรับ (ทำให้ใช้เลขคู่ 2 เลข) ซึ่งอาจส่งผลกระทบให้เลขที่พัสดุในแถวถัดไปซ้ำซ้อนกัน\n\n💡 คุณสามารถแก้ไขเลขที่พัสดุของแถวถัดไปในตารางโดยตรงได้เลยครับ");
+        } else {
+            alert("⚠️ เมื่อปิดใช้งานบริการตอบรับ (AR) รายการนี้จะเปลี่ยนมาใช้เลขเดี่ยว ซึ่งอาจทำให้เกิดช่องว่างในลำดับเลขพัสดุถัดไป\n\n💡 คุณสามารถแก้ไขเลขที่พัสดุในตารางโดยตรงได้ตามสะดวกครับ");
+        }
     } else if (serviceType === 'arTracking') {
         s.options.arTracking = checked;
-        if (checked) s.options.ar = false;
+        if (checked) {
+            s.options.ar = false;
+            alert("⚠️ เมื่อเปิดใช้งานบริการ AR Track รายการนี้จะใช้เลขที่พัสดุถัดไปด้วยสำหรับใบตอบรับ (ทำให้ใช้เลขคู่ 2 เลข) ซึ่งอาจส่งผลกระทบให้เลขที่พัสดุในแถวถัดไปซ้ำซ้อนกัน\n\n💡 คุณสามารถแก้ไขเลขที่พัสดุของแถวถัดไปในตารางโดยตรงได้เลยครับ");
+        } else {
+            alert("⚠️ เมื่อปิดใช้งานบริการ AR Track รายการนี้จะเปลี่ยนมาใช้เลขเดี่ยว ซึ่งอาจทำให้เกิดช่องว่างในลำดับเลขพัสดุถัดไป\n\n💡 คุณสามารถแก้ไขเลขที่พัสดุในตารางโดยตรงได้ตามสะดวกครับ");
+        }
     } else if (serviceType === 'insurance') {
         if (checked) {
             let currentVal = s.options.insuranceVal || 2000;
