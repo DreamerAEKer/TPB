@@ -1285,21 +1285,38 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
 
 
 function generateSummarySheet(items, titleSuffix, copies = 1) {
-    const volWeightItems = items.filter(s => s.options?.useVolWeight && s.options?.dimensions);
+    const volWeightItems = items.filter(s => s.options?.dimensions && (s.options.dimensions.w || s.options.dimensions.l || s.options.dimensions.h));
     let qrCodeHtml = '';
     if (volWeightItems.length > 0) {
         const qrLines = volWeightItems.map(s => {
             const cleanTrack = s.trackingFormatted.replace(/\s+/g, '');
-            return `${cleanTrack}:${s.options.dimensions.w}*${s.options.dimensions.l}*${s.options.dimensions.h}`;
+            const w = s.options.dimensions.w || 0;
+            const l = s.options.dimensions.l || 0;
+            const h = s.options.dimensions.h || 0;
+            return `${cleanTrack}:${w}*${l}*${h}`;
         });
         const qrText = qrLines.join('\n');
         const onlineQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrText)}`;
         const safeQrText = qrText.replace(/"/g, '&quot;').replace(/\n/g, '&#10;');
         
+        let localQrDataUrl = '';
+        if (typeof QRious !== 'undefined') {
+            try {
+                const qr = new QRious({
+                    value: qrText,
+                    size: 250,
+                    level: 'M'
+                });
+                localQrDataUrl = qr.toDataURL();
+            } catch (e) {
+                console.error('Error generating local QR:', e);
+            }
+        }
+        
         qrCodeHtml = `
             <div style="flex: 0.9; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fafafa; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 10pt; box-sizing: border-box; text-align: center; height: 100%;">
                 <div style="font-weight: bold; margin-bottom: 5px; color: #1e3a8a; font-size: 9.5pt;">QR ขนาด EMS ขนาดใหญ่ (${volWeightItems.length} ชิ้น)</div>
-                <img src="${onlineQrUrl}" 
+                <img src="${localQrDataUrl || onlineQrUrl}" 
                      data-qrtext="${safeQrText}" 
                      onerror="this.onerror=null; if(typeof QRious !== 'undefined'){ try { const qr = new QRious({value: this.getAttribute('data-qrtext'), size: 250, level: 'M'}); this.src = qr.toDataURL(); } catch(e){} }" 
                      style="width: 85px; height: 85px; object-fit: contain; border: 1px solid #eee; padding: 2px; background: white;" 
