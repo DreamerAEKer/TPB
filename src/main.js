@@ -1816,7 +1816,7 @@ batchCountInput.oninput = (e) => {
     syncBatchInputs('count');
 };
 weightInput.oninput = (e) => {
-    e.target.value = sanitizeNumeric(e.target.value);
+    e.target.value = sanitizeNumeric(e.target.value, currentWeightUnit === 'kg');
     updatePreview();
 };
 feeInput.oninput = (e) => {
