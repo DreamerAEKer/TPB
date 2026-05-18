@@ -1081,7 +1081,7 @@ function updatePreview() {
         ar: optAR.checked, 
         arTracking: optArTracking.checked,
         insurance: optInsurance.checked, 
-        insuranceVal: parseFloat(insuranceVal.value),
+        insuranceVal: parseFloat(insuranceVal.value) || 0,
         regType: regTypeInput.value
       });
       let total = base;
@@ -1095,8 +1095,7 @@ function updatePreview() {
       if (w === 0 && activeSvc !== 'CUSTOM') {
           feeInput.value = '';
           feeInput.style.color = '#888';
-          const fallbacks = { 'EMS': '32', 'REG': '18', 'PARCEL': '25', 'ECO': '20' };
-          feeInput.placeholder = fallbacks[activeSvc] || '0';
+          feeInput.placeholder = total.toLocaleString();
       } else {
           feeInput.value = total;
           feeInput.style.color = 'inherit';
@@ -2275,7 +2274,7 @@ addBtn.onclick = async (e) => {
                 ar: optAR.checked, 
                 arTracking: optArTracking.checked,
                 insurance: optInsurance.checked, 
-                insuranceVal: parseFloat(insuranceVal.value.replace(/,/g, '')),
+                insuranceVal: parseFloat(insuranceVal.value.replace(/,/g, '')) || 0,
                 regType: regTypeInput.value,
                 isLarge: isLarge,
                 useVolWeight: useVolWeight,
@@ -2416,7 +2415,7 @@ addBtn.onclick = async (e) => {
                 ar: optAR.checked, 
                 arTracking: optArTracking.checked,
                 insurance: optInsurance.checked, 
-                insuranceVal: parseFloat(insuranceVal.value.replace(/,/g, '')),
+                insuranceVal: parseFloat(insuranceVal.value.replace(/,/g, '')) || 0,
                 regType: regTypeInput.value,
                 isLarge: isLarge,
                 useVolWeight: useVolWeight,
