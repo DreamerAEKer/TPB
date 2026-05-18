@@ -1095,7 +1095,8 @@ function updatePreview() {
       if (w === 0 && activeSvc !== 'CUSTOM') {
           feeInput.value = '';
           feeInput.style.color = '#888';
-          feeInput.placeholder = total.toLocaleString();
+          const fallbacks = { 'EMS': '32', 'REG': '18', 'PARCEL': '25', 'ECO': '20' };
+          feeInput.placeholder = fallbacks[activeSvc] || '0';
       } else {
           feeInput.value = total;
           feeInput.style.color = 'inherit';
