@@ -24,7 +24,7 @@
         </div>
         <div style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
             <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-            <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v5.8.0</div>
+            <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v5.8.1</div>
         </div>
     </div>
 
@@ -311,18 +311,18 @@
                         </div>
 
                         <!-- AR -->
-                        <div>
+                        <div id="batch-ar-group">
                             <label style="display: block; font-size: 0.75rem; font-weight: bold; color: #0369a1; margin-bottom: 4px; cursor: pointer;">
                                 <input type="checkbox" id="batch-enable-ar" style="margin-right: 4px;"> 📩 บริการตอบรับ (AR)
                             </label>
                             <select id="batch-ar-input" disabled style="width: 100%; padding: 6px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #f1f5f9;">
-                                <option value="true">เปิดใช้งาน AR</option>
+                                <option value="ar">เปิดใช้งาน AR</option>
                                 <option value="false">ปิดการใช้งาน AR</option>
                             </select>
                         </div>
 
                         <!-- Insurance -->
-                        <div>
+                        <div id="batch-ins-group">
                             <label style="display: block; font-size: 0.75rem; font-weight: bold; color: #0369a1; margin-bottom: 4px; cursor: pointer;">
                                 <input type="checkbox" id="batch-enable-ins" style="margin-right: 4px;"> 🛡️ ปรับการรับประกัน
                             </label>
@@ -354,9 +354,10 @@
                                 <th>เลขที่สิ่งของ</th>
                                 <th style="min-width: 120px;">
                                     บริการเสริม
-                                    <div style="display: flex; gap: 8px; font-size: 0.65rem; font-weight: normal; margin-top: 4px; justify-content: center;">
-                                        <label title="ติ๊ก AR ทั้งหมด"><input type="checkbox" id="toggle-all-ar" onchange="toggleAllService('ar')"> AR</label>
-                                        <label title="ติ๊กประกันทั้งหมด"><input type="checkbox" id="toggle-all-ins" onchange="toggleAllService('ins')"> 🛡️</label>
+                                    <div style="display: flex; gap: 8px; font-size: 0.65rem; font-weight: normal; margin-top: 4px; justify-content: center; flex-wrap: wrap;">
+                                        <label id="header-ar-row" title="ติ๊ก AR ทั้งหมด" style="display: none;"><input type="checkbox" id="toggle-all-ar" onchange="toggleAllService('ar')"> AR</label>
+                                        <label id="header-ar-track-row" title="ติ๊ก AR Track ทั้งหมด" style="display: none;"><input type="checkbox" id="toggle-all-ar-track" onchange="toggleAllService('ar-track')"> AR Track</label>
+                                        <label id="header-ins-row" title="ติ๊กประกันทั้งหมด" style="display: none;"><input type="checkbox" id="toggle-all-ins" onchange="toggleAllService('ins')"> 🛡️</label>
                                     </div>
                                 </th>
                                 <th>น้ำหนัก</th>
@@ -856,7 +857,7 @@
         <div style="color: #64748b; margin-top: 0.5rem;">กรุณารอสักครู่ (อาจใช้เวลา 1-5 วินาที สำหรับรายการจำนวนมาก)</div>
     </div>
 
-    <script src="src/qrious.min.js?v=5.8.0"></script>
-    <script src="src/main.js?v=5.8.0"></script>
+    <script src="src/qrious.min.js?v=5.8.1"></script>
+    <script src="src/main.js?v=5.8.1"></script>
 </body>
 </html>

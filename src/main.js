@@ -881,6 +881,50 @@ function updatePreview() {
   if (optArTrackingRow) {
       optArTrackingRow.style.display = (activeSvc === 'REG') ? 'flex' : 'none';
   }
+
+  // --- Dynamic Option Controls for Table Header and Batch Helper (v5.8.1) ---
+  const headerArRow = document.getElementById('header-ar-row');
+  const headerArTrackRow = document.getElementById('header-ar-track-row');
+  const headerInsRow = document.getElementById('header-ins-row');
+  
+  if (headerArRow) {
+      headerArRow.style.display = (activeSvc === 'EMS' || activeSvc === 'REG' || activeSvc === 'ECO' || activeSvc === 'PARCEL') ? 'inline-block' : 'none';
+  }
+  if (headerArTrackRow) {
+      headerArTrackRow.style.display = (activeSvc === 'REG') ? 'inline-block' : 'none';
+  }
+  if (headerInsRow) {
+      headerInsRow.style.display = (activeSvc === 'EMS') ? 'inline-block' : 'none';
+  }
+
+  // Batch Helper Groups Visibility
+  const batchArGroup = document.getElementById('batch-ar-group');
+  const batchInsGroup = document.getElementById('batch-ins-group');
+  
+  if (batchArGroup) {
+      batchArGroup.style.display = (activeSvc === 'CUSTOM') ? 'none' : 'block';
+  }
+  if (batchInsGroup) {
+      batchInsGroup.style.display = (activeSvc === 'EMS') ? 'block' : 'none';
+  }
+
+  // Batch Helper AR Dropdown Content Update
+  const batchArInput = document.getElementById('batch-ar-input');
+  if (batchArInput) {
+      if (activeSvc === 'REG') {
+          batchArInput.innerHTML = `
+              <option value="ar">เปิดใช้งาน ตอบรับ (AR) 3 บ.</option>
+              <option value="ar-track">เปิดใช้งาน AR Track 8 บ.</option>
+              <option value="false">ปิดการใช้งานตอบรับ</option>
+          `;
+      } else {
+          const arPrice = activeSvc === 'EMS' ? '12 บ.' : '3 บ.';
+          batchArInput.innerHTML = `
+              <option value="ar">เปิดใช้งาน ตอบรับ (AR) ${arPrice}</option>
+              <option value="false">ปิดการใช้งานตอบรับ</option>
+          `;
+      }
+  }
   
   // Rule: Parcel and REG do not have remote surcharge
   const canHaveRemote = (activeSvc !== 'PARCEL' && activeSvc !== 'REG' && activeSvc !== 'CUSTOM');
@@ -3556,7 +3600,7 @@ async function applyBatchChanges() {
 
     // Parsed options values
     const newWeight = enableWeight ? parseFloat(document.getElementById('batch-weight-input').value) || 0 : null;
-    const newAR = enableAR ? (document.getElementById('batch-ar-input').value === 'true') : null;
+    const batchArVal = enableAR ? document.getElementById('batch-ar-input').value : null;
     const newInsActive = enableIns ? (document.getElementById('batch-ins-input').value === 'true') : null;
     const newInsVal = enableIns ? parseFloat(document.getElementById('batch-ins-val').value) || 0 : null;
 
@@ -3597,16 +3641,32 @@ async function applyBatchChanges() {
 
         // 2. Update AR
         if (enableAR) {
-            s.options.ar = newAR;
-            s.options.arTracking = false; // reset tracking-ar to standard
+            if (s.serviceType === 'CUSTOM') {
+                s.options.ar = false;
+                s.options.arTracking = false;
+            } else if (batchArVal === 'ar') {
+                s.options.ar = true;
+                s.options.arTracking = false;
+            } else if (batchArVal === 'ar-track' && s.serviceType === 'REG') {
+                s.options.ar = false;
+                s.options.arTracking = true;
+            } else {
+                s.options.ar = false;
+                s.options.arTracking = false;
+            }
         }
 
         // 3. Update Insurance
         if (enableIns) {
-            const maxIns = s.serviceType === 'EMS' ? 50000 : (s.serviceType === 'ECO' ? 0 : 5000);
-            if (newInsActive && maxIns > 0) {
-                s.options.insurance = true;
-                s.options.insuranceVal = Math.min(newInsVal, maxIns);
+            if (s.serviceType === 'EMS') {
+                const maxIns = 50000;
+                if (newInsActive) {
+                    s.options.insurance = true;
+                    s.options.insuranceVal = Math.min(newInsVal, maxIns);
+                } else {
+                    s.options.insurance = false;
+                    s.options.insuranceVal = 0;
+                }
             } else {
                 s.options.insurance = false;
                 s.options.insuranceVal = 0;
