@@ -122,6 +122,49 @@ const rates = {
   PARCEL: { base: 25, baseWeight: 1000, perKg: 20, ar: 3 }
 };
 
+// --- SPECIAL EMS PRICING ---
+const specialEmsTiers = [
+    [1000, 17], [2000, 27], [3000, 37], [4000, 47], [5000, 57], [6000, 67], [7000, 77], [8000, 87], [9000, 97], [10000, 107],
+    [11000, 112], [12000, 117], [13000, 122], [14000, 127], [15000, 132], [16000, 137], [17000, 142], [18000, 147], [19000, 152], [20000, 157], [30000, 157]
+];
+
+const SPECIAL_EMS_OFFSETS = {
+    'A1': 0, 'A2': 1, 'A3': 2, 'A4': 3, 'A5': 4, 'A6': 5, 'A7': 6, 'A8': 7, 'A9': 8, 'A10': 9, 'A11': 11, 'A12': 13
+};
+
+function isSpecialEmsActive() {
+    if (!settings.specialEmsEnabled) return false;
+    const licenseVal = (settings.license || '').trim();
+    const hasThp = /THP-/i.test(licenseVal);
+    
+    if (settings.paymentType === 'เงินสด') {
+        return hasThp;
+    } else if (settings.paymentType === 'เงินเชื่อ') {
+        const cleanLicense = licenseVal.replace(/THP-\d+/gi, '').replace(/THP-/gi, '').trim();
+        return hasThp && cleanLicense.length > 0;
+    }
+    return false;
+}
+
+function calculateSpecialEmsFee(weight, packageName = 'A12') {
+    let baseA1 = 17;
+    for (let [tier, price] of specialEmsTiers) {
+        if (weight <= tier) {
+            baseA1 = price;
+            break;
+        }
+        baseA1 = price;
+    }
+    
+    if (weight > 30000) {
+        const extraKg = Math.ceil((weight - 30000) / 1000);
+        baseA1 += extraKg * 15;
+    }
+    
+    const offset = SPECIAL_EMS_OFFSETS[packageName] || 0;
+    return baseA1 + offset;
+}
+
 const REMOTE_AREAS = {
     "20120": 1, "20150": 2, "21160": 3, "23000": 4, "23120": 5, "23170": 6, "50250": 7, "50310": 7, "50350": 7,
     "55130": 8, "55220": 8, "57170": 9, "57180": 9, "57260": 9, "57310": 9, "57340": 9, "58000": 10, "58110": 10,
@@ -142,7 +185,7 @@ let shipments = [];
 let history = [];
 let historyIndex = 0;
 let currentServiceTab = 'EMS';
-let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: true, paymentType: 'เงินเชื่อ', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left', postOffice: 'ไปรษณีย์กลาง 10501', meterDescending: 0, meterAscending: 0, homeZip: '' };
+let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: true, paymentType: 'เงินสด', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left', postOffice: 'ไปรษณีย์กลาง 10501', meterDescending: 0, meterAscending: 0, homeZip: '', specialEmsEnabled: false, specialEmsPackage: 'A12' };
 let editingArchiveId = null;
 let currentView = 'dashboard';
 let currentWeightUnit = 'g';
@@ -192,6 +235,14 @@ const settingsBtn = document.getElementById('settings-btn');
 const settingsModal = document.getElementById('settings-modal');
 const saveSettingsBtn = document.getElementById('save-settings-btn');
 const closeSettingsBtn = document.getElementById('close-settings-btn');
+
+const setSpecialEmsEnabled = document.getElementById('set-special-ems-enabled');
+const setSpecialEmsPackage = document.getElementById('set-special-ems-package');
+const adminSpecialEmsFields = document.getElementById('admin-special-ems-fields');
+const adminSettingsSection = document.getElementById('admin-settings-section');
+const appVersionTrigger = document.getElementById('app-version-trigger');
+const specialEmsBadge = document.getElementById('special-ems-badge');
+const specialEmsPkgName = document.getElementById('special-ems-pkg-name');
 
 // Nav & Views
 const navDashboard = document.getElementById('nav-dashboard');
@@ -251,7 +302,10 @@ function calculateBaseFee(type, weight, options = {}) {
     let baseFee = 0;
     if (type === 'CUSTOM') return parseFloat(feeInput.value) || 0; 
     
-    if (type === 'PARCEL') {
+    if (type === 'EMS' && isSpecialEmsActive()) {
+        const pkg = settings.specialEmsPackage || 'A12';
+        baseFee = calculateSpecialEmsFee(weight, pkg);
+    } else if (type === 'PARCEL') {
         baseFee = rates.PARCEL.base;
         if (weight > rates.PARCEL.baseWeight) {
             baseFee += Math.ceil((weight - rates.PARCEL.baseWeight) / 1000) * rates.PARCEL.perKg;
@@ -875,6 +929,16 @@ function updatePreview() {
       }
   }
 
+  // Toggle Special EMS Badge
+  if (specialEmsBadge && specialEmsPkgName) {
+      if (activeSvc === 'EMS' && isSpecialEmsActive() && w > 0) {
+          specialEmsBadge.style.display = 'block';
+          specialEmsPkgName.textContent = settings.specialEmsPackage || 'A12';
+      } else {
+          specialEmsBadge.style.display = 'none';
+      }
+  }
+
   let isWeightOverLimit = false;
   if (activeSvc === 'REG' && calcWeight > 2000) {
       isWeightOverLimit = true;
@@ -951,6 +1015,9 @@ function generateShipmentNote(s) {
     if (s.options?.insurance) notes.push(`🛡️ ${(parseFloat(s.options.insuranceVal)||0).toLocaleString()}`);
     if (s.serviceType === 'REG') {
         if (s.options?.regType === 'BOX') notes.push("หีบห่อ");
+    }
+    if (s.options?.isSpecialEms) {
+        notes.push(`✨ ${s.options.specialEmsPackage || 'A12'}`);
     }
     return notes.join(", ");
 }
@@ -1064,7 +1131,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         <div style="font-size: 11pt;">โทรศัพท์ <b>${phone}</b></div>
                     </div>
                     <div style="text-align: right;">
-                        <h2 style="margin: 0; font-size: 14pt;">ใบนำส่งสิ่งของทางไปรษณีย์ โดยชำระค่าบริการเป็น${settings.paymentType || 'เงินเชื่อ'}</h2>
+                        <h2 style="margin: 0; font-size: 14pt;">ใบนำส่งสิ่งของทางไปรษณีย์ โดยชำระค่าบริการเป็น${settings.paymentType || 'เงินสด'}</h2>
                         ${titleSuffix ? `<div style="font-size: 12pt; font-weight: bold;">(${titleSuffix})</div>` : ''}
                         <div style="font-size: 11pt; margin-top: 5px;">วันที่ ........................................ ฝากส่งครั้งที่ ........... ใบที่ <b>${p + 1} / ${totalPages}</b></div>
                         <div style="font-size: 11pt;"><span style="font-weight: bold; font-size: 12pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</span> ใบอนุญาตพิเศษที่ <b>${license}</b></div>
@@ -1287,7 +1354,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         <div class="print-page">
             ${generateLogoHtml()}
             <div style="margin-top: 10mm; text-align: center;">
-                <h2 style="font-size: 16pt; margin-bottom: 5px;">ใบสรุปการฝากส่งไปรษณียภัณฑ์ชำระค่าฝากส่งเป็น${settings.paymentType || 'เงินเชื่อ'}</h2>
+                <h2 style="font-size: 16pt; margin-bottom: 5px;">ใบสรุปการฝากส่งไปรษณียภัณฑ์ชำระค่าฝากส่งเป็น${settings.paymentType || 'เงินสด'}</h2>
                 <div style="color: #444; font-size: 14pt; font-weight: bold; margin-bottom: 15px;">หมวด: ${titleSuffix}</div>
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 12pt;">
@@ -1796,7 +1863,9 @@ addBtn.onclick = async (e) => {
                 isLarge: isLarge,
                 useVolWeight: useVolWeight,
                 dimensions: { w: parseFloat(dimW.value), l: parseFloat(dimL.value), h: parseFloat(dimH.value) },
-                isRemote: optRemote.checked
+                isRemote: optRemote.checked,
+                isSpecialEms: (type === 'EMS' && isSpecialEmsActive()),
+                specialEmsPackage: settings.specialEmsPackage || 'A12'
               },
               isIsland: false,
               trackingFormatted: trackingFormatted,
@@ -1887,7 +1956,9 @@ addBtn.onclick = async (e) => {
                 isLarge: isLarge,
                 useVolWeight: useVolWeight,
                 dimensions: { w: parseFloat(dimW.value), l: parseFloat(dimL.value), h: parseFloat(dimH.value) },
-                isRemote: optRemote.checked
+                isRemote: optRemote.checked,
+                isSpecialEms: (type === 'EMS' && isSpecialEmsActive()),
+                specialEmsPackage: settings.specialEmsPackage || 'A12'
               },
               isIsland: optRemote.checked && PARTIAL_REMOTE_ZIPS.includes(destInput.value.match(/\d{5}/)?.[0]),
               trackingFormatted: trackingFormatted,
@@ -1970,7 +2041,7 @@ printBtn.onclick = () => {
   if (!filtered.length) return alert(`ไม่มีรายการในหมวด ${currentServiceTab} สำหรับพิมพ์`);
   
   const printSection = document.getElementById('print-section');
-  const paymentType = settings.paymentType || 'เงินเชื่อ';
+  const paymentType = settings.paymentType || 'เงินสด';
   let manifestCopies = 1;
   
   if (paymentType === 'เงินเชื่อ') {
@@ -2051,7 +2122,7 @@ dispatchBtn.onclick = async () => {
     
     setTimeout(() => {
         let finalHtml = '';
-        const paymentType = settings.paymentType || 'เงินเชื่อ';
+        const paymentType = settings.paymentType || 'เงินสด';
 
         if (emsGroup.length > 0) {
             let sumCopies = 1;
@@ -2488,6 +2559,9 @@ saveSettingsBtn.onclick = async () => {
     settings.homeZip = document.getElementById('settings-home-zip').value;
     settings.excludeIslandEMS = document.getElementById('set-exclude-island-ems').checked;
     settings.excludeIslandEco = document.getElementById('set-exclude-island-eco').checked;
+    
+    settings.specialEmsEnabled = document.getElementById('set-special-ems-enabled').checked;
+    settings.specialEmsPackage = document.getElementById('set-special-ems-package').value;
 
     settings.logoWidth = parseInt(document.getElementById('set-logo-width').value) || 150;
     settings.logoAlign = document.getElementById('set-logo-align').value;
@@ -2498,6 +2572,11 @@ saveSettingsBtn.onclick = async () => {
 
     // Recalculate remote surcharge and fees of all active shipments based on new settings
     for (let s of shipments) {
+        if (s.serviceType === 'EMS') {
+            if (!s.options) s.options = {};
+            s.options.isSpecialEms = isSpecialEmsActive();
+            s.options.specialEmsPackage = settings.specialEmsPackage || 'A12';
+        }
         if (!s.options) s.options = {};
         const zipMatch = s.destination ? s.destination.match(/\d{5}/) : null;
         const zip = zipMatch ? zipMatch[0] : null;
@@ -2539,16 +2618,39 @@ saveSettingsBtn.onclick = async () => {
     await saveToDB('settings', settings);
     await saveToDB('shipments', shipments);
     settingsModal.style.display = 'none';
+    if (archiveFilterType) {
+        archiveFilterType.value = settings.paymentType || 'เงินสด';
+    }
     updatePreview();
     updateMeterStatus();
     renderShipments();
     updateSummary();
     renderStats();
+    renderArchiveView();
     alert('บันทึกการตั้งค่าสำเร็จ');
 };
 
+function updateLicenseLabel(paymentType) {
+    const label = document.getElementById('label-license');
+    const input = document.getElementById('set-license');
+    if (!label || !input) return;
+    
+    if (paymentType === 'เงินสด') {
+        label.innerHTML = 'เลขสมาชิก Post Family (THP-XXXXXXXX)';
+        input.placeholder = 'เช่น THP-12345678';
+    } else if (paymentType === 'เงินเชื่อ') {
+        label.innerHTML = 'ใบอนุญาตพิเศษที่';
+        input.placeholder = 'เช่น พ. 123 / 2569';
+    } else if (paymentType === 'เครื่องประทับไปรษณียากร') {
+        label.innerHTML = 'ใบอนุญาตพิเศษที่ (มิเตอร์)';
+        input.placeholder = 'เช่น พ. 123 / 2569';
+    }
+}
+
 document.getElementById('set-payment-type').onchange = (e) => {
-    document.getElementById('meter-settings-fields').style.display = (e.target.value === 'เครื่องประทับไปรษณียากร') ? 'block' : 'none';
+    const val = e.target.value;
+    document.getElementById('meter-settings-fields').style.display = (val === 'เครื่องประทับไปรษณียากร') ? 'block' : 'none';
+    updateLicenseLabel(val);
 };
 
 document.getElementById('set-meter-desc').oninput = (e) => {
@@ -2744,6 +2846,9 @@ navArchive.onclick = () => {
         const now = new Date();
         reportMonthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     }
+    if (archiveFilterType) {
+        archiveFilterType.value = settings.paymentType || 'เงินสด';
+    }
     renderArchiveView();
     renderStats();
 };
@@ -2775,7 +2880,7 @@ async function renderStats() {
     
     monthlyArchives.forEach(a => {
         if (!a.items) return;
-        const pType = a.paymentType || 'เงินเชื่อ'; // fallback
+        const pType = a.paymentType || 'เงินสด'; // fallback
         const fee = a.items.reduce((s, item) => s + (parseFloat(item.fee) || 0), 0);
         if (payGroup.hasOwnProperty(pType)) payGroup[pType] += fee;
     });
@@ -2802,7 +2907,6 @@ async function renderStats() {
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
-            <div style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace;">v5.5.0</div>
             <div style="font-size: 1.25rem; font-weight: bold; color: var(--primary-color);">${yearTotal.toLocaleString()}</div>
             <div style="font-size: 0.85rem; margin-top: 5px;">จำนวนชิ้นทั้งหมด: <b>${yearItems.toLocaleString()}</b> ชิ้น</div>
         </div>
@@ -2818,7 +2922,7 @@ async function renderArchiveView() {
     
     const filterType = archiveFilterType.value;
     if (filterType !== 'ทั้งหมด') {
-        filtered = filtered.filter(a => (a.paymentType || 'เงินเชื่อ') === filterType);
+        filtered = filtered.filter(a => (a.paymentType || 'เงินสด') === filterType);
     }
     
     // group by day
@@ -2974,9 +3078,14 @@ async function initApp() {
     
     const savedSettings = await loadFromDB('settings');
     if (savedSettings) {
+        if (savedSettings.paymentType === 'เงินเชื่อ' && !localStorage.getItem('paymentTypeDefaultMigrated')) {
+            savedSettings.paymentType = 'เงินสด';
+            await saveToDB('settings', savedSettings);
+        }
         settings = { ...settings, ...savedSettings };
         if (!settings.defaultPrefixes) settings.defaultPrefixes = {};
     }
+    localStorage.setItem('paymentTypeDefaultMigrated', 'true');
     
     const prefixes = settings.defaultPrefixes?.[currentServiceTab];
     if (prefixes && (Array.isArray(prefixes) ? prefixes.length > 0 : !!prefixes)) {
@@ -2991,7 +3100,8 @@ async function initApp() {
     updatePrefixListUI();
     
     document.getElementById('set-license').value = settings.license || '';
-    document.getElementById('set-payment-type').value = settings.paymentType || 'เงินเชื่อ';
+    document.getElementById('set-payment-type').value = settings.paymentType || 'เงินสด';
+    updateLicenseLabel(settings.paymentType || 'เงินสด');
     setFuelSurcharge.checked = settings.fuelSurcharge;
     document.getElementById('set-post-office').value = settings.postOffice || 'ไปรษณีย์กลาง 10501';
     document.getElementById('settings-home-zip').value = settings.homeZip || '';
@@ -3003,6 +3113,10 @@ async function initApp() {
     document.getElementById('sig-names-fields').style.display = settings.showSignatureNames ? 'block' : 'none';
     document.getElementById('set-exclude-island-ems').checked = settings.excludeIslandEMS || false;
     document.getElementById('set-exclude-island-eco').checked = settings.excludeIslandEco || false;
+    
+    document.getElementById('set-special-ems-enabled').checked = settings.specialEmsEnabled || false;
+    document.getElementById('set-special-ems-package').value = settings.specialEmsPackage || 'A12';
+    document.getElementById('admin-special-ems-fields').style.display = settings.specialEmsEnabled ? 'flex' : 'none';
 
     // Logo setup
     document.getElementById('set-logo-width').value = settings.logoWidth || 150;
@@ -3022,7 +3136,7 @@ async function initApp() {
     
     // Auto-set archive filter to current global payment type
     if (archiveFilterType) {
-        archiveFilterType.value = settings.paymentType || 'เงินเชื่อ';
+        archiveFilterType.value = settings.paymentType || 'เงินสด';
     }
     
     updatePreview();
@@ -3039,6 +3153,28 @@ async function initApp() {
     if (editingArchiveId) {
         dispatchBtn.innerHTML = '💾 บันทึกการแก้ไข (Update)';
         dispatchBtn.style.background = '#0ea5e9';
+    }
+    
+    // Admin Settings UI Event Listeners
+    if (setSpecialEmsEnabled && adminSpecialEmsFields) {
+        setSpecialEmsEnabled.onchange = (e) => {
+            adminSpecialEmsFields.style.display = e.target.checked ? 'flex' : 'none';
+        };
+    }
+    
+    if (appVersionTrigger) {
+        appVersionTrigger.ondblclick = () => {
+            const pass = prompt("กรุณากรอกรหัสผ่านผู้ดูแลระบบ (Admin Password) เพื่อแก้ไขการตั้งค่าขั้นสูง:");
+            if (pass === 'admin1234' || pass === 'mraek') {
+                if (adminSettingsSection) {
+                    adminSettingsSection.style.display = 'block';
+                }
+                settingsModal.style.display = 'flex';
+                alert("🔓 ปลดล็อคระบบการตั้งค่าขั้นสูงสำหรับ Admin เรียบร้อยแล้ว!");
+            } else if (pass !== null) {
+                alert("❌ รหัสผ่านไม่ถูกต้อง");
+            }
+        };
     }
 }
 
