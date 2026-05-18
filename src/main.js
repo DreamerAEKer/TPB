@@ -502,7 +502,7 @@ function renderShipments() {
             ${s.serviceType === 'EMS' ? `
                 <div style="display: flex; align-items: center; gap: 4px;">
                     <label class="svc-mini" title="ประกัน"><input type="checkbox" ${s.options?.insurance ? 'checked' : ''} onchange="toggleRowService(${i}, 'insurance', this.checked)"> 🛡️</label>
-                    ${s.options?.insurance ? `<input type="text" class="mini-input ${ (s.options.insuranceVal > 50000) ? 'error-input' : '' }" style="width: 60px; font-size: 0.75rem; padding: 2px;" value="${(parseFloat(s.options.insuranceVal) || 0).toLocaleString()}" oninput="this.value = sanitizeNumeric(this.value); updateRowInsuranceVal(${i}, this.value)" onblur="validateRowInsurance(${i}, this)">` : ''}
+                    ${s.options?.insurance ? `<input type="text" class="mini-input ${ (s.options.insuranceVal < 2100 || s.options.insuranceVal > 50000) ? 'error-input' : '' }" style="width: 60px; font-size: 0.75rem; padding: 2px;" value="${(parseFloat(s.options.insuranceVal) || 0).toLocaleString()}" oninput="this.value = sanitizeNumeric(this.value); updateRowInsuranceVal(${i}, this.value)" onblur="validateRowInsurance(${i}, this)">` : ''}
                 </div>
             ` : ''}
             ${(s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && s.destination.includes('เกาะ')) ? `<label class="svc-mini" title="พื้นที่ห่างไกล"><input type="checkbox" ${s.options?.isRemote ? 'checked' : ''} onchange="toggleRowService(${i}, 'isRemote', this.checked)"> 🏝️</label>` : ''}
@@ -705,12 +705,12 @@ window.toggleRowService = async (i, serviceType, checked) => {
         isARChange = true;
     } else if (serviceType === 'insurance') {
         if (checked) {
-            let currentVal = s.options.insuranceVal || 2100;
-            if (currentVal < 2100) {
-                const inputVal = prompt("ระบุจำนวนเงินรับประกัน แนะนำเริ่มที่ 2,100 บาทขึ้นไป (ช่วง 2,100 - 50,000 บาท):", "2100");
+            let currentVal = s.options.insuranceVal || "";
+            if (!currentVal || currentVal < 2100) {
+                const inputVal = prompt("ระบุจำนวนเงินรับประกัน (ตั้งแต่ 2,100 - 50,000 บาท):", "");
                 const parsed = parseFloat(sanitizeNumeric(inputVal || ""));
-                if (!inputVal || isNaN(parsed) || parsed < 2100) {
-                    alert("แนะนำระบุจำนวนเงินรับประกันตั้งแต่ 2,100 บาทขึ้นไป (เนื่องจากต่ำกว่านี้ EMS คุ้มครองฟรีสูงสุด 2,000 บาทแรกอยู่แล้ว)");
+                if (!inputVal || isNaN(parsed) || parsed < 2100 || parsed > 50000) {
+                    alert("⚠️ ไม่สามารถบันทึกรายการได้: วงเงินรับประกันสำหรับ EMS ต้องมีมูลค่าตั้งแต่ 2,100 - 50,000 บาทขึ้นไป (เนื่องจากต่ำกว่า 2,100 บาท EMS มีความคุ้มครองพื้นฐานให้ฟรี 2,000 บาทอยู่แล้ว)");
                     renderShipments();
                     return;
                 }
@@ -790,9 +790,9 @@ window.updateRowInsuranceVal = async (i, val) => {
     // Highlight input if exceeds limit
     const input = document.querySelector(`tr td input.mini-input[oninput*="updateRowInsuranceVal(${i},"]`);
     if (input) {
-        if (parsed > 50000) {
+        if (parsed < 2100 || parsed > 50000) {
             input.classList.add('error-input');
-            input.title = "⚠️ วงเงินรับประกันสูงสุดไม่เกิน 50,000 บาท";
+            input.title = "⚠️ วงเงินรับประกันต้องอยู่ระหว่าง 2,100 - 50,000 บาท";
         } else {
             input.classList.remove('error-input');
             input.title = "";
@@ -802,7 +802,11 @@ window.updateRowInsuranceVal = async (i, val) => {
 
 window.validateRowInsurance = (i, input) => {
     const val = parseFloat(input.value.replace(/,/g, '')) || 0;
-    if (val > 50000) {
+    if (val < 2100) {
+        alert('⚠️ ไม่สามารถบันทึกรายการได้: วงเงินรับประกันสำหรับ EMS ต้องมีมูลค่าตั้งแต่ 2,100 บาทขึ้นไป (เนื่องจากต่ำกว่า 2,100 บาท EMS มีความคุ้มครองพื้นฐานให้ฟรี 2,000 บาทอยู่แล้ว)');
+        input.value = "2,100";
+        updateRowInsuranceVal(i, 2100);
+    } else if (val > 50000) {
         alert('⚠️ วงเงินรับประกันสูงสุดคือ 50,000 บาท ระบบจะปรับยอดเป็น 50,000 ให้อัตโนมัติ');
         input.value = "50,000";
         updateRowInsuranceVal(i, 50000);
@@ -1021,12 +1025,12 @@ function updatePreview() {
       const insV = parseFloat(insuranceVal.value) || 0;
       const insWarn = document.getElementById('ins-warn');
       
-      if (insV < 2100 || insV > 50000) {
+      if (insuranceVal.value !== '' && (insV < 2100 || insV > 50000)) {
           insuranceVal.style.borderColor = '#ef4444';
           insuranceVal.style.backgroundColor = '#fef2f2';
           if (insWarn) insWarn.style.display = 'block';
       } else {
-          insuranceVal.style.borderColor = '#86efac';
+          insuranceVal.style.borderColor = '#cbd5e1';
           insuranceVal.style.backgroundColor = 'white';
           if (insWarn) insWarn.style.display = 'none';
       }
@@ -2162,10 +2166,15 @@ addBtn.onclick = async (e) => {
   // Insurance Validation
   if (optInsurance.checked && type === 'EMS') {
       const insV = parseFloat(insuranceVal.value.replace(/,/g, '')) || 0;
+      if (insV < 2100) {
+          alert('⚠️ ไม่สามารถบันทึกรายการได้: วงเงินรับประกันสำหรับบริการ EMS ต้องมีมูลค่าตั้งแต่ 2,100 บาทขึ้นไป (เนื่องจากต่ำกว่า 2,100 บาท บริการ EMS ปกติมีความคุ้มครองพื้นฐานให้ฟรี 2,000 บาทอยู่แล้ว)');
+          insuranceVal.focus();
+          return;
+      }
       if (insV > 50000) {
-          alert('⚠️ วงเงินรับประกันสูงสุดคือ 50,000 บาท ระบบจะปรับยอดเป็น 50,000 ให้อัตโนมัติ');
-          insuranceVal.value = 50000;
-          updatePreview();
+          alert('⚠️ ไม่สามารถบันทึกรายการได้: วงเงินรับประกันสูงสุดคือ 50,000 บาท');
+          insuranceVal.focus();
+          return;
       }
   }
   if (bulkToggle.checked) {
