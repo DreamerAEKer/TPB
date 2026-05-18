@@ -1893,26 +1893,82 @@ if (upcFeeInput) upcFeeInput.oninput = (e) => { e.target.value = sanitizeNumeric
 customServiceManualInput.oninput = updatePreview;
 
 // --- UNIQUE TRACKING NUMBER GENERATOR & ADJUSTER (v5.8.2) ---
-function getNextAvailableTrackingNumber(prefix, startD, activeStep) {
+async function checkTrackingDuplicateHistory(prefix, d, cd) {
+    const trackingFormatted = formatTrackingNumber(prefix, d, cd);
+    
+    // Check local shipments (current manifest)
+    const currentMatches = shipments.map((s, idx) => ({ ...s, idx }))
+                                     .filter(s => s.trackingFormatted === trackingFormatted);
+    if (currentMatches.length > 0) {
+        return {
+            trackingFormatted,
+            source: 'current',
+            matches: currentMatches.map(m => ({
+                recipient: m.recipient || '(ยังไม่ได้ระบุ)',
+                destination: m.destination || '(ยังไม่ได้ระบุ)',
+                index: m.idx + 1
+            }))
+        };
+    }
+    
+    // Check all archives
+    try {
+        const allArchives = await loadAllArchives();
+        const archiveMatches = [];
+        
+        for (const arch of allArchives) {
+            if (arch.items && Array.isArray(arch.items)) {
+                arch.items.forEach((item, itemIdx) => {
+                    if (item.trackingFormatted === trackingFormatted) {
+                        archiveMatches.push({
+                            archiveId: arch.id,
+                            date: arch.date,
+                            recipient: item.recipient || '(ยังไม่ได้ระบุ)',
+                            destination: item.destination || '(ยังไม่ได้ระบุ)',
+                            index: itemIdx + 1,
+                            totalItems: arch.items.length
+                        });
+                    }
+                });
+            }
+        }
+        
+        if (archiveMatches.length > 0) {
+            return {
+                trackingFormatted,
+                source: 'archive',
+                matches: archiveMatches
+            };
+        }
+    } catch (e) {
+        console.error('Error loading archives for duplicate check', e);
+    }
+    
+    return null;
+}
+
+async function getNextAvailableTrackingNumber(prefix, startD, activeStep) {
     let num = parseInt(startD);
     if (isNaN(num)) num = 0;
+    
+    const duplicateRecords = [];
+    
     while (true) {
         const d = num.toString().padStart(8, '0');
         const cd = calculateCheckDigit(d);
         const trackingFormatted = formatTrackingNumber(prefix, d, cd);
         
-        // Check if this tracking number is already in shipments
-        const isDup = shipments.some(s => s.trackingFormatted === trackingFormatted);
-        if (!isDup) {
-            return { d, cd, trackingFormatted };
+        const dupInfo = await checkTrackingDuplicateHistory(prefix, d, cd);
+        if (!dupInfo) {
+            return { d, cd, trackingFormatted, duplicateRecords };
         }
         
-        // If duplicated, increment by activeStep
+        duplicateRecords.push(dupInfo);
         num += activeStep;
     }
 }
 
-function adjustSidebarTrackingNumberForStep() {
+async function adjustSidebarTrackingNumberForStep() {
     const p = prefixInput.value.trim().toUpperCase();
     const type = getServiceType(p);
     if (type === 'CUSTOM') return;
@@ -1921,7 +1977,7 @@ function adjustSidebarTrackingNumberForStep() {
     if (startD.length !== 8) return;
     
     const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
-    const nextAvail = getNextAvailableTrackingNumber(p, startD, step);
+    const nextAvail = await getNextAvailableTrackingNumber(p, startD, step);
     
     num8StartInput.value = nextAvail.d;
     digitsInput.value = nextAvail.d;
@@ -2021,6 +2077,8 @@ addBtn.onclick = async (e) => {
       const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
       let currentNum = parseInt(startD);
       let lastGeneratedD = startD;
+      
+      const allBulkSkipped = [];
 
       for (let i = 0; i < count; i++) {
           let trackingFormatted = '';
@@ -2035,10 +2093,14 @@ addBtn.onclick = async (e) => {
                  trackingFormatted = startD + (i > 0 ? `-${i}` : ''); 
               }
           } else {
-              const nextAvail = getNextAvailableTrackingNumber(p, currentNum.toString().padStart(8, '0'), step);
+              const nextAvail = await getNextAvailableTrackingNumber(p, currentNum.toString().padStart(8, '0'), step);
               trackingFormatted = nextAvail.trackingFormatted;
               lastGeneratedD = nextAvail.d;
               currentNum = parseInt(nextAvail.d) + step;
+              
+              if (nextAvail.duplicateRecords && nextAvail.duplicateRecords.length > 0) {
+                  allBulkSkipped.push(...nextAvail.duplicateRecords);
+              }
           }
           
           let isLarge = false;
@@ -2122,15 +2184,64 @@ addBtn.onclick = async (e) => {
           digitsInput.value = nextStartD;
           num8StartInput.dispatchEvent(new Event('input'));
       }
+      
+      // Alert once after the entire bulk generation completes!
+      if (allBulkSkipped.length > 0) {
+          let msg = `⚠️ ตรวจพบเลขพัสดุซ้ำ และระบบได้ทำการสอย/ข้ามไปใช้เลขถัดไปที่ไม่ซ้ำให้อัตโนมัติเรียบร้อยแล้ว:\n\n`;
+          // Dedup by trackingFormatted to avoid listing same duplicate multiple times
+          const uniqueSkipped = [];
+          const seenTracking = new Set();
+          allBulkSkipped.forEach(rec => {
+              if (!seenTracking.has(rec.trackingFormatted)) {
+                  seenTracking.add(rec.trackingFormatted);
+                  uniqueSkipped.push(rec);
+              }
+          });
+          
+          uniqueSkipped.slice(0, 10).forEach(rec => {
+              msg += `❌ เลขที่ข้าม: ${rec.trackingFormatted}\n`;
+              if (rec.source === 'current') {
+                  msg += `   • กำลังใช้อยู่ในใบนำส่งปัจจุบัน แถวที่: ${rec.matches.map(m => m.index).join(', ')}\n`;
+              } else {
+                  rec.matches.forEach(m => {
+                      msg += `   • เคยใช้ในใบนำส่ง: ${m.archiveId} (วันที่ ${m.date || 'ไม่ระบุ'})\n`;
+                      msg += `     ผู้รับ: ${m.recipient} -> ปลายทาง: ${m.destination}\n`;
+                  });
+              }
+          });
+          if (uniqueSkipped.length > 10) {
+              msg += `\n... และยังมีเลขที่ซ้ำถูกข้ามไปอีก ${uniqueSkipped.length - 10} รายการ`;
+          }
+          alert(msg);
+      }
   } else {
       if (!startD) return alert('กรุณากรอกข้อมูลเลขที่');
       if (type !== 'CUSTOM' && (p.length !== 2 || startD.length !== 8)) return alert('รูปแบบเลข 8 หลักไม่ถูกต้อง');
       
+      let finalD = startD;
+      let nextAvail = null;
       if (type !== 'CUSTOM') {
           const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
-          const nextAvail = getNextAvailableTrackingNumber(p, startD, step);
+          nextAvail = await getNextAvailableTrackingNumber(p, startD, step);
           finalD = nextAvail.d;
           trackingFormatted = nextAvail.trackingFormatted;
+          
+          // Alert if any duplicates were skipped
+          if (nextAvail.duplicateRecords && nextAvail.duplicateRecords.length > 0) {
+              let msg = `⚠️ ตรวจพบเลขพัสดุซ้ำ และระบบได้เลื่อนไปใช้เลขถัดไปที่ไม่ซ้ำให้อัตโนมัติ:\n\n`;
+              nextAvail.duplicateRecords.forEach(rec => {
+                  msg += `❌ เลขที่ซ้ำ: ${rec.trackingFormatted}\n`;
+                  if (rec.source === 'current') {
+                      msg += `   • กำลังใช้ในใบนำส่งปัจจุบัน แถวที่: ${rec.matches.map(m => m.index).join(', ')}\n`;
+                  } else {
+                      rec.matches.forEach(m => {
+                          msg += `   • เคยใช้ในใบนำส่ง: ${m.archiveId} (วันที่ ${m.date || 'ไม่ระบุ'})\n`;
+                          msg += `     ผู้รับ: ${m.recipient} -> ปลายทาง: ${m.destination}\n`;
+                      });
+                  }
+              });
+              alert(msg);
+          }
       }
       
       let isLarge = false;
@@ -2209,9 +2320,9 @@ addBtn.onclick = async (e) => {
       
       if (type !== 'CUSTOM') {
           const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
-          const nextAvail = getNextAvailableTrackingNumber(p, (parseInt(finalD) + step).toString().padStart(8, '0'), step);
-          digitsInput.value = nextAvail.d;
-          num8StartInput.value = nextAvail.d;
+          const nextAvailNum = await getNextAvailableTrackingNumber(p, (parseInt(finalD) + step).toString().padStart(8, '0'), step);
+          digitsInput.value = nextAvailNum.d;
+          num8StartInput.value = nextAvailNum.d;
       }
       recipientInput.value = '';
       destInput.value = '';
@@ -2415,14 +2526,14 @@ dispatchBtn.onclick = async () => {
     }, 100);
 };
 
-nextNumBtn.onclick = () => {
+nextNumBtn.onclick = async () => {
   const v = digitsInput.value;
   if (currentServiceTab !== 'CUSTOM' && v.length === 8) {
     const p = prefixInput.value.trim().toUpperCase();
     const type = getServiceType(p);
     const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
     const startVal = (parseInt(v) + step) % 100000000;
-    const nextAvail = getNextAvailableTrackingNumber(p, startVal.toString().padStart(8, '0'), step);
+    const nextAvail = await getNextAvailableTrackingNumber(p, startVal.toString().padStart(8, '0'), step);
     digitsInput.value = nextAvail.d;
     num8StartInput.value = nextAvail.d;
     updatePreview();
