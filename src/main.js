@@ -1267,6 +1267,14 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     const address = settings.address || '............................................................................';
     const license = settings.license || 'พ. ...... / 2569';
     
+    let printDate = settings.date ? settings.date.trim() : '';
+    if (!printDate) {
+        const d = new Date();
+        const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        printDate = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
+    }
+    const printSession = settings.session ? settings.session.trim() : '...........';
+    
     for (let p = 0; p < totalPages; p++) {
         const pageItems = itemsWithIndent.slice(p * ITEMS_PER_PAGE, (p + 1) * ITEMS_PER_PAGE);
         let rowsHtml = '';
@@ -1318,7 +1326,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                     <div style="text-align: right;">
                         <h2 style="margin: 0; font-size: 14pt;">ใบนำส่งสิ่งของทางไปรษณีย์ โดยชำระค่าบริการเป็น${settings.paymentType || 'เงินสด'}</h2>
                         ${titleSuffix ? `<div style="font-size: 12pt; font-weight: bold;">(${titleSuffix})</div>` : ''}
-                        <div style="font-size: 11pt; margin-top: 5px;">วันที่ ........................................ ฝากส่งครั้งที่ ........... ใบที่ <b>${p + 1} / ${totalPages}</b></div>
+                        <div style="font-size: 11pt; margin-top: 5px;">วันที่ <b>${printDate}</b> ฝากส่งครั้งที่ <b>${printSession}</b> ใบที่ <b>${p + 1} / ${totalPages}</b></div>
                         <div style="font-size: 11pt;"><span style="font-weight: bold; font-size: 12pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</span> ใบอนุญาตพิเศษที่ <b>${license}</b></div>
                     </div>
                 </div>
@@ -1557,6 +1565,13 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     const address = settings.address || '............................................................................';
     const phone = settings.phone || '......................................';
     const license = settings.license || 'พ. ...... / 2569';
+    
+    let printDate = settings.date ? settings.date.trim() : '';
+    if (!printDate) {
+        const d = new Date();
+        const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        printDate = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
+    }
     const singleSheetHtml = `
         <div class="print-page">
             ${generateLogoHtml()}
@@ -1571,7 +1586,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     <div style="font-size: 11pt;">โทรศัพท์ <b>${phone}</b></div>
                 </div>
                 <div style="text-align: right; font-size: 11pt;">
-                    <div style="margin-bottom: 4px;">วันที่ ........................................</div>
+                    <div style="margin-bottom: 4px;">วันที่ <b>${printDate}</b>${settings.session ? ` <span style="margin-left: 10px;">ฝากส่งครั้งที่ <b>${settings.session}</b></span>` : ''}</div>
                     <div style="display: flex; flex-direction: column; align-items: flex-end;">
                         <span style="font-weight: bold; font-size: 12pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</span>
                         <span>ใบอนุญาตพิเศษที่ <b>${license}</b></span>
@@ -2958,6 +2973,8 @@ toggleViewBtns.forEach(btn => {
 });
 
 saveSettingsBtn.onclick = async () => {
+    settings.date = document.getElementById('set-date').value;
+    settings.session = document.getElementById('set-session').value;
     settings.company = document.getElementById('set-company').value;
     settings.address = document.getElementById('set-address').value;
     settings.phone = document.getElementById('set-phone').value;
@@ -3512,6 +3529,11 @@ async function initApp() {
     }
     updatePrefixListUI();
     
+    document.getElementById('set-date').value = settings.date || '';
+    document.getElementById('set-session').value = settings.session || '';
+    document.getElementById('set-company').value = settings.company || '';
+    document.getElementById('set-address').value = settings.address || '';
+    document.getElementById('set-phone').value = settings.phone || '';
     document.getElementById('set-license').value = settings.license || '';
     document.getElementById('set-payment-type').value = settings.paymentType || 'เงินสด';
     updateLicenseLabel(settings.paymentType || 'เงินสด');
