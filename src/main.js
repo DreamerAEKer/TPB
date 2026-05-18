@@ -3091,13 +3091,23 @@ function updateTopupHistoryUI() {
         historyDiv.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 5px;">ไม่มีประวัติการเติมเงิน</div>';
         return;
     }
-    historyDiv.innerHTML = settings.meterTopUps.slice().reverse().map(t => 
-        `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 3px 0;">
-            <span>${t.date}</span>
+    historyDiv.innerHTML = settings.meterTopUps.slice().reverse().map(t => {
+        const thaiDate = new Date(t.date).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+        return `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 3px 0;">
+            <span>${thaiDate}</span>
             <span style="color: #059669; font-weight: bold;">+${t.amount.toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</span>
-        </div>`
-    ).join('');
+        </div>`;
+    }).join('');
 }
+
+document.getElementById('topup-amount').oninput = (e) => {
+    const btn = document.getElementById('btn-topup');
+    if (e.target.value.trim() !== '') {
+        btn.style.display = 'block';
+    } else {
+        btn.style.display = 'none';
+    }
+};
 
 document.getElementById('btn-topup').onclick = () => {
     const dateVal = document.getElementById('topup-date').value;
@@ -3118,6 +3128,7 @@ document.getElementById('btn-topup').onclick = () => {
     
     document.getElementById('topup-date').value = '';
     document.getElementById('topup-amount').value = '';
+    document.getElementById('btn-topup').style.display = 'none';
     
     updateTopupHistoryUI();
 };
