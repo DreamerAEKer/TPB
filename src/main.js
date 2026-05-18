@@ -598,6 +598,18 @@ function renderShipments() {
                     s.trackingFormatted = formatTrackingNumber(simpleMatch[1], simpleMatch[2], cd);
                 }
             }
+            
+            const promptVal = prompt(
+                "ต้องการให้ระบบจัดลำดับเลขพัสดุของรายการถัดๆ ไปโดยอัตโนมัติด้วยหรือไม่ เพื่อป้องกันการใช้เลขซ้ำ?\n\n" +
+                "• กด 'ตกลง' (OK) เพื่อจัดลำดับใหม่ทั้งหมดจนถึงรายการสุดท้าย\n" +
+                "• พิมพ์ตัวเลข (เช่น 5) เพื่อจัดลำดับเฉพาะ 5 รายการถัดไป\n" +
+                "• กด 'ยกเลิก' (Cancel) เพื่อแก้ไขเฉพาะรายการนี้รายการเดียว",
+                ""
+            );
+            if (promptVal !== null) {
+                const limit = parseInt(promptVal.trim());
+                recalculateTabSequencesFrom(s.serviceType, parseInt(idx), isNaN(limit) ? null : limit);
+            }
             needsRender = true;
         }
         
@@ -615,27 +627,57 @@ function highlightPostcode(text, isRemote) {
     });
 }
 
+function recalculateTabSequencesFrom(tab, startOriginalIdx, countLimit = null) {
+    const filtered = shipments.map((s, originalIdx) => ({ ...s, originalIdx }))
+                             .filter(s => s.serviceType === tab);
+    
+    const startIndex = filtered.findIndex(item => item.originalIdx === startOriginalIdx);
+    if (startIndex === -1 || startIndex >= filtered.length) return;
+    
+    let currentItem = filtered[startIndex];
+    let trackData = parseTracking(currentItem.trackingFormatted);
+    if (!trackData || !trackData.prefix) return;
+    
+    let prevPrefix = trackData.prefix;
+    let prevNum = trackData.num;
+    let prevStep = (currentItem.serviceType === 'EMS' && currentItem.options?.ar) ? 2 
+                 : (currentItem.serviceType === 'REG' && currentItem.options?.arTracking) ? 2 
+                 : 1;
+                 
+    let endIdx = filtered.length;
+    if (countLimit !== null && countLimit > 0) {
+        endIdx = Math.min(startIndex + 1 + countLimit, filtered.length);
+    }
+                 
+    for (let j = startIndex + 1; j < endIdx; j++) {
+        const item = filtered[j];
+        const nextNum = prevNum + prevStep;
+        const numStr = nextNum.toString().padStart(8, '0');
+        const cd = calculateCheckDigit(numStr);
+        const newTracking = formatTrackingNumber(prevPrefix, numStr, cd);
+        
+        shipments[item.originalIdx].trackingFormatted = newTracking;
+        
+        prevNum = nextNum;
+        prevStep = (item.serviceType === 'EMS' && item.options?.ar) ? 2 
+                 : (item.serviceType === 'REG' && item.options?.arTracking) ? 2 
+                 : 1;
+    }
+}
 
 window.toggleRowService = async (i, serviceType, checked) => {
     const s = shipments[i];
     if (!s.options) s.options = {};
     
+    let isARChange = false;
     if (serviceType === 'ar') {
         s.options.ar = checked;
-        if (checked) {
-            s.options.arTracking = false;
-            alert("⚠️ เมื่อเปิดใช้งานบริการตอบรับ (AR) รายการนี้จะใช้เลขที่พัสดุถัดไปด้วยสำหรับใบตอบรับ (ทำให้ใช้เลขคู่ 2 เลข) ซึ่งอาจส่งผลกระทบให้เลขที่พัสดุในแถวถัดไปซ้ำซ้อนกัน\n\n💡 คุณสามารถแก้ไขเลขที่พัสดุของแถวถัดไปในตารางโดยตรงได้เลยครับ");
-        } else {
-            alert("⚠️ เมื่อปิดใช้งานบริการตอบรับ (AR) รายการนี้จะเปลี่ยนมาใช้เลขเดี่ยว ซึ่งอาจทำให้เกิดช่องว่างในลำดับเลขพัสดุถัดไป\n\n💡 คุณสามารถแก้ไขเลขที่พัสดุในตารางโดยตรงได้ตามสะดวกครับ");
-        }
+        if (checked) s.options.arTracking = false;
+        isARChange = true;
     } else if (serviceType === 'arTracking') {
         s.options.arTracking = checked;
-        if (checked) {
-            s.options.ar = false;
-            alert("⚠️ เมื่อเปิดใช้งานบริการ AR Track รายการนี้จะใช้เลขที่พัสดุถัดไปด้วยสำหรับใบตอบรับ (ทำให้ใช้เลขคู่ 2 เลข) ซึ่งอาจส่งผลกระทบให้เลขที่พัสดุในแถวถัดไปซ้ำซ้อนกัน\n\n💡 คุณสามารถแก้ไขเลขที่พัสดุของแถวถัดไปในตารางโดยตรงได้เลยครับ");
-        } else {
-            alert("⚠️ เมื่อปิดใช้งานบริการ AR Track รายการนี้จะเปลี่ยนมาใช้เลขเดี่ยว ซึ่งอาจทำให้เกิดช่องว่างในลำดับเลขพัสดุถัดไป\n\n💡 คุณสามารถแก้ไขเลขที่พัสดุในตารางโดยตรงได้ตามสะดวกครับ");
-        }
+        if (checked) s.options.ar = false;
+        isARChange = true;
     } else if (serviceType === 'insurance') {
         if (checked) {
             let currentVal = s.options.insuranceVal || 2000;
@@ -669,6 +711,26 @@ window.toggleRowService = async (i, serviceType, checked) => {
     s.isRemoteBold = !!s.optRemote;
     
     s.fee = total;
+    
+    if (isARChange) {
+        const msg = checked
+            ? "⚠️ เมื่อเปิดใช้งานบริการตอบรับ รายการนี้จะใช้เลขพัสดุถัดไปด้วยสำหรับใบตอบรับ (รวมเป็น 2 เลข)\n\n" +
+              "ต้องการให้ระบบจัดลำดับเลขพัสดุของรายการถัดๆ ไปในตารางใหม่โดยอัตโนมัติ เพื่อไม่ให้มีการใช้เลขซ้ำกันหรือไม่?\n\n" +
+              "• กด 'ตกลง' (OK) เพื่อจัดลำดับใหม่ทั้งหมดจนถึงรายการสุดท้าย\n" +
+              "• พิมพ์ตัวเลข (เช่น 5) เพื่อจัดลำดับเฉพาะ 5 รายการถัดไป\n" +
+              "• กด 'ยกเลิก' (Cancel) เพื่อปล่อยแถวอื่นไว้เหมือนเดิม"
+            : "⚠️ เมื่อปิดใช้งานบริการตอบรับ รายการนี้จะเปลี่ยนกลับมาใช้เลขเดี่ยว\n\n" +
+              "ต้องการให้ระบบจัดลำดับเลขพัสดุของรายการถัดๆ ไปในตารางใหม่โดยอัตโนมัติ เพื่อกระชับคิวเลขพัสดุหรือไม่?\n\n" +
+              "• กด 'ตกลง' (OK) เพื่อจัดลำดับใหม่ทั้งหมดจนถึงรายการสุดท้าย\n" +
+              "• พิมพ์ตัวเลข (เช่น 5) เพื่อจัดลำดับเฉพาะ 5 รายการถัดไป\n" +
+              "• กด 'ยกเลิก' (Cancel) เพื่อปล่อยแถวอื่นไว้เหมือนเดิม";
+              
+        const promptVal = prompt(msg, "");
+        if (promptVal !== null) {
+            const limit = parseInt(promptVal.trim());
+            recalculateTabSequencesFrom(s.serviceType, i, isNaN(limit) ? null : limit);
+        }
+    }
     
     renderShipments();
     updateSummary();
