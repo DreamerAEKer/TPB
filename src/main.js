@@ -869,7 +869,11 @@ function updatePreview() {
   regTypeGroup.style.display = (activeSvc === 'REG') ? 'block' : 'none';
   emsDimGroup.style.display = (activeSvc === 'EMS') ? 'block' : 'none';
   
-  // Insurance row MUST show for EMS always
+  // Control display of special options depending on the service tab
+  if (optArRow) {
+      optArRow.style.display = (activeSvc === 'EMS' || activeSvc === 'REG' || activeSvc === 'ECO' || activeSvc === 'PARCEL') ? 'flex' : 'none';
+  }
+  
   if (optInsuranceRow) {
       optInsuranceRow.style.display = (activeSvc === 'EMS') ? 'flex' : 'none';
   }
@@ -1022,6 +1026,8 @@ function updatePreview() {
       if (w === 0 && activeSvc !== 'CUSTOM') {
           feeInput.value = '';
           feeInput.style.color = '#888';
+          const fallbacks = { 'EMS': '32', 'REG': '18', 'PARCEL': '25', 'ECO': '20' };
+          feeInput.placeholder = fallbacks[activeSvc] || '0';
       } else {
           feeInput.value = total;
           feeInput.style.color = 'inherit';
