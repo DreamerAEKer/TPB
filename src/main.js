@@ -1520,45 +1520,84 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         priceBreakdownHtml += `<div style="margin-bottom: 4px;">- ${desc}: <b>${priceMap[desc]}</b> ชิ้น</div>`;
     }
     
-    // Calculate Official Service Stats (v5.5.0)
+    // Calculate Official Service Stats (v5.8.5)
     const summaryStats = {
-        ordinary: { count: 0, fee: 0 },
-        printed: { count: 0, fee: 0 },
-        registered: { count: 0, fee: 0 },
-        eco: { count: 0, fee: 0 },
-        epacket: { count: 0, fee: 0 },
-        parcel: { count: 0, fee: 0 },
-        others: { count: 0, fee: 0 }
+        ordinary: { domestic: { count: 0, fee: 0 }, international: { count: 0, fee: 0 } },
+        printed: { domestic: { count: 0, fee: 0 }, international: { count: 0, fee: 0 } },
+        registered: { domestic: { count: 0, fee: 0 }, international: { count: 0, fee: 0 } },
+        eco: { domestic: { count: 0, fee: 0 }, international: { count: 0, fee: 0 } },
+        epacket: { domestic: { count: 0, fee: 0 }, international: { count: 0, fee: 0 } },
+        parcel: { domestic: { count: 0, fee: 0 }, international: { count: 0, fee: 0 } },
+        ems: { domestic: { count: 0, fee: 0 }, international: { count: 0, fee: 0 } },
+        others: { domestic: { count: 0, fee: 0 }, international: { count: 0, fee: 0 } }
     };
+
+    function isInternationalShipment(item) {
+        const type = item.serviceType;
+        const name = (item.customServiceName || '').toUpperCase();
+        const trk = (item.trackingFormatted || '').replace(/\s+/g, '').toUpperCase();
+        const dest = (item.destination || '').trim();
+        
+        // 1. If service type or custom name explicitly implies international
+        if (type === 'EPACKET' || name.includes('EPACKET') || name.includes('EPK') || name.includes('WORLD') || name.includes('ระหว่างประเทศ') || name.includes('ต่างประเทศ') || name.includes('INT')) {
+            return true;
+        }
+        
+        // 2. ePacket is always international (starts with L)
+        if (trk.startsWith('L')) {
+            return true;
+        }
+        
+        // 3. If destination postcode does NOT have a 5-digit Thai postcode
+        const hasThaiPostcode = /\d{5}/.test(dest);
+        if (!hasThaiPostcode && dest.length > 0) {
+            return true;
+        }
+        
+        return false;
+    }
 
     items.forEach(item => {
         const fee = parseFloat(item.fee) || 0;
         const type = item.serviceType;
         const name = (item.customServiceName || '').toUpperCase();
-        const trk = (item.trackingNum || '').trim().toUpperCase();
+        const trk = (item.trackingFormatted || '').replace(/\s+/g, '').toUpperCase();
         const cnt = item.isOrdinaryBulk ? (parseInt(item.quantity) || 1) : 1;
-
-        if (type === 'ECO' || (type === 'CUSTOM' && (name.includes('ECO') || name.includes('อีโค')))) {
-            summaryStats.eco.count += cnt;
-            summaryStats.eco.fee += fee;
-        } else if (type === 'CUSTOM' && (name.includes('EPACKET') || name.includes('EPK') || trk.startsWith('L'))) {
-            summaryStats.epacket.count += cnt;
-            summaryStats.epacket.fee += fee;
-        } else if (type === 'REG' || (type === 'CUSTOM' && (name.includes('REG') || name.includes('ลงทะเบียน') || trk.startsWith('R')))) {
-            summaryStats.registered.count += cnt;
-            summaryStats.registered.fee += fee;
-        } else if (type === 'PARCEL' || (type === 'CUSTOM' && (name.includes('PARCEL') || name.includes('พัสดุ') || trk.startsWith('P')))) {
-            summaryStats.parcel.count += cnt;
-            summaryStats.parcel.fee += fee;
-        } else if (type === 'ORD' || (type === 'CUSTOM' && (name.includes('ORD') || name.includes('ธรรมดา') || name.includes('จดหมาย')))) {
-            summaryStats.ordinary.count += cnt;
-            summaryStats.ordinary.fee += fee;
-        } else if (type === 'PRINTED' || (type === 'CUSTOM' && (name.includes('PRINT') || name.includes('สิ่งตีพิมพ์') || name.includes('สิ่งพิมพ์')))) {
-            summaryStats.printed.count += cnt;
-            summaryStats.printed.fee += fee;
+        
+        const isIntl = isInternationalShipment(item);
+        const region = isIntl ? 'international' : 'domestic';
+        
+        // Categorize
+        if (type === 'EMS' || name.includes('EMS')) {
+            summaryStats.ems[region].count += cnt;
+            summaryStats.ems[region].fee += fee;
+        } else if (type === 'ECO' || name.includes('ECO') || name.includes('อีโค')) {
+            summaryStats.eco[region].count += cnt;
+            summaryStats.eco[region].fee += fee;
+        } else if (type === 'EPACKET' || name.includes('EPACKET') || name.includes('EPK') || trk.startsWith('L')) {
+            summaryStats.epacket.international.count += cnt;
+            summaryStats.epacket.international.fee += fee;
+        } else if (type === 'REG' || name.includes('REG') || name.includes('ลงทะเบียน') || trk.startsWith('R')) {
+            summaryStats.registered[region].count += cnt;
+            summaryStats.registered[region].fee += fee;
+        } else if (type === 'PARCEL' || name.includes('PARCEL') || name.includes('พัสดุ') || trk.startsWith('P')) {
+            summaryStats.parcel[region].count += cnt;
+            summaryStats.parcel[region].fee += fee;
+        } else if (type === 'PRINTED' || name.includes('PRINT') || name.includes('สิ่งตีพิมพ์') || name.includes('สิ่งพิมพ์')) {
+            if (isIntl) {
+                // For international, printed matter is counted as Ordinary International (ธรรมดา ต่างประเทศ)
+                summaryStats.ordinary.international.count += cnt;
+                summaryStats.ordinary.international.fee += fee;
+            } else {
+                summaryStats.printed.domestic.count += cnt;
+                summaryStats.printed.domestic.fee += fee;
+            }
+        } else if (type === 'ORD' || type === 'CUSTOM' || name.includes('ORD') || name.includes('จดหมาย') || name.includes('ธรรมดา')) {
+            summaryStats.ordinary[region].count += cnt;
+            summaryStats.ordinary[region].fee += fee;
         } else {
-            summaryStats.others.count += cnt;
-            summaryStats.others.fee += fee;
+            summaryStats.others[region].count += cnt;
+            summaryStats.others[region].fee += fee;
         }
     });
 
@@ -1624,8 +1663,45 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </div>
             </div>
             
-            <!-- Official Service Classification Table (v5.5.0) -->
-            ${titleSuffix !== 'กลุ่ม EMS' ? `
+            <!-- Official Service Classification Table (v5.8.5) -->
+            ${titleSuffix === 'กลุ่ม EMS' ? `
+            <div style="margin-top: 15px; margin-bottom: 15px; page-break-inside: avoid;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; text-align: center; font-family: 'Sarabun', sans-serif; border: 1.5px solid black;">
+                    <thead>
+                        <tr style="background: #f8fafc; font-weight: bold;">
+                            <th rowspan="2" style="padding: 6px; width: 30%; text-align: left; border: 1.5px solid black; font-size: 10pt;">รายการ</th>
+                            <th colspan="2" style="padding: 6px; width: 28%; border: 1.5px solid black; font-size: 10pt;">ในประเทศ</th>
+                            <th colspan="2" style="padding: 6px; width: 28%; border: 1.5px solid black; font-size: 10pt;">ต่างประเทศ</th>
+                            <th rowspan="2" style="padding: 6px; width: 14%; border: 1.5px solid black; font-size: 10pt;">รวมเงินทั้งสิ้น<br>(1) + (2)</th>
+                        </tr>
+                        <tr style="background: #f8fafc; font-weight: bold;">
+                            <th style="padding: 6px; width: 10%; border: 1.5px solid black;">ชิ้น</th>
+                            <th style="padding: 6px; width: 18%; border: 1.5px solid black;">เงิน (1)</th>
+                            <th style="padding: 6px; width: 10%; border: 1.5px solid black;">ชิ้น</th>
+                            <th style="padding: 6px; width: 18%; border: 1.5px solid black;">เงิน (2)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 6px 10px; text-align: left; font-weight: bold; border: 1px solid black; font-size: 10pt;">EMS</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 10.5pt;">${valStr(summaryStats.ems.domestic.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 10.5pt;">${feeStr(summaryStats.ems.domestic.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 10.5pt;">${valStr(summaryStats.ems.international.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 10.5pt;">${feeStr(summaryStats.ems.international.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 10.5pt;">${feeStr(summaryStats.ems.domestic.fee + summaryStats.ems.international.fee)}</td>
+                        </tr>
+                        <tr style="background: #fafafa; font-weight: bold; font-size: 10pt;">
+                            <td style="padding: 6px 10px; text-align: left; border: 1.5px solid black;">ยอดรวม</td>
+                            <td style="border: 1.5px solid black;">${valStr(summaryStats.ems.domestic.count)}</td>
+                            <td style="border: 1.5px solid black;">${feeStr(summaryStats.ems.domestic.fee)}</td>
+                            <td style="border: 1.5px solid black;">${valStr(summaryStats.ems.international.count)}</td>
+                            <td style="border: 1.5px solid black;">${feeStr(summaryStats.ems.international.fee)}</td>
+                            <td style="border: 1.5px solid black;">${totalFee > 0 ? totalFee.toLocaleString() : '0'}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            ` : `
             <div style="margin-top: 15px; margin-bottom: 15px; page-break-inside: avoid;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; text-align: center; font-family: 'Sarabun', sans-serif; border: 1.5px solid black;">
                     <thead>
@@ -1645,72 +1721,72 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     <tbody>
                         <tr>
                             <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">จดหมายธรรมดา</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.ordinary.count)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.ordinary.fee)}</td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.ordinary.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.ordinary.domestic.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.ordinary.domestic.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.ordinary.international.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.ordinary.international.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.ordinary.domestic.fee + summaryStats.ordinary.international.fee)}</td>
                         </tr>
                         <tr>
                             <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">สิ่งตีพิมพ์</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.printed.count)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.printed.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.printed.domestic.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.printed.domestic.fee)}</td>
                             <td style="border: 1px solid black;"></td>
                             <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.printed.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.printed.domestic.fee)}</td>
                         </tr>
                         <tr>
                             <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">ลงทะเบียน</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.registered.count)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.registered.fee)}</td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.registered.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.registered.domestic.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.registered.domestic.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.registered.international.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.registered.international.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.registered.domestic.fee + summaryStats.registered.international.fee)}</td>
                         </tr>
                         <tr>
                             <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">eCo-Post (ในประเทศ)</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.eco.count)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.eco.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.eco.domestic.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.eco.domestic.fee)}</td>
                             <td style="border: 1px solid black;"></td>
                             <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.eco.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.eco.domestic.fee)}</td>
                         </tr>
                         <tr>
                             <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">ePacket (ต่างประเทศ)</td>
                             <td style="border: 1px solid black;"></td>
                             <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.epacket.count)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.epacket.fee)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.epacket.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.epacket.international.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.epacket.international.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.epacket.international.fee)}</td>
                         </tr>
                         <tr>
                             <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">พัสดุไปรษณีย์</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.parcel.count)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.parcel.fee)}</td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.parcel.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.parcel.domestic.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.parcel.domestic.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.parcel.international.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.parcel.international.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.parcel.domestic.fee + summaryStats.parcel.international.fee)}</td>
                         </tr>
                         <tr>
                             <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">อื่น ๆ</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.others.count)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.others.fee)}</td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black;"></td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.others.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.others.domestic.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.others.domestic.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${valStr(summaryStats.others.international.count)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.others.international.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt;">${feeStr(summaryStats.others.domestic.fee + summaryStats.others.international.fee)}</td>
                         </tr>
                         <tr style="background: #fafafa; font-weight: bold; font-size: 9.5pt;">
                             <td style="padding: 3px 5px; text-align: left; border: 1.5px solid black;">ยอดรวม</td>
-                            <td style="border: 1.5px solid black;">${valStr(summaryStats.ordinary.count + summaryStats.printed.count + summaryStats.registered.count + summaryStats.eco.count + summaryStats.parcel.count)}</td>
-                            <td style="border: 1.5px solid black;">${feeStr(summaryStats.ordinary.fee + summaryStats.printed.fee + summaryStats.registered.fee + summaryStats.eco.fee + summaryStats.parcel.fee)}</td>
-                            <td style="border: 1.5px solid black;">${valStr(summaryStats.epacket.count)}</td>
-                            <td style="border: 1.5px solid black;">${feeStr(summaryStats.epacket.fee)}</td>
+                            <td style="border: 1.5px solid black;">${valStr(summaryStats.ordinary.domestic.count + summaryStats.printed.domestic.count + summaryStats.registered.domestic.count + summaryStats.eco.domestic.count + summaryStats.parcel.domestic.count + summaryStats.others.domestic.count)}</td>
+                            <td style="border: 1.5px solid black;">${feeStr(summaryStats.ordinary.domestic.fee + summaryStats.printed.domestic.fee + summaryStats.registered.domestic.fee + summaryStats.eco.domestic.fee + summaryStats.parcel.domestic.fee + summaryStats.others.domestic.fee)}</td>
+                            <td style="border: 1.5px solid black;">${valStr(summaryStats.ordinary.international.count + summaryStats.registered.international.count + summaryStats.epacket.international.count + summaryStats.parcel.international.count + summaryStats.others.international.count)}</td>
+                            <td style="border: 1.5px solid black;">${feeStr(summaryStats.ordinary.international.fee + summaryStats.registered.international.fee + summaryStats.epacket.international.fee + summaryStats.parcel.international.fee + summaryStats.others.international.fee)}</td>
                             <td style="border: 1.5px solid black;">${totalFee > 0 ? totalFee.toLocaleString() : '0'}</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-            ` : ''}
+            `}
             
             <div style="display: flex; justify-content: space-between; margin-top: auto; padding-top: 20px; font-size: 9pt; page-break-inside: avoid;">
                 <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
