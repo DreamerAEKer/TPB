@@ -1195,12 +1195,12 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 rowsHtml += `
                     <tr style="height: 24px;">
                         <td style="padding: 1px 4px; text-align: center;">${p * ITEMS_PER_PAGE + i + 1}</td>
-                        <td style="text-align: left; padding: 1px 4px;">${displayRecipient}</td>
-                        <td style="text-align: left; padding: 1px 4px;">${displayDestination}</td>
-                        <td style="padding: 1px 4px; text-align: left; font-weight: bold;">${trackingCellContent}</td>
-                        <td style="padding: 1px 4px; text-align: center;">${s.isOrdinaryBulk ? displayWeight : (displayWeight ? parseFloat(displayWeight).toLocaleString() : '')}</td>
-                        <td style="padding: 1px 4px; text-align: center;">${displayFee}</td>
-                        <td style="padding: 1px 4px; font-size: 8pt; text-align: center;">${generateShipmentNote(s)}</td>
+                        <td style="text-align: left; padding: 1px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayRecipient}</td>
+                        <td style="text-align: left; padding: 1px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayDestination}</td>
+                        <td style="padding: 1px 4px; text-align: left; font-weight: bold; white-space: nowrap;">${trackingCellContent}</td>
+                        <td style="padding: 1px 4px; text-align: center; white-space: nowrap;">${s.isOrdinaryBulk ? displayWeight : (displayWeight ? parseFloat(displayWeight).toLocaleString() : '')}</td>
+                        <td style="padding: 1px 4px; text-align: center; white-space: nowrap;">${displayFee}</td>
+                        <td style="padding: 1px 4px; font-size: 8pt; text-align: center; white-space: nowrap;">${generateShipmentNote(s)}</td>
                     </tr>
                 `;
             } else {
@@ -1235,10 +1235,10 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                                 <th style="padding: 6px; width: 40px; text-align: center;">ลำดับ</th>
                                 <th style="padding: 6px; width: auto; text-align: center;">ผู้รับ</th>
                                 <th style="padding: 6px; width: 100px; text-align: center;">ปลายทาง</th>
-                                <th style="padding: 6px; width: 135px; text-align: center;">เลขที่สิ่งของ 13 หลัก</th>
+                                <th style="padding: 6px; width: 160px; text-align: center;">เลขที่สิ่งของ 13 หลัก</th>
                                 <th style="padding: 6px; width: 70px; text-align: center;">น้ำหนัก<br>(กรัม)</th>
                                 <th style="padding: 6px; width: 80px; text-align: center;">ค่าบริการ<br>(บาท)</th>
-                                <th style="padding: 6px; width: 125px; text-align: center;">หมายเหตุ</th>
+                                <th style="padding: 6px; width: 100px; text-align: center;">หมายเหตุ</th>
                             </tr>
                         </thead>
                         <tbody>
