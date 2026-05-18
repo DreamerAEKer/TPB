@@ -1192,13 +1192,16 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 const displayFee = s.isOrdinaryBulk ? (parseFloat(s.fee) || 0).toLocaleString() : (isWeightEmpty ? '' : parseFloat(s.fee).toLocaleString());
                 const trackingCellContent = s.isOrdinaryBulk ? '' : s.displayTracking;
                 
+                const isVolWeight = s.options?.useVolWeight && s.options?.dimensions;
+                const weightStyle = isVolWeight ? 'font-weight: bold;' : '';
+                
                 rowsHtml += `
                     <tr style="height: 24px;">
                         <td style="padding: 1px 4px; text-align: center;">${p * ITEMS_PER_PAGE + i + 1}</td>
                         <td style="text-align: left; padding: 1px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayRecipient}</td>
                         <td style="text-align: left; padding: 1px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayDestination}</td>
                         <td style="padding: 1px 4px; text-align: left; font-weight: bold; white-space: nowrap;">${trackingCellContent}</td>
-                        <td style="padding: 1px 4px; text-align: center; white-space: nowrap;">${s.isOrdinaryBulk ? displayWeight : (displayWeight ? parseFloat(displayWeight).toLocaleString() : '')}</td>
+                        <td style="padding: 1px 4px; text-align: center; white-space: nowrap; ${weightStyle}">${s.isOrdinaryBulk ? displayWeight : (displayWeight ? parseFloat(displayWeight).toLocaleString() : '')}</td>
                         <td style="padding: 1px 4px; text-align: center; white-space: nowrap;">${displayFee}</td>
                         <td style="padding: 1px 4px; font-size: 8pt; text-align: center; white-space: nowrap;">${generateShipmentNote(s)}</td>
                     </tr>
