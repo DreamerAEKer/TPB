@@ -1084,18 +1084,26 @@ function syncBatchInputs(source) {
 
 function generateShipmentNote(s) {
     const notes = [];
+    const hasAR = s.options?.ar || s.options?.arTracking;
+    const hasInsurance = s.options?.insurance;
     
-    // AR/AR Track logic: show last 4 digits + space + check digit instead of text
-    if (s.options?.ar || s.options?.arTracking) {
-        const track = s.trackingFormatted || '';
-        // Match 4 digits, then 1 digit before TH
-        const match = track.replace(/\s+/g, '').match(/(\d{4})(\d)TH$/);
-        if (match) {
-            notes.push(`${match[1]} ${match[2]}`);
+    // AR/AR Track logic: show last 4 digits + space + check digit instead of text, 
+    // but if both AR and Insurance are present, use compact 'AR' to save print space
+    if (hasAR) {
+        if (hasInsurance) {
+            notes.push("AR");
+        } else {
+            const track = s.trackingFormatted || '';
+            const match = track.replace(/\s+/g, '').match(/(\d{4})(\d)TH$/);
+            if (match) {
+                notes.push(`${match[1]} ${match[2]}`);
+            } else {
+                notes.push("AR");
+            }
         }
     }
 
-    if (s.options?.insurance) notes.push(`🛡️ ${(parseFloat(s.options.insuranceVal)||0).toLocaleString()}`);
+    if (hasInsurance) notes.push(`🛡️ ${(parseFloat(s.options.insuranceVal)||0).toLocaleString()}`);
     if (s.serviceType === 'REG') {
         if (s.options?.regType === 'BOX') notes.push("หีบห่อ");
     }
@@ -1227,10 +1235,10 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                                 <th style="padding: 6px; width: 40px; text-align: center;">ลำดับ</th>
                                 <th style="padding: 6px; width: auto; text-align: center;">ผู้รับ</th>
                                 <th style="padding: 6px; width: 100px; text-align: center;">ปลายทาง</th>
-                                <th style="padding: 6px; width: 160px; text-align: center;">เลขที่สิ่งของ 13 หลัก</th>
+                                <th style="padding: 6px; width: 135px; text-align: center;">เลขที่สิ่งของ 13 หลัก</th>
                                 <th style="padding: 6px; width: 70px; text-align: center;">น้ำหนัก<br>(กรัม)</th>
                                 <th style="padding: 6px; width: 80px; text-align: center;">ค่าบริการ<br>(บาท)</th>
-                                <th style="padding: 6px; width: 100px; text-align: center;">หมายเหตุ</th>
+                                <th style="padding: 6px; width: 125px; text-align: center;">หมายเหตุ</th>
                             </tr>
                         </thead>
                         <tbody>
