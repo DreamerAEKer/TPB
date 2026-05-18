@@ -24,7 +24,7 @@
         </div>
         <div style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
             <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-            <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v5.8.6</div>
+            <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v5.8.7</div>
         </div>
     </div>
 
@@ -206,8 +206,9 @@
                     <label class="option-item" id="opt-insurance-row"><input type="checkbox" id="opt-insurance"> รับประกัน (EMS)</label>
                     <div id="insurance-detail" style="display: none; padding: 5px 0 5px 25px; gap: 5px; flex-direction: column;">
                         <label style="font-size: 0.75rem;">วงเงิน (สูงสุด 50,000.-)</label>
-                        <input type="number" id="insurance-val" value="2000" style="padding: 4px; font-size: 0.9rem;">
+                        <input type="number" id="insurance-val" value="2100" style="padding: 4px; font-size: 0.9rem;">
                         <span id="ins-warn" style="color: var(--primary-color); font-size: 0.7rem; display: none;">ยอด 2,100 - 50,000 บาทเท่านั้น</span>
+                        <div style="font-size: 0.7rem; color: #475569; margin-top: 2px; line-height: 1.3;">💡 แนะนำเริ่มต้นที่ <b>2,100 บาท</b> ขึ้นไป (ต่ำกว่านี้ EMS คุ้มครองฟรีสูงสุด 2,000 บาทแรกอยู่แล้ว ไม่คุ้มค่าบริการรับประกัน 15 บาท)</div>
                     </div>
                     <div id="remote-check-container" class="hidden" style="margin-bottom: 10px; background: #fff1f2; padding: 8px; border-radius: 8px; border: 1px solid #fecaca; display: flex; align-items: center; gap: 8px;">
                         <input type="checkbox" id="is-remote-check" onchange="updatePreview()">
@@ -857,7 +858,7 @@
         <div style="color: #64748b; margin-top: 0.5rem;">กรุณารอสักครู่ (อาจใช้เวลา 1-5 วินาที สำหรับรายการจำนวนมาก)</div>
     </div>
 
-    <script src="src/qrious.min.js?v=5.8.6"></script>
-    <script src="src/main.js?v=5.8.6"></script>
+    <script src="src/qrious.min.js?v=5.8.7"></script>
+    <script src="src/main.js?v=5.8.7"></script>
 </body>
 </html>

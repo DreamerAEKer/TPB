@@ -705,12 +705,12 @@ window.toggleRowService = async (i, serviceType, checked) => {
         isARChange = true;
     } else if (serviceType === 'insurance') {
         if (checked) {
-            let currentVal = s.options.insuranceVal || 2000;
-            if (currentVal < 2000) {
-                const inputVal = prompt("ระบุจำนวนเงินรับประกัน (2,000 - 50,000 บาท):", "2000");
+            let currentVal = s.options.insuranceVal || 2100;
+            if (currentVal < 2100) {
+                const inputVal = prompt("ระบุจำนวนเงินรับประกัน แนะนำเริ่มที่ 2,100 บาทขึ้นไป (ช่วง 2,100 - 50,000 บาท):", "2100");
                 const parsed = parseFloat(sanitizeNumeric(inputVal || ""));
-                if (!inputVal || isNaN(parsed) || parsed < 2000) {
-                    alert("จำเป็นต้องระบุจำนวนเงินรับประกันเพื่อใช้บริการนี้ (ขั้นต่ำ 2,000 บาท)");
+                if (!inputVal || isNaN(parsed) || parsed < 2100) {
+                    alert("แนะนำระบุจำนวนเงินรับประกันตั้งแต่ 2,100 บาทขึ้นไป (เนื่องจากต่ำกว่านี้ EMS คุ้มครองฟรีสูงสุด 2,000 บาทแรกอยู่แล้ว)");
                     renderShipments();
                     return;
                 }
@@ -1172,7 +1172,7 @@ function syncBatchInputs(source) {
 function generateShipmentNote(s) {
     const notes = [];
     const hasAR = s.options?.ar || s.options?.arTracking;
-    const hasInsurance = s.options?.insurance;
+    const hasInsurance = s.options?.insurance && (s.serviceType !== 'EMS' || (parseFloat(s.options.insuranceVal) || 0) >= 2100);
     
     // AR/AR Track logic: show last 4 digits + space + check digit instead of text, 
     // but if both AR and Insurance are present, use compact 'AR' to save print space
