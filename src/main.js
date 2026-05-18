@@ -1390,61 +1390,40 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     const volWeightItems = items.filter(s => s.options?.dimensions && (s.options.dimensions.w || s.options.dimensions.l || s.options.dimensions.h));
     let qrCodeHtml = '';
     if (volWeightItems.length > 0) {
-        // Chunk items into max 15 per QR to avoid QRious character limit overflow and dense unreadable printouts
-        const chunks = [];
-        const chunkSize = 15;
-        for (let i = 0; i < volWeightItems.length; i += chunkSize) {
-            chunks.push(volWeightItems.slice(i, i + chunkSize));
-        }
-
-        let qrCardsHtml = '';
-        chunks.forEach((chunk, chunkIdx) => {
-            const qrLines = chunk.map(s => {
-                const cleanTrack = s.trackingFormatted.replace(/\s+/g, '');
-                const w = s.options.dimensions.w || 0;
-                const l = s.options.dimensions.l || 0;
-                const h = s.options.dimensions.h || 0;
-                return `${cleanTrack}:${w}*${l}*${h}`;
-            });
-            const qrText = qrLines.join('\n');
-            const onlineQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrText)}`;
-            const safeQrText = qrText.replace(/"/g, '&quot;').replace(/\n/g, '&#10;');
-            
-            let localQrDataUrl = '';
-            if (typeof QRious !== 'undefined') {
-                try {
-                    const qr = new QRious({
-                        value: qrText,
-                        size: 250,
-                        level: 'L' // Level 'L' maximizes capacity and high readability
-                    });
-                    localQrDataUrl = qr.toDataURL();
-                } catch (e) {
-                    console.error('Error generating local QR:', e);
-                }
-            }
-            
-            const label = chunks.length > 1 ? `ชุดที่ ${chunkIdx + 1} (${chunk.length} ชิ้น)` : `(${chunk.length} ชิ้น)`;
-            
-            qrCardsHtml += `
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 5px;">
-                    <div style="font-weight: bold; margin-bottom: 3px; color: #1e3a8a; font-size: 8pt;">QR ${label}</div>
-                    <img src="${localQrDataUrl || onlineQrUrl}" 
-                         data-qrtext="${safeQrText}" 
-                         onerror="this.onerror=null; if(typeof QRious !== 'undefined'){ try { const qr = new QRious({value: this.getAttribute('data-qrtext'), size: 250, level: 'L'}); this.src = qr.toDataURL(); } catch(e){} }" 
-                         style="width: 80px; height: 80px; object-fit: contain; border: 1px solid #eee; padding: 2px; background: white;" 
-                         alt="QR Code EMS Dimensions">
-                </div>
-            `;
+        const qrLines = volWeightItems.map(s => {
+            const cleanTrack = s.trackingFormatted.replace(/\s+/g, '');
+            const w = s.options.dimensions.w || 0;
+            const l = s.options.dimensions.l || 0;
+            const h = s.options.dimensions.h || 0;
+            return `${cleanTrack}:${w}*${l}*${h}`;
         });
+        const qrText = qrLines.join('\n');
+        const onlineQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrText)}`;
+        const safeQrText = qrText.replace(/"/g, '&quot;').replace(/\n/g, '&#10;');
+        
+        let localQrDataUrl = '';
+        if (typeof QRious !== 'undefined') {
+            try {
+                const qr = new QRious({
+                    value: qrText,
+                    size: 250,
+                    level: 'L' // Level 'L' maximizes capacity and results in larger, easier-to-scan pixel blocks!
+                });
+                localQrDataUrl = qr.toDataURL();
+            } catch (e) {
+                console.error('Error generating local QR:', e);
+            }
+        }
         
         qrCodeHtml = `
-            <div style="flex: 0.9; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fafafa; padding: 5px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 10pt; box-sizing: border-box; text-align: center; height: 100%;">
-                <div style="font-weight: bold; margin-bottom: 5px; color: #1e3a8a; font-size: 9pt;">QR นำเข้าขนาดพัสดุ (เฉพาะ ${volWeightItems.length} จาก ${items.length} ชิ้น)</div>
-                <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; flex-wrap: wrap; gap: 10px; width: 100%;">
-                    ${qrCardsHtml}
-                </div>
-                <div style="font-size: 7.5pt; color: #64748b; margin-top: 5px; line-height: 1.2;">สแกนเพื่ออ่านข้อมูล กว้าง*ยาว*สูง</div>
+            <div style="flex: 0.9; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fafafa; padding: 6px; border: 1px solid #ddd; border-radius: 8px; font-size: 10pt; box-sizing: border-box; text-align: center; height: 100%;">
+                <div style="font-weight: bold; margin-bottom: 4px; color: #1e3a8a; font-size: 9pt;">QR นำเข้าขนาดพัสดุ (เฉพาะ ${volWeightItems.length} จาก ${items.length} ชิ้น)</div>
+                <img src="${localQrDataUrl || onlineQrUrl}" 
+                     data-qrtext="${safeQrText}" 
+                     onerror="this.onerror=null; if(typeof QRious !== 'undefined'){ try { const qr = new QRious({value: this.getAttribute('data-qrtext'), size: 250, level: 'L'}); this.src = qr.toDataURL(); } catch(e){} }" 
+                     style="width: 85px; height: 85px; object-fit: contain; border: 1px solid #eee; padding: 2px; background: white;" 
+                     alt="QR Code EMS Dimensions">
+                <div style="font-size: 7.5pt; color: #64748b; margin-top: 4px; line-height: 1.2;">สแกนเพื่อนำเข้าข้อมูล ขนาด กว้าง*ยาว*สูง</div>
             </div>
         `;
     }
