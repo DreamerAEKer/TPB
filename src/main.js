@@ -1388,45 +1388,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
 
 function generateSummarySheet(items, titleSuffix, copies = 1) {
     const volWeightItems = items.filter(s => s.options?.dimensions && (s.options.dimensions.w || s.options.dimensions.l || s.options.dimensions.h));
-    let qrCodeHtml = '';
-    if (volWeightItems.length > 0) {
-        const qrLines = volWeightItems.map(s => {
-            const cleanTrack = s.trackingFormatted.replace(/\s+/g, '');
-            const w = s.options.dimensions.w || 0;
-            const l = s.options.dimensions.l || 0;
-            const h = s.options.dimensions.h || 0;
-            return `${cleanTrack}:${w}*${l}*${h}`;
-        });
-        const qrText = qrLines.join('\n');
-        const onlineQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrText)}`;
-        const safeQrText = qrText.replace(/"/g, '&quot;').replace(/\n/g, '&#10;');
-        
-        let localQrDataUrl = '';
-        if (typeof QRious !== 'undefined') {
-            try {
-                const qr = new QRious({
-                    value: qrText,
-                    size: 250,
-                    level: 'L' // Level 'L' maximizes capacity and results in larger, easier-to-scan pixel blocks!
-                });
-                localQrDataUrl = qr.toDataURL();
-            } catch (e) {
-                console.error('Error generating local QR:', e);
-            }
-        }
-        
-        qrCodeHtml = `
-            <div style="flex: 0.9; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fafafa; padding: 6px; border: 1px solid #ddd; border-radius: 8px; font-size: 10pt; box-sizing: border-box; text-align: center; height: 100%;">
-                <div style="font-weight: bold; margin-bottom: 4px; color: #1e3a8a; font-size: 9pt;">QR นำเข้าขนาดพัสดุ (เฉพาะ ${volWeightItems.length} จาก ${items.length} ชิ้น)</div>
-                <img src="${localQrDataUrl || onlineQrUrl}" 
-                     data-qrtext="${safeQrText}" 
-                     onerror="this.onerror=null; if(typeof QRious !== 'undefined'){ try { const qr = new QRious({value: this.getAttribute('data-qrtext'), size: 250, level: 'L'}); this.src = qr.toDataURL(); } catch(e){} }" 
-                     style="width: 85px; height: 85px; object-fit: contain; border: 1px solid #eee; padding: 2px; background: white;" 
-                     alt="QR Code EMS Dimensions">
-                <div style="font-size: 7.5pt; color: #64748b; margin-top: 4px; line-height: 1.2;">สแกนเพื่อนำเข้าข้อมูล ขนาด กว้าง*ยาว*สูง</div>
-            </div>
-        `;
-    }
+
 
     const groups = {};
     items.forEach(item => {
@@ -1637,15 +1599,14 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
             </table>
             <div style="display: flex; gap: 20px; font-size: 12pt; align-items: stretch;">
                 ${priceBreakdownHtml !== '' ? `
-                <div style="flex: ${volWeightItems.length > 0 ? '1.3' : '1.5'};">
+                <div style="flex: 1.5;">
                     <div style="background: #fafafa; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 11pt; height: 100%; box-sizing: border-box;">
                         <div style="margin-bottom: 8px;"><b>รายละเอียดชิ้นต่อราคา (อ้างอิง):</b></div>
                         ${priceBreakdownHtml}
                     </div>
                 </div>
                 ` : `<div style="flex: 1.5;"></div>`}
-                ${qrCodeHtml}
-                <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; box-sizing: border-box; text-align: right; height: 100%;">
+                <div style="flex: 1.5; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; box-sizing: border-box; text-align: right; height: 100%;">
                      <div style="font-size: 14pt; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 5px;">
                         ยอดรวมสุทธิ: ${totalFee > 0 ? totalFee.toLocaleString() : '0'} บาท
                      </div>
