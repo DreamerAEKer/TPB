@@ -185,7 +185,7 @@ let shipments = [];
 let history = [];
 let historyIndex = 0;
 let currentServiceTab = 'EMS';
-let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: true, paymentType: 'เงินสด', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left', postOffice: 'ไปรษณีย์กลาง 10501', meterDescending: 0, meterAscending: 0, homeZip: '', specialEmsEnabled: false, specialEmsPackage: 'A12' };
+let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: true, paymentType: 'เงินสด', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left', postOffice: 'ไปรษณีย์กลาง 10501', meterDescending: 0, meterAscending: 0, meterTopUps: [], homeZip: '', specialEmsEnabled: false, specialEmsPackage: 'A12' };
 let editingArchiveId = null;
 let currentView = 'dashboard';
 let currentWeightUnit = 'g';
@@ -3083,11 +3083,43 @@ document.getElementById('set-payment-type').onchange = (e) => {
     updateLicenseLabel(val);
 };
 
-document.getElementById('set-meter-desc').oninput = (e) => {
-    e.target.value = sanitizeNumeric(e.target.value, true);
-};
-document.getElementById('set-meter-asc').oninput = (e) => {
-    e.target.value = sanitizeNumeric(e.target.value, true);
+
+
+function updateTopupHistoryUI() {
+    const historyDiv = document.getElementById('topup-history');
+    if (!settings.meterTopUps || settings.meterTopUps.length === 0) {
+        historyDiv.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 5px;">ไม่มีประวัติการเติมเงิน</div>';
+        return;
+    }
+    historyDiv.innerHTML = settings.meterTopUps.slice().reverse().map(t => 
+        `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 3px 0;">
+            <span>${t.date}</span>
+            <span style="color: #059669; font-weight: bold;">+${t.amount.toLocaleString('en-US', {minimumFractionDigits: 2})} ฿</span>
+        </div>`
+    ).join('');
+}
+
+document.getElementById('btn-topup').onclick = () => {
+    const dateVal = document.getElementById('topup-date').value;
+    const amountVal = parseFloat(document.getElementById('topup-amount').value);
+    
+    if (!dateVal || isNaN(amountVal) || amountVal <= 0) {
+        alert('กรุณาระบุวันที่และจำนวนเงินให้ถูกต้อง');
+        return;
+    }
+    
+    if (!settings.meterTopUps) settings.meterTopUps = [];
+    settings.meterTopUps.push({ date: dateVal, amount: amountVal });
+    
+    const descInput = document.getElementById('set-meter-desc');
+    let currentDesc = parseFloat(descInput.value) || 0;
+    currentDesc += amountVal;
+    descInput.value = currentDesc.toFixed(2);
+    
+    document.getElementById('topup-date').value = '';
+    document.getElementById('topup-amount').value = '';
+    
+    updateTopupHistoryUI();
 };
 
 document.getElementById('set-show-sig-names').onchange = (e) => {
@@ -3562,6 +3594,7 @@ async function initApp() {
     // Meter setup
     document.getElementById('set-meter-desc').value = settings.meterDescending || 0;
     document.getElementById('set-meter-asc').value = settings.meterAscending || 0;
+    updateTopupHistoryUI();
     document.getElementById('meter-settings-fields').style.display = (settings.paymentType === 'เครื่องประทับไปรษณียากร') ? 'block' : 'none';
 
     if (!reportMonthInput.value) {
