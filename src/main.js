@@ -1501,11 +1501,15 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
             const hasAR = s.options?.ar || s.options?.arTracking;
             if (s.isOrdinaryBulk) {
                 const unitF = parseFloat(s.unitFee) || 0;
-                const key = `@ ${unitF.toLocaleString()}`;
-                priceMap[key] = (priceMap[key] || 0) + (parseInt(s.quantity) || 1);
+                if (unitF > 0) {
+                    const key = `@ ${unitF.toLocaleString()}`;
+                    priceMap[key] = (priceMap[key] || 0) + (parseInt(s.quantity) || 1);
+                }
             } else {
-                const key = `@ ${f.toLocaleString()}${hasAR ? ' (AR)' : ''}`;
-                priceMap[key] = (priceMap[key] || 0) + 1;
+                if (f > 0) {
+                    const key = `@ ${f.toLocaleString()}${hasAR ? ' (AR)' : ''}`;
+                    priceMap[key] = (priceMap[key] || 0) + 1;
+                }
             }
         });
     }
@@ -1649,12 +1653,14 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </tbody>
             </table>
             <div style="display: flex; gap: 20px; font-size: 12pt; align-items: stretch;">
+                ${priceBreakdownHtml !== '' ? `
                 <div style="flex: ${volWeightItems.length > 0 ? '1.3' : '1.5'};">
                     <div style="background: #fafafa; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 11pt; height: 100%; box-sizing: border-box;">
                         <div style="margin-bottom: 8px;"><b>รายละเอียดชิ้นต่อราคา (อ้างอิง):</b></div>
                         ${priceBreakdownHtml}
                     </div>
                 </div>
+                ` : `<div style="flex: 1.5;"></div>`}
                 ${qrCodeHtml}
                 <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; box-sizing: border-box; text-align: right; height: 100%;">
                      <div style="font-size: 14pt; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 5px;">
