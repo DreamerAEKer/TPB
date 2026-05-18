@@ -1440,7 +1440,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         
         qrCodeHtml = `
             <div style="flex: 0.9; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fafafa; padding: 5px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 10pt; box-sizing: border-box; text-align: center; height: 100%;">
-                <div style="font-weight: bold; margin-bottom: 5px; color: #1e3a8a; font-size: 9.5pt;">QR ขนาด EMS ขนาดใหญ่ (ทั้งหมด ${volWeightItems.length} ชิ้น)</div>
+                <div style="font-weight: bold; margin-bottom: 5px; color: #1e3a8a; font-size: 9pt;">QR นำเข้าขนาดพัสดุ (เฉพาะ ${volWeightItems.length} จาก ${items.length} ชิ้น)</div>
                 <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; flex-wrap: wrap; gap: 10px; width: 100%;">
                     ${qrCardsHtml}
                 </div>
