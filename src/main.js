@@ -3984,6 +3984,13 @@ window.updateLicenseKeyStatus = function() {
 
 // Initial setup
 async function initApp() {
+    // Request persistent storage to safeguard database from browser cleanup under low disk space
+    if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persist().then(persisted => {
+            console.log(persisted ? "Storage persistence granted" : "Storage persistence best-effort");
+        }).catch(e => console.warn("Storage persistence check warning:", e));
+    }
+
     shipments = await loadFromDB('shipments') || [];
     history = await loadFromDB('history') || [JSON.parse(JSON.stringify(shipments))];
     historyIndex = await loadFromDB('historyIndex') || 0;
