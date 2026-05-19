@@ -122,6 +122,53 @@ const rates = {
   PARCEL: { base: 25, baseWeight: 1000, perKg: 20, ar: 3 }
 };
 
+// --- LICENSE KEY SYSTEM ---
+// Simple DJB2-variant hash (client-side validation)
+function _hx(s) {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = Math.imul(h, 33) ^ s.charCodeAt(i);
+    return (h >>> 0).toString(36).toUpperCase();
+}
+// Obfuscated salt — split to prevent easy grep
+const _p1='T',_p2='h',_p3='P',_p4='b',_p5='K',_p6='3',_p7='y';
+const _LK_SALT = _p1+_p2+_p3+_p4+_p5+_p6+_p7; // only known at runtime
+
+function validateLicenseKey(key) {
+    if (!key) return null;
+    const parts = key.trim().toUpperCase().replace(/\s+/g,'').split('-');
+    if (parts.length !== 4) return null;
+    const [thpNum, expiryYYMM, pkgCode, hash] = parts;
+    if (!/^\d{8}$/.test(thpNum)) return null;
+    if (!/^\d{4}$/.test(expiryYYMM)) return null;
+    if (!/^A(1[0-2]|[1-9])$/.test(pkgCode)) return null;
+    // Validate checksum
+    const payload = `${thpNum}|${expiryYYMM}|${pkgCode}`;
+    const expected = _hx(payload + _LK_SALT).substring(0, 6);
+    if (hash !== expected) return null;
+    // Validate expiry (YYMM: e.g. 2612 = Dec 2026)
+    const yy = parseInt(expiryYYMM.substring(0, 2));
+    const mm = parseInt(expiryYYMM.substring(2, 4));
+    if (mm < 1 || mm > 12) return null;
+    const expiryDate = new Date(2000 + yy, mm, 0); // last day of month
+    const expired = new Date() > expiryDate;
+    return {
+        valid: !expired,
+        expired,
+        thpNum,
+        pkgCode,
+        expiryYYMM,
+        expiryLabel: `${String(mm).padStart(2,'0')}/${2000+yy}`
+    };
+}
+
+function getActiveSpecialEmsPackage() {
+    if (settings.specialEmsLicenseKey) {
+        const r = validateLicenseKey(settings.specialEmsLicenseKey);
+        if (r && r.valid) return r.pkgCode;
+    }
+    return settings.specialEmsPackage || 'A12';
+}
+
 // --- SPECIAL EMS PRICING ---
 const specialEmsTiers = [
     [1000, 17], [2000, 27], [3000, 37], [4000, 47], [5000, 57], [6000, 67], [7000, 77], [8000, 87], [9000, 97], [10000, 107],
@@ -133,15 +180,28 @@ const SPECIAL_EMS_OFFSETS = {
 };
 
 function isSpecialEmsActive() {
+    // Block meter payment type always
+    if (settings.paymentType === 'เครื่องประทับไปรษณียากร') return false;
+
+    // Priority 1: Valid License Key (no admin password needed)
+    if (settings.specialEmsLicenseKey) {
+        const r = validateLicenseKey(settings.specialEmsLicenseKey);
+        if (r && r.valid) {
+            // Optionally tie to THP in license field (security layer)
+            const thpInLicense = (settings.license || '').match(/THP-(\d{8})/i);
+            if (thpInLicense && thpInLicense[1] !== r.thpNum) return false;
+            return true;
+        }
+    }
+
+    // Priority 2: Manual admin enable (existing flow)
     if (!settings.specialEmsEnabled) return false;
     const licenseVal = (settings.license || '').trim();
     const hasThp = /THP-/i.test(licenseVal);
-    
-    if (settings.paymentType === 'เงินสด') {
-        return hasThp;
-    } else if (settings.paymentType === 'เงินเชื่อ') {
-        const cleanLicense = licenseVal.replace(/THP-\d+/gi, '').replace(/THP-/gi, '').trim();
-        return hasThp && cleanLicense.length > 0;
+    if (settings.paymentType === 'เงินสด') return hasThp;
+    if (settings.paymentType === 'เงินเชื่อ') {
+        const clean = licenseVal.replace(/THP-\d+/gi, '').replace(/THP-/gi, '').trim();
+        return hasThp && clean.length > 0;
     }
     return false;
 }
@@ -185,7 +245,7 @@ let shipments = [];
 let history = [];
 let historyIndex = 0;
 let currentServiceTab = 'EMS';
-let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: true, paymentType: 'เงินสด', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left', postOffice: 'ไปรษณีย์กลาง 10501', meterDescending: 0, meterAscending: 0, meterTopUps: [], homeZip: '', specialEmsEnabled: false, specialEmsPackage: 'A12' };
+let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: true, paymentType: 'เงินสด', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left', postOffice: 'ไปรษณีย์กลาง 10501', meterDescending: 0, meterAscending: 0, meterTopUps: [], homeZip: '', specialEmsEnabled: false, specialEmsPackage: 'A12', specialEmsLicenseKey: '' };
 let editingArchiveId = null;
 let currentView = 'dashboard';
 let currentWeightUnit = 'g';
@@ -302,8 +362,9 @@ function calculateBaseFee(type, weight, options = {}) {
     let baseFee = 0;
     if (type === 'CUSTOM') return parseFloat(feeInput.value) || 0; 
     
-    if (type === 'EMS' && isSpecialEmsActive()) {
-        const pkg = settings.specialEmsPackage || 'A12';
+    // Special EMS: only if active AND item is NOT oversized (isLarge)
+    if (type === 'EMS' && isSpecialEmsActive() && !options.isLarge) {
+        const pkg = getActiveSpecialEmsPackage();
         baseFee = calculateSpecialEmsFee(weight, pkg);
     } else if (type === 'PARCEL') {
         baseFee = rates.PARCEL.base;
@@ -403,7 +464,8 @@ function updateHistoryButtons() {
 }
 
 function updateSummary() {
-  const filtered = shipments.filter(s => s.serviceType === currentServiceTab);
+  const filtered = shipments.filter(s => s.serviceType === currentServiceTab || 
+      (currentServiceTab === 'EMS_SPECIAL' && s.serviceType === 'EMS' && s.options?.isSpecialEms));
   
   const totalItems = filtered.length;
   const totalFee = filtered.reduce((s, x) => s + (parseFloat(x.fee) || 0), 0);
@@ -416,6 +478,17 @@ function updateSummary() {
       const counterEl = document.getElementById(`count-${svc.toLowerCase()}`);
       if(counterEl) counterEl.textContent = count;
   });
+
+  // EMS Special tab count
+  const specialEmsCount = shipments.filter(s => s.serviceType === 'EMS' && s.options?.isSpecialEms).length;
+  const specialTabEl = document.getElementById('count-ems-special');
+  if (specialTabEl) specialTabEl.textContent = specialEmsCount;
+
+  // Show/hide EMS Special tab based on setting
+  const specialTab = document.getElementById('tab-ems-special');
+  if (specialTab) {
+      specialTab.style.display = (settings.specialEmsEnabled && isSpecialEmsActive()) ? '' : 'none';
+  }
   
   updateMeterStatus();
 }
@@ -438,8 +511,14 @@ function updateMeterStatus() {
 function renderShipments() {
   shipmentList.innerHTML = '';
 
+  const isSpecialTab = currentServiceTab === 'EMS_SPECIAL';
+  const effectiveTab = isSpecialTab ? 'EMS' : currentServiceTab;
+
   const filtered = shipments.map((s, originalIdx) => ({ ...s, originalIdx }))
-                           .filter(s => s.serviceType === currentServiceTab);
+                           .filter(s => {
+                               if (isSpecialTab) return s.serviceType === 'EMS' && s.options?.isSpecialEms;
+                               return s.serviceType === currentServiceTab;
+                           });
 
   let prevPrefix = null;
   let prevNum = null;
@@ -849,7 +928,7 @@ function updatePreview() {
   const w = (currentWeightUnit === 'kg') ? Math.round(rawW * 1000) : rawW;
   
   // Show/Hide sub-type groups based on active tab (currentServiceTab)
-  const activeSvc = currentServiceTab;
+  const activeSvc = (currentServiceTab === 'EMS_SPECIAL') ? 'EMS' : currentServiceTab;
   const selectedCustomSvc = customServiceNameInput.value;
   const isOrdinary = activeSvc === 'CUSTOM' && (selectedCustomSvc === 'จดหมาย ในประเทศ' || selectedCustomSvc === 'สิ่งพิมพ์ ในประเทศ');
 
@@ -892,7 +971,7 @@ function updatePreview() {
   }
 
   regTypeGroup.style.display = (activeSvc === 'REG') ? 'block' : 'none';
-  emsDimGroup.style.display = (activeSvc === 'EMS') ? 'block' : 'none';
+  emsDimGroup.style.display = (activeSvc === 'EMS' || activeSvc === 'EMS_SPECIAL') ? 'block' : 'none';
   
   // Control display of special options depending on the service tab
   if (optArRow) {
@@ -1082,7 +1161,8 @@ function updatePreview() {
         arTracking: optArTracking.checked,
         insurance: optInsurance.checked, 
         insuranceVal: parseFloat(insuranceVal.value) || 0,
-        regType: regTypeInput.value
+        regType: regTypeInput.value,
+        isLarge: isLarge
       });
       let total = base;
       if (optRemote.checked) total += 20;
@@ -1103,9 +1183,9 @@ function updatePreview() {
       }
   }
 
-  // Toggle Special EMS Badge
+  // Toggle Special EMS Badge (hidden when jumbo/isLarge)
   if (specialEmsBadge && specialEmsPkgName) {
-      if (activeSvc === 'EMS' && isSpecialEmsActive() && w > 0) {
+      if (activeSvc === 'EMS' && isSpecialEmsActive() && w > 0 && !isLarge) {
           specialEmsBadge.style.display = 'block';
           specialEmsPkgName.textContent = settings.specialEmsPackage || 'A12';
       } else {
@@ -1265,7 +1345,13 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     const company = settings.company || '......................................';
     const phone = settings.phone || '......................................';
     const address = settings.address || '............................................................................';
-    const license = settings.license || 'พ. ...... / 2569';
+    const licenseRaw = settings.license || '';
+    // Extract THP code and display license separately
+    const thpMatch = licenseRaw.match(/THP-[\w\d]+/i);
+    const thpCode = thpMatch ? thpMatch[0].toUpperCase() : null;
+    const licenseClean = licenseRaw.replace(/THP-[\w\d]+/gi, '').trim().replace(/^[,\s]+|[,\s]+$/g, '') || 'พ. ...... / 2569';
+    const license = licenseClean || 'พ. ...... / 2569';
+    const showThp = thpCode && settings.paymentType !== 'เครื่องประทับไปรษณียากร';
     
     let printDate = settings.date ? settings.date.trim() : '';
     if (!printDate) {
@@ -1327,7 +1413,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         <h2 style="margin: 0; font-size: 14pt;">ใบนำส่งสิ่งของทางไปรษณีย์ โดยชำระค่าบริการเป็น${settings.paymentType || 'เงินสด'}</h2>
                         ${titleSuffix ? `<div style="font-size: 12pt; font-weight: bold;">(${titleSuffix})</div>` : ''}
                         <div style="font-size: 11pt; margin-top: 5px;">วันที่ <b>${printDate}</b> ฝากส่งครั้งที่ <b>${printSession}</b> ใบที่ <b>${p + 1} / ${totalPages}</b></div>
-                        <div style="font-size: 11pt;"><span style="font-weight: bold; font-size: 12pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</span> ใบอนุญาตพิเศษที่ <b>${license}</b></div>
+                        <div style="font-size: 11pt;">${showThp ? `<span style="font-size: 10pt; color: #0369a1; font-weight: bold;">THP: <b>${thpCode}</b> &nbsp;|&nbsp; </span>` : ''}<span style="font-weight: bold; font-size: 12pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</span> ใบอนุญาตพิเศษที่ <b>${license}</b></div>
                     </div>
                 </div>
                 <div style="margin-bottom: 2px;">
@@ -1564,7 +1650,12 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     const company = settings.company || '......................................';
     const address = settings.address || '............................................................................';
     const phone = settings.phone || '......................................';
-    const license = settings.license || 'พ. ...... / 2569';
+    const licenseRawS = settings.license || '';
+    const thpMatchS = licenseRawS.match(/THP-[\w\d]+/i);
+    const thpCodeS = thpMatchS ? thpMatchS[0].toUpperCase() : null;
+    const licenseCleanS = licenseRawS.replace(/THP-[\w\d]+/gi, '').trim().replace(/^[,\s]+|[,\s]+$/g, '') || 'พ. ...... / 2569';
+    const license = licenseCleanS || 'พ. ...... / 2569';
+    const showThpS = thpCodeS && settings.paymentType !== 'เครื่องประทับไปรษณียากร';
     
     let printDate = settings.date ? settings.date.trim() : '';
     if (!printDate) {
@@ -1590,6 +1681,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     <div style="display: flex; flex-direction: column; align-items: flex-end;">
                         <span style="font-weight: bold; font-size: 12pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</span>
                         <span>ใบอนุญาตพิเศษที่ <b>${license}</b></span>
+                        ${showThpS ? `<span style="color: #0369a1; font-weight: bold; font-size: 11pt;">THP: <b>${thpCodeS}</b></span>` : ''}
                     </div>
                 </div>
             </div>
@@ -2405,7 +2497,9 @@ addBtn.onclick = async (e) => {
       }, 50);
   }
 
-  if (currentServiceTab !== type) {
+  // If on EMS_SPECIAL tab and adding EMS item, stay on EMS_SPECIAL
+  const stayOnSpecialTab = (currentServiceTab === 'EMS_SPECIAL' && type === 'EMS');
+  if (!stayOnSpecialTab && currentServiceTab !== type) {
       currentServiceTab = type;
       document.querySelectorAll('.service-tab').forEach(t => {
           t.classList.toggle('active', t.dataset.service === type);
@@ -2654,7 +2748,9 @@ document.querySelectorAll('.service-tab').forEach(tab => {
         currentServiceTab = tab.dataset.service;
         document.querySelectorAll('.service-tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-        serviceTitle.textContent = `จัดการรายการ: ${currentServiceTab === 'CUSTOM' ? 'อื่นๆ' : currentServiceTab}`;
+        // EMS_SPECIAL tab: show EMS form but filter by isSpecialEms
+        const displayTab = currentServiceTab === 'EMS_SPECIAL' ? 'EMS (ราคาพิเศษ)' : (currentServiceTab === 'CUSTOM' ? 'อื่นๆ' : currentServiceTab);
+        serviceTitle.textContent = `จัดการรายการ: ${displayTab}`;
         
         const prefixes = settings.defaultPrefixes?.[currentServiceTab];
         if (prefixes && (Array.isArray(prefixes) ? prefixes.length > 0 : !!prefixes)) {
@@ -2669,6 +2765,15 @@ document.querySelectorAll('.service-tab').forEach(tab => {
         updatePrefixListUI();
         
         customServiceGroup.style.display = (currentServiceTab === 'CUSTOM') ? 'block' : 'none';
+        // EMS_SPECIAL: treat like EMS for input form
+        const effectiveTab = (currentServiceTab === 'EMS_SPECIAL') ? 'EMS' : currentServiceTab;
+        if (effectiveTab !== currentServiceTab) {
+            // Switch input context to EMS
+            const fallbacks = { 'EMS': 'EX' };
+            if (!prefixInput.value || prefixInput.value === 'EX') {
+                prefixInput.value = settings.defaultPrefixes?.['EMS']?.[0] || 'EX';
+            }
+        }
         if (currentServiceTab === 'CUSTOM') {
             feeInput.placeholder = "ระบุค่าบริการ...";
             if (feeInput.value.startsWith('เริ่มต้น')) feeInput.value = '';
@@ -2992,6 +3097,16 @@ saveSettingsBtn.onclick = async () => {
     
     settings.specialEmsEnabled = document.getElementById('set-special-ems-enabled').checked;
     settings.specialEmsPackage = document.getElementById('set-special-ems-package').value;
+    const keyInput = document.getElementById('set-license-key');
+    if (keyInput) settings.specialEmsLicenseKey = keyInput.value.trim().toUpperCase();
+    // Auto-apply package from key if valid
+    if (settings.specialEmsLicenseKey) {
+        const keyR = validateLicenseKey(settings.specialEmsLicenseKey);
+        if (keyR && keyR.valid) {
+            settings.specialEmsEnabled = true;
+            settings.specialEmsPackage = keyR.pkgCode;
+        }
+    }
 
     settings.logoWidth = parseInt(document.getElementById('set-logo-width').value) || 150;
     settings.logoAlign = document.getElementById('set-logo-align').value;
@@ -3542,6 +3657,33 @@ exportCsvBtn.onclick = () => {
     document.body.removeChild(link);
 };
 
+// License Key Status UI
+window.updateLicenseKeyStatus = function() {
+    const el = document.getElementById('set-license-key');
+    const statusEl = document.getElementById('license-key-status');
+    if (!el || !statusEl) return;
+    const key = el.value.trim();
+    if (!key) { statusEl.style.display = 'none'; return; }
+    const r = validateLicenseKey(key);
+    statusEl.style.display = 'block';
+    if (!r) {
+        statusEl.style.background = '#fef2f2';
+        statusEl.style.color = '#dc2626';
+        statusEl.style.border = '1px solid #fecaca';
+        statusEl.innerHTML = '❌ รูปแบบ Key ไม่ถูกต้อง หรือ Checksum ผิด กรุณาตรวจสอบอีกครั้ง';
+    } else if (r.expired) {
+        statusEl.style.background = '#fff7ed';
+        statusEl.style.color = '#c2410c';
+        statusEl.style.border = '1px solid #fed7aa';
+        statusEl.innerHTML = `⏰ Key หมดอายุแล้ว (สิ้นสุด ${r.expiryLabel}) สำหรับ THP-${r.thpNum} [${r.pkgCode}]`;
+    } else {
+        statusEl.style.background = '#f0fdf4';
+        statusEl.style.color = '#166534';
+        statusEl.style.border = '1px solid #bbf7d0';
+        statusEl.innerHTML = `✅ Key ถูกต้อง — THP-${r.thpNum} • Package <b>${r.pkgCode}</b> • หมดอายุ ${r.expiryLabel}`;
+    }
+};
+
 // Initial setup
 async function initApp() {
     shipments = await loadFromDB('shipments') || [];
@@ -3596,6 +3738,13 @@ async function initApp() {
     document.getElementById('set-special-ems-package').value = settings.specialEmsPackage || 'A12';
     document.getElementById('admin-special-ems-fields').style.display = settings.specialEmsEnabled ? 'flex' : 'none';
 
+    // License Key UI
+    const licKeyEl = document.getElementById('set-license-key');
+    if (licKeyEl) {
+        licKeyEl.value = settings.specialEmsLicenseKey || '';
+        updateLicenseKeyStatus();
+    }
+
     // Logo setup
     document.getElementById('set-logo-width').value = settings.logoWidth || 150;
     document.getElementById('logo-width-val').textContent = (settings.logoWidth || 150) + 'px';
@@ -3640,7 +3789,35 @@ async function initApp() {
             adminSpecialEmsFields.style.display = e.target.checked ? 'flex' : 'none';
         };
     }
-    
+
+    // Hide Admin section when payment type = เครื่องประทับ
+    const paymentTypeSelect = document.getElementById('set-payment-type');
+    function syncAdminSectionVisibility() {
+        const isMeter = paymentTypeSelect && paymentTypeSelect.value === 'เครื่องประทับไปรษณียากร';
+        if (adminSettingsSection) {
+            // Only affect visibility of the admin section toggle area
+            // The section itself may be unlocked; just disable display when meter
+            if (isMeter) {
+                adminSettingsSection.style.opacity = '0.4';
+                adminSettingsSection.style.pointerEvents = 'none';
+                adminSettingsSection.title = 'ราคาพิเศษ EMS ใช้ได้เฉพาะ เงินสด และ เงินเชื่อ เท่านั้น';
+            } else {
+                adminSettingsSection.style.opacity = '';
+                adminSettingsSection.style.pointerEvents = '';
+                adminSettingsSection.title = '';
+            }
+        }
+        // meter-settings-fields
+        const meterFields = document.getElementById('meter-settings-fields');
+        if (meterFields) {
+            meterFields.style.display = isMeter ? 'block' : 'none';
+        }
+    }
+    if (paymentTypeSelect) {
+        paymentTypeSelect.onchange = syncAdminSectionVisibility;
+        syncAdminSectionVisibility(); // run once on init
+    }
+
     if (appVersionTrigger) {
         appVersionTrigger.ondblclick = () => {
             const pass = prompt("กรุณากรอกรหัสผ่านผู้ดูแลระบบ (Admin Password) เพื่อแก้ไขการตั้งค่าขั้นสูง:");

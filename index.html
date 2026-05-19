@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-     <link rel="stylesheet" href="src/style.css?v=5.7.2">
+     <link rel="stylesheet" href="src/style.css?v=6.0.0">
     <style>
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -24,7 +24,7 @@
         </div>
         <div style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
             <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-            <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v5.9.9</div>
+            <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v6.0.0</div>
         </div>
     </div>
 
@@ -274,6 +274,7 @@
                     <div class="service-tab" data-service="ECO">eCo-Post <span class="tab-count" id="count-eco">0</span></div>
                     <div class="service-tab" data-service="PARCEL">พัสดุ <span class="tab-count" id="count-parcel">0</span></div>
                     <div class="service-tab" data-service="CUSTOM">อื่นๆ (กำหนดเอง) <span class="tab-count" id="count-custom">0</span></div>
+                    <div class="service-tab" id="tab-ems-special" data-service="EMS_SPECIAL" style="display: none; background: linear-gradient(135deg, #e0f2fe, #eff6ff); color: #0369a1; font-weight: bold; border-bottom: 2px solid #0284c7;">✨ EMS ราคาพิเศษ <span class="tab-count" id="count-ems-special" style="background: #0284c7; color: white;">0</span></div>
                 </div>
                 
                 <!-- Batch Helper Toggle Toolbar -->
@@ -694,9 +695,9 @@
 
     <!-- Settings Modal -->
     <div id="settings-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-        <div style="background: white; padding: 2rem; border-radius: var(--radius); width: 420px; max-width: 95%; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
+        <div style="background: white; padding: 2rem; border-radius: var(--radius); width: 520px; max-width: 95vw; max-height: 85vh; overflow-y: auto; overflow-x: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); box-sizing: border-box;">
             <h2 style="margin-bottom: 1.5rem; color: var(--primary-color);">ตั้งค่าข้อมูลหัวกระดาษ</h2>
-            <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+            <div style="display: flex; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap;">
                 <div class="form-group" style="flex: 1; margin-bottom: 0;">
                     <label>วันที่ฝากส่ง (ปล่อยว่าง=อัตโนมัติ)</label>
                     <input type="text" id="set-date" placeholder="เช่น 18 พ.ค. 2569">
@@ -788,6 +789,16 @@
                 <label for="set-exclude-island-eco" style="color: #0369a1; margin: 0; cursor: pointer;">🏝️ ยกเว้นค่าพื้นที่เกาะ สำหรับ eCo-Post</label>
             </div>
             
+            <!-- License Key Section (visible to all users) -->
+            <div style="border: 1.5px solid #0284c7; padding: 12px; border-radius: 8px; margin-bottom: 1rem; background: linear-gradient(135deg,#f0f9ff,#e0f2fe);">
+                <div style="font-weight: bold; color: #0369a1; margin-bottom: 0.5rem; font-size: 0.9rem;">🔑 License Key (ราคาพิเศษ EMS)</div>
+                <input type="text" id="set-license-key"
+                    placeholder="XXXXXXXX-YYMM-A12-XXXXXX"
+                    style="font-family: monospace; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #7dd3fc; border-radius: 6px; padding: 8px;"
+                    oninput="this.value=this.value.toUpperCase(); updateLicenseKeyStatus()">
+                <div id="license-key-status" style="font-size: 0.78rem; margin-top: 6px; padding: 6px 8px; border-radius: 6px; display: none;"></div>
+            </div>
+
             <!-- Admin Only Section -->
             <div id="admin-settings-section" style="display: none; border: 1.5px dashed #0284c7; padding: 12px; border-radius: 8px; margin-bottom: 1rem; background: #f0f9ff;">
                 <div style="font-weight: bold; color: #0284c7; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 5px; font-size: 0.95rem;">

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔑 TPB License Key Generator — Admin Only</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Sarabun', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 32px; max-width: 520px; width: 100%; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; color: #38bdf8; }
+  .subtitle { font-size: 0.8rem; color: #64748b; margin-bottom: 24px; }
+  .warning { background: #450a0a; border: 1px solid #7f1d1d; border-radius: 8px; padding: 10px 14px; font-size: 0.8rem; color: #fca5a5; margin-bottom: 24px; }
+  label { display: block; font-size: 0.82rem; color: #94a3b8; margin-bottom: 5px; margin-top: 14px; }
+  input, select { width: 100%; padding: 10px 12px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; font-size: 0.95rem; font-family: inherit; }
+  input:focus, select:focus { outline: none; border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2,132,199,0.2); }
+  select option { background: #1e293b; }
+  .btn { width: 100%; padding: 12px; margin-top: 20px; background: linear-gradient(135deg, #0284c7, #0369a1); border: none; border-radius: 8px; color: white; font-size: 1rem; font-weight: bold; cursor: pointer; border-radius: 8px; transition: opacity 0.2s; }
+  .btn:hover { opacity: 0.9; }
+  .result { margin-top: 20px; display: none; }
+  .key-display { background: #0f172a; border: 1.5px solid #0284c7; border-radius: 10px; padding: 18px; text-align: center; }
+  .key-text { font-family: 'Courier New', monospace; font-size: 1.3rem; font-weight: bold; color: #38bdf8; letter-spacing: 2px; word-break: break-all; }
+  .key-info { margin-top: 10px; font-size: 0.8rem; color: #64748b; line-height: 1.6; }
+  .key-info span { color: #94a3b8; }
+  .copy-btn { margin-top: 12px; padding: 8px 20px; background: #0f172a; border: 1px solid #0284c7; border-radius: 6px; color: #38bdf8; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+  .copy-btn:hover { background: #0284c7; color: white; }
+  .divider { border: none; border-top: 1px solid #1e293b; margin: 20px 0; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🔑 License Key Generator</h1>
+  <div class="subtitle">Thai Post Bill — Admin Tool v1.0</div>
+  <div class="warning">⚠️ ไฟล์นี้สำหรับ Admin เท่านั้น — ห้ามแจกจ่ายให้ลูกค้า</div>
+
+  <label>เลขที่ THP (8 หลัก ไม่รวม "THP-")</label>
+  <input type="text" id="inp-thp" maxlength="8" placeholder="เช่น 12345678" oninput="this.value=this.value.replace(/\D/g,'').substring(0,8); preview()">
+
+  <label>หมดอายุ (เดือน / ปี)</label>
+  <div style="display:flex; gap:8px;">
+    <select id="inp-month" onchange="preview()" style="flex:1">
+      <option value="01">มกราคม (01)</option><option value="02">กุมภาพันธ์ (02)</option>
+      <option value="03">มีนาคม (03)</option><option value="04">เมษายน (04)</option>
+      <option value="05">พฤษภาคม (05)</option><option value="06">มิถุนายน (06)</option>
+      <option value="07">กรกฎาคม (07)</option><option value="08">สิงหาคม (08)</option>
+      <option value="09">กันยายน (09)</option><option value="10">ตุลาคม (10)</option>
+      <option value="11">พฤศจิกายน (11)</option><option value="12">ธันวาคม (12)</option>
+    </select>
+    <select id="inp-year" onchange="preview()" style="flex:1"></select>
+  </div>
+
+  <label>Package Level</label>
+  <select id="inp-pkg" onchange="preview()">
+    <option value="A1">A1 — >= 10,000 ชิ้น/เดือน</option>
+    <option value="A2">A2</option><option value="A3">A3</option><option value="A4">A4</option>
+    <option value="A5">A5</option>
+    <option value="A6">A6 — >= 8,000 ชิ้น/เดือน</option>
+    <option value="A7">A7 — >= 6,000 ชิ้น/เดือน</option>
+    <option value="A8">A8 — >= 4,000 ชิ้น/เดือน</option>
+    <option value="A9">A9</option><option value="A10">A10</option>
+    <option value="A11">A11 — >= 1,000 ชิ้น/เดือน</option>
+    <option value="A12" selected>A12 — >= 5 ชิ้น/ใบเสร็จ</option>
+  </select>
+
+  <button class="btn" onclick="generate()">🔑 สร้าง License Key</button>
+
+  <div class="result" id="result">
+    <hr class="divider">
+    <div class="key-display">
+      <div class="key-text" id="key-out">—</div>
+      <div class="key-info" id="key-info"></div>
+      <button class="copy-btn" onclick="copyKey()">📋 คัดลอก Key</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ⚠️ MUST match _LK_SALT in main.js exactly
+const _p1='T',_p2='h',_p3='P',_p4='b',_p5='K',_p6='3',_p7='y';
+const _LK_SALT = _p1+_p2+_p3+_p4+_p5+_p6+_p7;
+
+function _hx(s) {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = Math.imul(h, 33) ^ s.charCodeAt(i);
+    return (h >>> 0).toString(36).toUpperCase();
+}
+
+function generateKey(thpNum, expiryYYMM, pkgCode) {
+    const payload = `${thpNum}|${expiryYYMM}|${pkgCode}`;
+    const hash = _hx(payload + _LK_SALT).substring(0, 6);
+    return `${thpNum}-${expiryYYMM}-${pkgCode}-${hash}`;
+}
+
+// Populate year dropdown (current year + 5 years)
+const yearSel = document.getElementById('inp-year');
+const now = new Date();
+for (let y = now.getFullYear(); y <= now.getFullYear() + 5; y++) {
+    const opt = document.createElement('option');
+    opt.value = String(y).substring(2); // YY
+    opt.textContent = `${y} (${y+543})`;
+    if (y === now.getFullYear()) opt.selected = true;
+    yearSel.appendChild(opt);
+}
+// Default month = current + 12
+const defaultMm = ((now.getMonth() + 12) % 12) + 1;
+document.getElementById('inp-month').value = String(defaultMm).padStart(2,'0');
+
+function preview() {} // placeholder
+
+function generate() {
+    const thpNum = document.getElementById('inp-thp').value.trim();
+    const mm = document.getElementById('inp-month').value;
+    const yy = document.getElementById('inp-year').value;
+    const pkg = document.getElementById('inp-pkg').value;
+
+    if (thpNum.length !== 8 || !/^\d{8}$/.test(thpNum)) {
+        alert('⚠️ กรุณากรอกเลข THP 8 หลัก (ตัวเลขเท่านั้น)');
+        return;
+    }
+
+    const expiryYYMM = yy + mm;
+    const key = generateKey(thpNum, expiryYYMM, pkg);
+    const monthNames = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+    document.getElementById('key-out').textContent = key;
+    document.getElementById('key-info').innerHTML = `
+        <span>THP:</span> THP-${thpNum} &nbsp;|&nbsp;
+        <span>Package:</span> ${pkg} &nbsp;|&nbsp;
+        <span>หมดอายุ:</span> ${monthNames[parseInt(mm)]} ${2000+parseInt(yy)}
+    `;
+    document.getElementById('result').style.display = 'block';
+}
+
+function copyKey() {
+    const key = document.getElementById('key-out').textContent;
+    navigator.clipboard.writeText(key).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = '✅ คัดลอกแล้ว!';
+        setTimeout(() => btn.textContent = '📋 คัดลอก Key', 2000);
+    });
+}
+</script>
+</body>
+</html>
