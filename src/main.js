@@ -1379,13 +1379,11 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
 
     if (paymentType === 'เงินสด') {
         const thp = settings.cashThp ? settings.cashThp.trim().toUpperCase() : '................';
-        const name = settings.cashMemberName ? settings.cashMemberName.trim() : '';
-        licenseHeaderHtml = `<span style="font-weight: bold; font-size: 11.5pt;">${postOffice}</span> &nbsp;|&nbsp; สมาชิก Post Family: <b>${thp}</b>${name ? ` (<b>${name}</b>)` : ''}`;
+        licenseHeaderHtml = `<span style="font-weight: bold; font-size: 11.5pt;">${postOffice}</span> &nbsp;|&nbsp; สมาชิก Post Family: <b>${thp}</b>`;
     } else if (paymentType === 'เงินเชื่อ') {
         const lic = settings.creditLicense ? settings.creditLicense.trim() : 'พ. ...... / 2569';
         const thp = settings.creditThp ? settings.creditThp.trim().toUpperCase() : '';
-        const name = settings.creditMemberName ? settings.creditMemberName.trim() : '';
-        licenseHeaderHtml = `<span style="font-weight: bold; font-size: 11.5pt;">${postOffice}</span> &nbsp;|&nbsp; ใบอนุญาตพิเศษที่ <b>${lic}</b>${thp ? ` &nbsp;|&nbsp; THP: <b>${thp}</b>${name ? ` (<b>${name}</b>)` : ''}` : ''}`;
+        licenseHeaderHtml = `<span style="font-weight: bold; font-size: 11.5pt;">${postOffice}</span> &nbsp;|&nbsp; ใบอนุญาตพิเศษที่ <b>${lic}</b>${thp ? ` &nbsp;|&nbsp; THP: <b>${thp}</b>` : ''}`;
     } else if (paymentType === 'เครื่องประทับไปรษณียากร') {
         const lic = settings.meterLicense ? settings.meterLicense.trim() : 'พ. ...... / 2569';
         const num = settings.meterNumber ? settings.meterNumber.trim().toUpperCase() : '............';
@@ -1695,20 +1693,17 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
 
     if (paymentType === 'เงินสด') {
         const thp = settings.cashThp ? settings.cashThp.trim().toUpperCase() : '................';
-        const name = settings.cashMemberName ? settings.cashMemberName.trim() : '';
         licenseSummaryHtml = `
             <span style="font-weight: bold; font-size: 12pt;">${postOffice}</span>
             <span>สมาชิก Post Family: <b>${thp}</b></span>
-            ${name ? `<span>ชื่อสมาชิก: <b>${name}</b></span>` : ''}
         `;
     } else if (paymentType === 'เงินเชื่อ') {
         const lic = settings.creditLicense ? settings.creditLicense.trim() : 'พ. ...... / 2569';
         const thp = settings.creditThp ? settings.creditThp.trim().toUpperCase() : '';
-        const name = settings.creditMemberName ? settings.creditMemberName.trim() : '';
         licenseSummaryHtml = `
             <span style="font-weight: bold; font-size: 12pt;">${postOffice}</span>
             <span>ใบอนุญาตพิเศษที่ <b>${lic}</b></span>
-            ${thp ? `<span>THP: <b>${thp}</b>${name ? ` (<b>${name}</b>)` : ''}</span>` : ''}
+            ${thp ? `<span>THP: <b>${thp}</b></span>` : ''}
         `;
     } else if (paymentType === 'เครื่องประทับไปรษณียากร') {
         const lic = settings.meterLicense ? settings.meterLicense.trim() : 'พ. ...... / 2569';
@@ -3147,10 +3142,23 @@ saveSettingsBtn.onclick = async () => {
     const paymentType = document.getElementById('set-payment-type').value;
 
     // Validate payment type constraints
-    if (paymentType === 'เงินเชื่อ') {
+    if (paymentType === 'เงินสด') {
+        const thp = document.getElementById('set-cash-thp').value.trim();
+        const digits = thp.replace(/\D/g, '');
+        if (digits.length > 8) {
+            alert('⚠️ เลขสมาชิก Post Family ต้องไม่เกิน 8 หลัก');
+            return;
+        }
+    } else if (paymentType === 'เงินเชื่อ') {
         const creditLicense = document.getElementById('set-credit-license').value.trim();
         if (!creditLicense) {
             alert('⚠️ สำหรับประเภทเงินเชื่อ กรุณาระบุ "ใบอนุญาตพิเศษที่"');
+            return;
+        }
+        const thp = document.getElementById('set-credit-thp').value.trim();
+        const digits = thp.replace(/\D/g, '');
+        if (digits.length > 8) {
+            alert('⚠️ เลขสมาชิก Post Family ต้องไม่เกิน 8 หลัก');
             return;
         }
     } else if (paymentType === 'เครื่องประทับไปรษณียากร') {
@@ -3164,10 +3172,8 @@ saveSettingsBtn.onclick = async () => {
 
     settings.paymentType = paymentType;
     settings.cashThp = document.getElementById('set-cash-thp').value.trim();
-    settings.cashMemberName = document.getElementById('set-cash-member-name').value.trim();
     settings.creditLicense = document.getElementById('set-credit-license').value.trim();
     settings.creditThp = document.getElementById('set-credit-thp').value.trim();
-    settings.creditMemberName = document.getElementById('set-credit-member-name').value.trim();
     settings.meterNumber = document.getElementById('set-meter-number').value.trim();
     settings.meterLicense = document.getElementById('set-meter-license').value.trim();
 
@@ -3285,6 +3291,13 @@ function validatePaymentLicenseRealtime() {
     
     if (paymentType === 'เงินสด') {
         const thpVal = document.getElementById('set-cash-thp').value.trim();
+        const digitsOnly = thpVal.replace(/\D/g, '');
+        
+        if (digitsOnly.length > 8) {
+            cashStatus.innerHTML = `<span style="color: #dc2626;">❌ เลขสมาชิกต้องไม่เกิน 8 หลัก</span>`;
+            return;
+        }
+        
         const thpMatch = thpVal.match(/(?:THP-)?(\d{8})/i);
         const thpNum = thpMatch ? thpMatch[1] : null;
         
@@ -3303,6 +3316,13 @@ function validatePaymentLicenseRealtime() {
         }
     } else if (paymentType === 'เงินเชื่อ') {
         const thpVal = document.getElementById('set-credit-thp').value.trim();
+        const digitsOnly = thpVal.replace(/\D/g, '');
+        
+        if (digitsOnly.length > 8) {
+            creditStatus.innerHTML = `<span style="color: #dc2626;">❌ เลขสมาชิกต้องไม่เกิน 8 หลัก</span>`;
+            return;
+        }
+        
         const thpMatch = thpVal.match(/(?:THP-)?(\d{8})/i);
         const thpNum = thpMatch ? thpMatch[1] : null;
         
@@ -4015,10 +4035,8 @@ async function initApp() {
     
     // Set values in dedicated inputs
     document.getElementById('set-cash-thp').value = settings.cashThp || '';
-    document.getElementById('set-cash-member-name').value = settings.cashMemberName || '';
     document.getElementById('set-credit-license').value = settings.creditLicense || '';
     document.getElementById('set-credit-thp').value = settings.creditThp || '';
-    document.getElementById('set-credit-member-name').value = settings.creditMemberName || '';
     document.getElementById('set-meter-number').value = settings.meterNumber || '';
     document.getElementById('set-meter-license').value = settings.meterLicense || '';
     
