@@ -3657,32 +3657,123 @@ exportCsvBtn.onclick = () => {
     document.body.removeChild(link);
 };
 
-// License Key Status UI
-window.updateLicenseKeyStatus = function() {
-    const el = document.getElementById('set-license-key');
-    const statusEl = document.getElementById('license-key-status');
+// --- LICENSE MODAL FUNCTIONS ---
+function _getKeyStatusHtml(key) {
+    if (!key) return null;
+    const r = validateLicenseKey(key);
+    if (!r) return { bg:'#fef2f2', color:'#dc2626', border:'#fecaca', html:'❌ รูปแบบ Key ไม่ถูกต้อง หรือ Checksum ผิด' };
+    if (r.expired) return { bg:'#fff7ed', color:'#c2410c', border:'#fed7aa', html:`⏰ Key หมดอายุแล้ว (${r.expiryLabel}) — THP-${r.thpNum} [${r.pkgCode}]` };
+    return { bg:'#f0fdf4', color:'#166534', border:'#bbf7d0', html:`✅ Key ถูกต้อง — THP-${r.thpNum} • Package <b>${r.pkgCode}</b> • หมดอายุ ${r.expiryLabel}` };
+}
+
+// Update navbar dot + status
+function updateNavLicenseDot() {
+    const dot = document.getElementById('license-nav-dot');
+    const btn = document.getElementById('btn-open-license');
+    if (!dot || !btn) return;
+    if (settings.specialEmsLicenseKey) {
+        const r = validateLicenseKey(settings.specialEmsLicenseKey);
+        if (r && r.valid) {
+            dot.style.background = '#22c55e';
+            btn.style.color = '#22c55e';
+            btn.style.borderColor = '#166534';
+            btn.title = `License ใช้งานได้ — THP-${r.thpNum} [${r.pkgCode}] หมดอายุ ${r.expiryLabel}`;
+            return;
+        } else if (r && r.expired) {
+            dot.style.background = '#f97316';
+            btn.style.color = '#f97316';
+            btn.style.borderColor = '#c2410c';
+            btn.title = 'License หมดอายุแล้ว — กดเพื่ออัปเดต';
+            return;
+        }
+    }
+    dot.style.background = '#334155';
+    btn.style.color = '#94a3b8';
+    btn.style.borderColor = '#334155';
+    btn.title = 'ใส่ License Key เพื่อเปิดใช้ราคาพิเศษ EMS';
+}
+
+// Modal input realtime status
+window.updateLicenseModalStatus = function() {
+    const el = document.getElementById('license-modal-input');
+    const statusEl = document.getElementById('license-modal-status');
     if (!el || !statusEl) return;
     const key = el.value.trim();
     if (!key) { statusEl.style.display = 'none'; return; }
-    const r = validateLicenseKey(key);
+    const info = _getKeyStatusHtml(key);
     statusEl.style.display = 'block';
-    if (!r) {
-        statusEl.style.background = '#fef2f2';
-        statusEl.style.color = '#dc2626';
-        statusEl.style.border = '1px solid #fecaca';
-        statusEl.innerHTML = '❌ รูปแบบ Key ไม่ถูกต้อง หรือ Checksum ผิด กรุณาตรวจสอบอีกครั้ง';
-    } else if (r.expired) {
-        statusEl.style.background = '#fff7ed';
-        statusEl.style.color = '#c2410c';
-        statusEl.style.border = '1px solid #fed7aa';
-        statusEl.innerHTML = `⏰ Key หมดอายุแล้ว (สิ้นสุด ${r.expiryLabel}) สำหรับ THP-${r.thpNum} [${r.pkgCode}]`;
-    } else {
-        statusEl.style.background = '#f0fdf4';
-        statusEl.style.color = '#166534';
-        statusEl.style.border = '1px solid #bbf7d0';
-        statusEl.innerHTML = `✅ Key ถูกต้อง — THP-${r.thpNum} • Package <b>${r.pkgCode}</b> • หมดอายุ ${r.expiryLabel}`;
-    }
+    statusEl.style.background = info.bg;
+    statusEl.style.color = info.color;
+    statusEl.style.border = `1px solid ${info.border}`;
+    statusEl.innerHTML = info.html;
 };
+
+// Save from modal
+window.saveLicenseFromModal = async function() {
+    const el = document.getElementById('license-modal-input');
+    const statusEl = document.getElementById('license-modal-status');
+    const key = el ? el.value.trim().toUpperCase() : '';
+    const r = validateLicenseKey(key);
+    if (!r) {
+        statusEl.style.display = 'block';
+        statusEl.style.background = '#fef2f2'; statusEl.style.color = '#dc2626'; statusEl.style.border = '1px solid #fecaca';
+        statusEl.innerHTML = '❌ Key ไม่ถูกต้อง กรุณาตรวจสอบและลองใหม่';
+        return;
+    }
+    if (r.expired) {
+        statusEl.style.display = 'block';
+        statusEl.style.background = '#fff7ed'; statusEl.style.color = '#c2410c'; statusEl.style.border = '1px solid #fed7aa';
+        statusEl.innerHTML = `⏰ Key หมดอายุแล้ว (${r.expiryLabel}) — กรุณาขอ Key ใหม่จากผู้ดูแลระบบ`;
+        return;
+    }
+    // Save key
+    settings.specialEmsLicenseKey = key;
+    settings.specialEmsEnabled = true;
+    settings.specialEmsPackage = r.pkgCode;
+    await saveToDB('settings', settings);
+    // Sync settings modal field if it exists
+    const settingsKeyEl = document.getElementById('set-license-key');
+    if (settingsKeyEl) settingsKeyEl.value = key;
+    updateNavLicenseDot();
+    updateSummary();
+    renderShipments();
+    updatePreview();
+    // Show success then close
+    statusEl.style.display = 'block';
+    statusEl.style.background = '#f0fdf4'; statusEl.style.color = '#166534'; statusEl.style.border = '1px solid #bbf7d0';
+    statusEl.innerHTML = `✅ เปิดใช้งานสำเร็จ! Package <b>${r.pkgCode}</b> — หมดอายุ ${r.expiryLabel}`;
+    setTimeout(() => { document.getElementById('license-modal').style.display = 'none'; }, 1800);
+};
+
+// Clear license key
+window.clearLicenseKey = async function() {
+    if (!confirm('ต้องการลบ License Key ออกจากระบบหรือไม่?')) return;
+    settings.specialEmsLicenseKey = '';
+    settings.specialEmsEnabled = false;
+    await saveToDB('settings', settings);
+    const el = document.getElementById('license-modal-input');
+    if (el) el.value = '';
+    const statusEl = document.getElementById('license-modal-status');
+    if (statusEl) statusEl.style.display = 'none';
+    updateNavLicenseDot();
+    updateSummary();
+    updatePreview();
+};
+
+// Legacy: updateLicenseKeyStatus (for settings modal if still present)
+window.updateLicenseKeyStatus = function() {
+    const el = document.getElementById('set-license-key');
+    if (!el) return;
+    const key = el.value.trim();
+    const info = _getKeyStatusHtml(key);
+    const statusEl = document.getElementById('license-key-status');
+    if (!statusEl) return;
+    if (!info) { statusEl.style.display = 'none'; return; }
+    statusEl.style.display = 'block';
+    statusEl.style.background = info.bg; statusEl.style.color = info.color; statusEl.style.border = `1px solid ${info.border}`;
+    statusEl.innerHTML = info.html;
+};
+
 
 // Initial setup
 async function initApp() {
@@ -3776,7 +3867,34 @@ async function initApp() {
     
     // Setup Fluent Navigation (Enter Key)
     setupFluentNavigation();
-    
+
+    // --- License Modal Init ---
+    const licModalInput = document.getElementById('license-modal-input');
+    if (licModalInput && settings.specialEmsLicenseKey) {
+        licModalInput.value = settings.specialEmsLicenseKey;
+        updateLicenseModalStatus();
+    }
+    updateNavLicenseDot();
+
+    // Open license modal button
+    const btnOpenLicense = document.getElementById('btn-open-license');
+    if (btnOpenLicense) {
+        btnOpenLicense.onclick = () => {
+            const modal = document.getElementById('license-modal');
+            if (modal) modal.style.display = 'flex';
+            // Pre-fill if key exists
+            if (licModalInput && settings.specialEmsLicenseKey) {
+                licModalInput.value = settings.specialEmsLicenseKey;
+                updateLicenseModalStatus();
+            }
+        };
+    }
+    // Close modal on backdrop click
+    const licModal = document.getElementById('license-modal');
+    if (licModal) {
+        licModal.onclick = (e) => { if (e.target === licModal) licModal.style.display = 'none'; };
+    }
+
     // set dispatch btn state if editing
     if (editingArchiveId) {
         dispatchBtn.innerHTML = '💾 บันทึกการแก้ไข (Update)';

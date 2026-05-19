@@ -22,9 +22,35 @@
             <button id="nav-dashboard" style="background: transparent; color: white; border: none; padding: 10px 15px; font-size: 1rem; border-bottom: 3px solid var(--primary-color);">แผงควบคุมหลัก</button>
             <button id="nav-archive" style="background: transparent; color: #cbd5e1; border: none; padding: 10px 15px; font-size: 1rem; border-bottom: 3px solid transparent;">📚 ประวัติและรายงาน</button>
         </div>
-        <div style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
-            <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-            <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v6.0.0</div>
+        <div style="margin-left: auto; display: flex; align-items: center; gap: 12px;">
+            <!-- License Key Button -->
+            <button id="btn-open-license" title="ใส่ License Key เพื่อเปิดใช้ราคาพิเศษ EMS"
+                style="background: transparent; border: 1px solid #334155; border-radius: 8px; padding: 5px 12px; color: #94a3b8; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                <span id="license-nav-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #334155; display: inline-block;"></span>
+                <span>License Key</span>
+            </button>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
+                <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
+                <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v6.0.0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- License Key Modal (User-facing) -->
+    <div id="license-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+        <div style="background:#1e293b; border:1px solid #334155; border-radius:16px; padding:28px; max-width:420px; width:90%; box-shadow:0 25px 50px rgba(0,0,0,0.5); position:relative;">
+            <button onclick="document.getElementById('license-modal').style.display='none'" style="position:absolute; top:12px; right:14px; background:transparent; border:none; color:#64748b; font-size:1.2rem; cursor:pointer;">✕</button>
+            <div style="font-size:1.1rem; font-weight:bold; color:#38bdf8; margin-bottom:4px;">🔑 License Key</div>
+            <div style="font-size:0.78rem; color:#475569; margin-bottom:18px;">กรอก Key ที่ได้รับจากผู้ดูแลระบบ เพื่อเปิดใช้ราคาพิเศษ EMS</div>
+            <input type="text" id="license-modal-input"
+                placeholder="XXXXXXXX-YYMM-A12-XXXXXX"
+                style="width:100%; padding:12px; font-family:monospace; font-size:1rem; text-transform:uppercase; letter-spacing:1.5px; background:#0f172a; border:1.5px solid #334155; border-radius:8px; color:#e2e8f0;"
+                oninput="this.value=this.value.toUpperCase(); updateLicenseModalStatus()">
+            <div id="license-modal-status" style="font-size:0.78rem; margin-top:8px; padding:8px 10px; border-radius:6px; display:none; min-height:34px;"></div>
+            <div style="display:flex; gap:8px; margin-top:14px;">
+                <button onclick="saveLicenseFromModal()" style="flex:1; padding:11px; background:linear-gradient(135deg,#0284c7,#0369a1); border:none; border-radius:8px; color:white; font-size:0.95rem; font-weight:bold; cursor:pointer;">💾 บันทึกและเปิดใช้งาน</button>
+                <button onclick="clearLicenseKey()" style="padding:11px 14px; background:#0f172a; border:1px solid #475569; border-radius:8px; color:#94a3b8; font-size:0.85rem; cursor:pointer;" title="ล้าง Key">🗑️</button>
+            </div>
         </div>
     </div>
 
@@ -789,15 +815,7 @@
                 <label for="set-exclude-island-eco" style="color: #0369a1; margin: 0; cursor: pointer;">🏝️ ยกเว้นค่าพื้นที่เกาะ สำหรับ eCo-Post</label>
             </div>
             
-            <!-- License Key Section (visible to all users) -->
-            <div style="border: 1.5px solid #0284c7; padding: 12px; border-radius: 8px; margin-bottom: 1rem; background: linear-gradient(135deg,#f0f9ff,#e0f2fe);">
-                <div style="font-weight: bold; color: #0369a1; margin-bottom: 0.5rem; font-size: 0.9rem;">🔑 License Key (ราคาพิเศษ EMS)</div>
-                <input type="text" id="set-license-key"
-                    placeholder="XXXXXXXX-YYMM-A12-XXXXXX"
-                    style="font-family: monospace; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #7dd3fc; border-radius: 6px; padding: 8px;"
-                    oninput="this.value=this.value.toUpperCase(); updateLicenseKeyStatus()">
-                <div id="license-key-status" style="font-size: 0.78rem; margin-top: 6px; padding: 6px 8px; border-radius: 6px; display: none;"></div>
-            </div>
+            <!-- License Key field moved to dedicated modal via navbar button -->
 
             <!-- Admin Only Section -->
             <div id="admin-settings-section" style="display: none; border: 1.5px dashed #0284c7; padding: 12px; border-radius: 8px; margin-bottom: 1rem; background: #f0f9ff;">
