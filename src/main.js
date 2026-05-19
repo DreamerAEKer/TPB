@@ -3291,15 +3291,15 @@ function validatePaymentLicenseRealtime() {
         if (keyR && keyR.valid) {
             if (thpNum === keyR.thpNum) {
                 cashStatus.innerHTML = `<span style="color: #059669;">✓ เลขสมาชิกตรงกับ License Key (เรทพิเศษ ${keyR.pkgCode} เปิดใช้งานแล้ว)</span>`;
-            } else if (!thpNum) {
-                cashStatus.innerHTML = `<span style="color: #d97706;">⚠️ โปรดกรอกเลขสมาชิกให้ตรงกับคีย์เพื่อเปิดใช้งานเรทพิเศษ (ต้องการ THP-${keyR.thpNum})</span>`;
+            } else if (!thpVal) {
+                cashStatus.innerHTML = `<span style="color: #d97706;">⚠️ กรุณาใส่ข้อมูลเลขสมาชิก Post Family</span>`;
             } else {
-                cashStatus.innerHTML = `<span style="color: #dc2626;">❌ เลขสมาชิกไม่ตรงกับคีย์ (คีย์ต้องการ THP-${keyR.thpNum})</span>`;
+                cashStatus.innerHTML = `<span style="color: #dc2626;">❌ ข้อมูล Post Family ไม่ตรงตามสิทธิ์</span>`;
             }
         } else if (key) {
             cashStatus.innerHTML = `<span style="color: #dc2626;">❌ มีการระบุ License Key แต่คีย์ไม่ถูกต้องหรือหมดอายุ</span>`;
         } else {
-            cashStatus.innerHTML = `<span style="color: #64748b;">💡 กรอกเลขสมาชิก Post Family (ถ้ามีคีย์ License Key จะได้รับอัตราพิเศษ EMS)</span>`;
+            cashStatus.innerHTML = '';
         }
     } else if (paymentType === 'เงินเชื่อ') {
         const thpVal = document.getElementById('set-credit-thp').value.trim();
@@ -3309,15 +3309,15 @@ function validatePaymentLicenseRealtime() {
         if (keyR && keyR.valid) {
             if (thpNum === keyR.thpNum) {
                 creditStatus.innerHTML = `<span style="color: #059669;">✓ เลขสมาชิกตรงกับ License Key (เรทพิเศษ ${keyR.pkgCode} เปิดใช้งานแล้วสำหรับเงินเชื่อ)</span>`;
-            } else if (!thpNum) {
-                creditStatus.innerHTML = `<span style="color: #d97706;">💡 กรอกเลขสมาชิกให้ตรงกับคีย์หากมีสิทธิ์ EMS เรทราคาพิเศษ (ต้องการ THP-${keyR.thpNum})</span>`;
+            } else if (!thpVal) {
+                creditStatus.innerHTML = `<span style="color: #d97706;">⚠️ กรุณาใส่ข้อมูลเลขสมาชิก Post Family</span>`;
             } else {
-                creditStatus.innerHTML = `<span style="color: #dc2626;">❌ เลขสมาชิกไม่ตรงกับคีย์ (คีย์ต้องการ THP-${keyR.thpNum})</span>`;
+                creditStatus.innerHTML = `<span style="color: #dc2626;">❌ ข้อมูล Post Family ไม่ตรงตามสิทธิ์</span>`;
             }
         } else if (key) {
             creditStatus.innerHTML = `<span style="color: #dc2626;">❌ มีการระบุ License Key แต่คีย์ไม่ถูกต้องหรือหมดอายุ</span>`;
         } else {
-            creditStatus.innerHTML = `<span style="color: #64748b;">💡 หากบริษัทท่านได้รับ EMS เรทพิเศษร่วมด้วย ให้กรอกเลขสมาชิก Post Family และชื่อสมาชิกด้วย</span>`;
+            creditStatus.innerHTML = '';
         }
     }
 }
@@ -3901,9 +3901,9 @@ window.saveLicenseFromModal = async function() {
 
     let warningMsg = '';
     if (!thpNum) {
-        warningMsg = `<br><span style="color:#d97706; font-size:0.75rem;">💡 อย่าลืมไปที่ "⚙️ ตั้งค่า" เพื่อระบุเลขสมาชิก THP-${r.thpNum} ให้ตรงกันเพื่อเปิดใช้เรทราคาพิเศษ</span>`;
+        warningMsg = `<br><span style="color:#d97706; font-size:0.75rem;">💡 อย่าลืมไปที่ "⚙️ ตั้งค่า" เพื่อกรอกเลขสมาชิก Post Family ให้ตรงตามสิทธิ์เพื่อเปิดใช้เรทราคาพิเศษ</span>`;
     } else if (thpNum !== r.thpNum) {
-        warningMsg = `<br><span style="color:#dc2626; font-size:0.75rem;">⚠️ เลขสมาชิกที่ตั้งไว้ (THP-${thpNum}) ไม่ตรงกับคีย์ (ต้องการ THP-${r.thpNum}) กรุณาแก้ไขเพื่อเปิดใช้เรทราคาพิเศษ</span>`;
+        warningMsg = `<br><span style="color:#dc2626; font-size:0.75rem;">⚠️ ข้อมูล Post Family ที่ระบุไว้ในระบบไม่ตรงตามสิทธิ์คีย์ กรุณาแก้ไขในการตั้งค่าเพื่อเปิดใช้เรทราคาพิเศษ</span>`;
     }
 
     // Sync settings modal fields
