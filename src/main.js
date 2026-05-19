@@ -4562,12 +4562,12 @@ async function generateExcelTemplate() {
     try {
         const XLSX = await loadSheetJS();
         
-        // Define sample rows
+        // Define sample rows according to new specifications
         const data = [
-            ["เลขที่พัสดุ 13 หลัก (ตัวอย่าง)", "ชื่อผู้รับ", "รหัสไปรษณีย์", "น้ำหนัก (กรัม)"],
-            ["EQ123456789TH", "นายสมชาย รักดี", "10500", 550],
-            ["EQ990909397TH", "นางสาวสมศรี สุขใจ", "20000", 250],
-            ["", "หากไม่ระบุน้ำหนัก ระบบจะนำไปคำนวณราคาเป็น 0 บาทให้อัตโนมัติ", "", ""]
+            ["บริการ (EMS / ลงทะเบียน / eco-Post / พัสดุ)", "ชื่อผู้รับ", "รหัสไปรษณีย์", "น้ำหนัก (กรัม)", "กว้าง (ซม.)", "ยาว (ซม.)", "สูง (ซม.)", "เลขที่พัสดุ (ไม่บังคับ - ว่างไว้เพื่อรันเลขต่ออัตโนมัติ)"],
+            ["EMS", "นายสมชาย รักดี", "10500", 550, 15, 20, 10, ""],
+            ["ลงทะเบียน", "นางสาวสมศรี สุขใจ", "20000", 250, "", "", "", ""],
+            ["eco-Post", "นายประหยัด จันทร์", "10110", "", 30, 40, 20, ""]
         ];
 
         // Create sheet and workbook
@@ -4595,6 +4595,22 @@ async function parseAndImportExcelFile() {
     statusEl.textContent = '⏳ กำลังประมวลผลไฟล์...';
 
     const isCSV = file.name.endsWith('.csv');
+    
+    // Tracking formatting helper
+    const formatParsedTracking = (raw) => {
+        if (!raw) return '';
+        raw = raw.replace(/\s+/g, '').toUpperCase();
+        const match = raw.match(/^([A-Z]{2})(\d{8})(\d)([A-Z]{2})$/);
+        if (match) {
+            return formatTrackingNumber(match[1], match[2], match[3]);
+        }
+        const simpleMatch = raw.match(/^([A-Z]{2})(\d{8})([A-Z]{2})$/);
+        if (simpleMatch) {
+            const cd = calculateCheckDigit(simpleMatch[2]);
+            return formatTrackingNumber(simpleMatch[1], simpleMatch[2], cd);
+        }
+        return raw;
+    };
 
     try {
         let rows = [];
@@ -4632,35 +4648,93 @@ async function parseAndImportExcelFile() {
         const isSpecialTab = currentServiceTab === 'EMS_SPECIAL';
         const activeServiceType = isSpecialTab ? 'EMS' : currentServiceTab;
 
+        // Get sidebar digits for consecutive generation
+        const startD = (bulkToggle.checked ? num8StartInput.value : digitsInput.value).trim();
+        let currentNum = parseInt(startD);
+        if (isNaN(currentNum)) currentNum = 10000001;
+
         for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
             if (!row || row.length === 0) continue;
 
-            const rawTracking = (row[0] || '').toString().trim().toUpperCase();
-            if (!rawTracking) continue;
-
-            // Basic tracking verification: should have letters/digits
-            const tracking = rawTracking.replace(/[^A-Z0-9]/g, '');
-            if (tracking.length < 5) {
-                skippedCount++;
-                continue;
+            // Column 0: Service (e.g. EMS, ลงทะเบียน, eco-Post, พัสดุ)
+            const rawService = (row[0] || '').toString().trim().toUpperCase();
+            let targetServiceType = activeServiceType;
+            if (rawService) {
+                if (rawService === 'EMS') targetServiceType = 'EMS';
+                else if (rawService.includes('ลงทะเบียน') || rawService === 'REG') targetServiceType = 'REG';
+                else if (rawService.includes('ECO') || rawService === 'ECO-POST') targetServiceType = 'ECO';
+                else if (rawService.includes('พัสดุ') || rawService === 'PARCEL') targetServiceType = 'PARCEL';
+                else if (rawService.includes('อื่น') || rawService === 'CUSTOM') targetServiceType = 'CUSTOM';
             }
 
-            const name = (row[1] || '').toString().trim();
+            const recipient = (row[1] || '').toString().trim();
             const zip = (row[2] || '').toString().trim();
             const rawWeight = parseFloat(row[3]) || 0;
+            
+            // Dimensions
+            const dimW = parseFloat(row[4]) || 0;
+            const dimL = parseFloat(row[5]) || 0;
+            const dimH = parseFloat(row[6]) || 0;
+
+            // Tracking Number
+            let trackingFormatted = '';
+            const rawTracking = (row[7] || '').toString().trim().toUpperCase();
+            if (rawTracking) {
+                const tracking = rawTracking.replace(/[^A-Z0-9]/g, '');
+                if (tracking.length >= 5) {
+                    trackingFormatted = formatParsedTracking(tracking);
+                }
+            }
+
+            // If no tracking number provided, we will generate one dynamically!
+            if (!trackingFormatted) {
+                let servicePrefix = 'EX';
+                if (targetServiceType === 'REG') servicePrefix = 'RE';
+                else if (targetServiceType === 'ECO') servicePrefix = 'DX';
+                else if (targetServiceType === 'PARCEL') servicePrefix = 'PD';
+                
+                if (targetServiceType === activeServiceType) {
+                    const sidebarPrefix = prefixInput.value.trim().toUpperCase();
+                    if (sidebarPrefix) servicePrefix = sidebarPrefix;
+                } else {
+                    const defaults = settings.defaultPrefixes || {};
+                    if (defaults[targetServiceType] && defaults[targetServiceType][0]) {
+                        servicePrefix = defaults[targetServiceType][0];
+                    }
+                }
+
+                const step = ((targetServiceType === 'REG' && optArTracking.checked) || (targetServiceType === 'EMS' && optAR.checked)) ? 2 : 1;
+                const nextAvail = await getNextAvailableTrackingNumber(servicePrefix, currentNum.toString().padStart(8, '0'), step);
+                trackingFormatted = nextAvail.trackingFormatted;
+                currentNum = parseInt(nextAvail.d) + step;
+            }
 
             // Remote area flags
             const isAlwaysRemote = !!REMOTE_AREAS[zip] && !PARTIAL_REMOTE_ZIPS.includes(zip);
             const isIslandPotential = PARTIAL_REMOTE_ZIPS.includes(zip);
 
+            // Volumetric Weight calculation
+            let calcWeight = rawWeight;
+            let useVolWeight = false;
+            let dimensions = null;
+
+            if (dimW > 0 && dimL > 0 && dimH > 0) {
+                dimensions = { w: dimW, l: dimL, h: dimH };
+                const volWeight = Math.ceil((dimW * dimL * dimH) / 6);
+                if (volWeight > rawWeight) {
+                    useVolWeight = true;
+                    calcWeight = volWeight;
+                }
+            }
+
             // Create shipment object
             const s = {
-                serviceType: activeServiceType,
-                trackingFormatted: formatTrackingNum(tracking),
-                name: name,
+                serviceType: targetServiceType,
+                trackingFormatted: trackingFormatted,
+                recipient: recipient,
                 destination: zip,
-                weight: rawWeight > 0 ? rawWeight : '',
+                weight: calcWeight > 0 ? calcWeight : '',
                 fee: '',
                 isIsland: false,
                 options: {
@@ -4669,14 +4743,19 @@ async function parseAndImportExcelFile() {
                     insurance: false,
                     insuranceValue: 0,
                     isRemote: isAlwaysRemote,
-                    isSpecialEms: isSpecialTab
+                    isSpecialEms: isSpecialTab && targetServiceType === 'EMS'
                 }
             };
 
-            // Calculate base fee if weight is given
-            if (rawWeight > 0 && activeServiceType !== 'CUSTOM') {
-                let base = calculateBaseFee(activeServiceType, rawWeight, s.options);
-                if (settings.fuelSurcharge && (activeServiceType === 'EMS' || activeServiceType === 'ECO')) {
+            if (dimensions) {
+                s.options.dimensions = dimensions;
+                s.options.useVolWeight = useVolWeight;
+            }
+
+            // Calculate base fee
+            if (calcWeight > 0 && targetServiceType !== 'CUSTOM') {
+                let base = calculateBaseFee(targetServiceType, calcWeight, s.options);
+                if (settings.fuelSurcharge && (targetServiceType === 'EMS' || targetServiceType === 'ECO')) {
                     base += 3;
                 }
                 s.fee = base;
@@ -4687,6 +4766,12 @@ async function parseAndImportExcelFile() {
             importedCount++;
         }
 
+        // After loop finishes, update the sidebar input fields to the NEXT available tracking number!
+        const step = ((activeServiceType === 'REG' && optArTracking.checked) || (activeServiceType === 'EMS' && optAR.checked)) ? 2 : 1;
+        const nextAvailNum = await getNextAvailableTrackingNumber(prefixInput.value.trim().toUpperCase(), currentNum.toString().padStart(8, '0'), step);
+        digitsInput.value = nextAvailNum.d;
+        num8StartInput.value = nextAvailNum.d;
+
         // Save and Refresh UI
         await updateHistory();
         updatePreview();
@@ -4695,8 +4780,8 @@ async function parseAndImportExcelFile() {
         updateMeterStatus();
         renderStats();
 
-        statusEl.textContent = `🎉 นำเข้าพัสดุสำเร็จ ${importedCount} รายการ! (ข้าม ${skippedCount} รายการ)`;
-        alert(`🎉 นำเข้าข้อมูลพัสดุจากไฟล์สำเร็จเรียบร้อยแล้ว!\n\nนำเข้าสำเร็จ: ${importedCount} รายการ\nข้ามรายการไม่สมบูรณ์: ${skippedCount} รายการ`);
+        statusEl.textContent = `🎉 นำเข้าพัสดุสำเร็จ ${importedCount} รายการ!`;
+        alert(`🎉 นำเข้าข้อมูลพัสดุจากไฟล์สำเร็จเรียบร้อยแล้ว!\n\nนำเข้าสำเร็จ: ${importedCount} รายการ\nรันเลขแทรคกิ้งต่อให้อัตโนมัติเรียบร้อยครับ`);
 
         // Reset file input and dropzone
         fileInput.value = '';
@@ -5069,8 +5154,8 @@ async function applyBulkImport() {
         const data = parsedData[dataIdx];
 
         // Apply recipient name
-        if (clearExisting || !targetShipment.name) {
-            targetShipment.name = data.name;
+        if (clearExisting || !targetShipment.recipient) {
+            targetShipment.recipient = data.name;
         }
 
         // Apply zip code
