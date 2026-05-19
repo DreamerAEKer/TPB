@@ -1343,15 +1343,17 @@ function getFormattedPhoneForPrint(settings) {
     const paymentType = settings.paymentType || 'เงินสด';
     const mobile = (settings.mobilePhone || (settings.phone && !settings.phone.includes('ต่อ') ? settings.phone : '')).trim();
 
+    // If mobile phone exists, prioritize and return ONLY mobile phone
+    if (mobile) return mobile;
+
+    // If mobile phone does not exist, check and return the office phone
     if (paymentType === 'เงินเชื่อ' && settings.creditUseOffice && settings.creditOfficePhone) {
-        const officePart = settings.creditOfficePhone.trim() + (settings.creditOfficeExt ? ` ต่อ ${settings.creditOfficeExt.trim()}` : '');
-        return mobile ? `${mobile}, ${officePart}` : officePart;
+        return settings.creditOfficePhone.trim() + (settings.creditOfficeExt ? ` ต่อ ${settings.creditOfficeExt.trim()}` : '');
     } else if (paymentType === 'เครื่องประทับไปรษณียากร' && settings.meterUseOffice && settings.meterOfficePhone) {
-        const officePart = settings.meterOfficePhone.trim() + (settings.meterOfficeExt ? ` ต่อ ${settings.meterOfficeExt.trim()}` : '');
-        return mobile ? `${mobile}, ${officePart}` : officePart;
+        return settings.meterOfficePhone.trim() + (settings.meterOfficeExt ? ` ต่อ ${settings.meterOfficeExt.trim()}` : '');
     }
     
-    return mobile || settings.phone || '......................................';
+    return settings.phone || '......................................';
 }
 
 function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
