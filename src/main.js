@@ -2735,8 +2735,27 @@ dispatchBtn.onclick = async () => {
             if (paymentType === 'เงินเชื่อ') { sumCopies = 2; manCopies = 3; }
             else if (paymentType === 'เครื่องประทับไปรษณียากร') { sumCopies = 3; manCopies = 1; }
 
+            // Group summary is single/consolidated for Registration, eco-Post, Parcel, Custom
             finalHtml += generateSummarySheet(otherGroup, "กลุ่มอื่นๆ", sumCopies);
-            finalHtml += generatePrintPages(otherGroup, "กลุ่มอื่นๆ", manCopies);
+            
+            // Separate manifests (ใบนำส่ง) by service type so they are never mixed on the same page
+            const regItems = otherGroup.filter(s => s.serviceType === 'REG');
+            const ecoItems = otherGroup.filter(s => s.serviceType === 'ECO');
+            const parcelItems = otherGroup.filter(s => s.serviceType === 'PARCEL');
+            const customItems = otherGroup.filter(s => s.serviceType === 'CUSTOM');
+
+            if (regItems.length > 0) {
+                finalHtml += generatePrintPages(regItems, "ลงทะเบียน", manCopies);
+            }
+            if (ecoItems.length > 0) {
+                finalHtml += generatePrintPages(ecoItems, "eco-Post", manCopies);
+            }
+            if (parcelItems.length > 0) {
+                finalHtml += generatePrintPages(parcelItems, "พัสดุ", manCopies);
+            }
+            if (customItems.length > 0) {
+                finalHtml += generatePrintPages(customItems, "อื่นๆ", manCopies);
+            }
         }
         
         printSection.innerHTML = finalHtml;
