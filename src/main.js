@@ -4363,6 +4363,52 @@ function setupFluentNavigation() {
 
 window.onload = initApp;
 
+// --- CLEAR TAB (NEW MANIFEST) EVENT LISTENER ---
+const clearTabBtn = document.getElementById('clear-tab-btn');
+if (clearTabBtn) {
+    clearTabBtn.onclick = async () => {
+        // Find tab display name for confirmation message
+        let tabName = currentServiceTab;
+        if (currentServiceTab === 'EMS') tabName = 'EMS';
+        else if (currentServiceTab === 'REG') tabName = 'ลงทะเบียน';
+        else if (currentServiceTab === 'ECO') tabName = 'eCo-Post';
+        else if (currentServiceTab === 'PARCEL') tabName = 'พัสดุ';
+        else if (currentServiceTab === 'CUSTOM') tabName = 'อื่นๆ (กำหนดเอง)';
+        else if (currentServiceTab === 'EMS_SPECIAL') tabName = 'EMS ราคาพิเศษ';
+
+        const tabShipments = shipments.filter(s => {
+            if (currentServiceTab === 'EMS_SPECIAL') {
+                return s.serviceType === 'EMS' && s.options?.isSpecialEms;
+            }
+            return s.serviceType === currentServiceTab;
+        });
+
+        if (tabShipments.length === 0) {
+            alert(`📝 ไม่มีข้อมูลพัสดุในแท็บ [${tabName}] ให้ล้างข้อมูลครับ`);
+            return;
+        }
+
+        const confirmClear = confirm(`⚠️ คุณต้องการล้างข้อมูลพัสดุทั้งหมดในแท็บ [${tabName}] เพื่อเริ่มต้นสร้างใบนำส่งใหม่ใช่หรือไม่?\n\n(ระบบจะล้างเฉพาะพัสดุในตารางของแท็บนี้จำนวน ${tabShipments.length} รายการเท่านั้น และสามารถกดปุ่ม "ย้อนกลับ" เพื่อกู้คืนข้อมูลได้หากต้องการ)`);
+        
+        if (confirmClear) {
+            // Keep shipments that do NOT belong to the current tab
+            shipments = shipments.filter(s => {
+                if (currentServiceTab === 'EMS_SPECIAL') {
+                    return !(s.serviceType === 'EMS' && s.options?.isSpecialEms);
+                }
+                return s.serviceType !== currentServiceTab;
+            });
+            
+            // Save & Update history
+            await updateHistory();
+            
+            // Refresh UI
+            renderShipments();
+            updateSummary();
+        }
+    };
+}
+
 // --- BATCH OPERATIONS HELPER EVENT LISTENERS ---
 const toggleBatchBtn = document.getElementById('toggle-batch-btn');
 const batchHelperPanel = document.getElementById('batch-helper-panel');

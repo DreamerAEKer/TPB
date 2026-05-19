@@ -31,7 +31,7 @@
             </button>
             <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
                 <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-                <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v7.0.4</div>
+                <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v7.0.5</div>
             </div>
         </div>
     </div>
@@ -303,12 +303,16 @@
                     <div class="service-tab" id="tab-ems-special" data-service="EMS_SPECIAL" style="display: none; background: linear-gradient(135deg, #e0f2fe, #eff6ff); color: #0369a1; font-weight: bold; border-bottom: 2px solid #0284c7;">✨ EMS ราคาพิเศษ <span class="tab-count" id="count-ems-special" style="background: #0284c7; color: white;">0</span></div>
                 </div>
                 
-                <!-- Batch Helper Toggle Toolbar -->
                 <div style="background: #f8fafc; padding: 8px 16px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
                     <span style="font-size: 0.8rem; color: #64748b; font-weight: 500;">📋 รายการนำส่งในระบบ</span>
-                    <button type="button" id="toggle-batch-btn" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
-                        ⚡ เครื่องมือช่วยแก้ไขข้อมูลแบบกลุ่ม (Batch Helper)
-                    </button>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button type="button" id="clear-tab-btn" style="background: #fff5f5; color: #e53e3e; border: 1px solid #fed7d7; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                            🆕 สร้างใบนำส่งใหม่
+                        </button>
+                        <button type="button" id="toggle-batch-btn" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                            ⚡ เครื่องมือช่วยแก้ไขข้อมูลแบบกลุ่ม (Batch Helper)
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Batch Helper Panel -->
@@ -950,7 +954,7 @@
         <div style="color: #64748b; margin-top: 0.5rem;">กรุณารอสักครู่ (อาจใช้เวลา 1-5 วินาที สำหรับรายการจำนวนมาก)</div>
     </div>
 
-    <script src="src/qrious.min.js?v=7.0.4"></script>
-    <script src="src/main.js?v=7.0.4"></script>
+    <script src="src/qrious.min.js?v=7.0.5"></script>
+    <script src="src/main.js?v=7.0.5"></script>
 </body>
 </html>
