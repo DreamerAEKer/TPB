@@ -792,11 +792,13 @@ window.toggleRowService = async (i, serviceType, checked) => {
     if (serviceType === 'ar') {
         s.options.ar = checked;
         if (checked) s.options.arTracking = false;
-        isARChange = true;
+        // Prompt only for EMS (which uses double numbers)
+        if (s.serviceType === 'EMS') isARChange = true;
     } else if (serviceType === 'arTracking') {
         s.options.arTracking = checked;
         if (checked) s.options.ar = false;
-        isARChange = true;
+        // Prompt only for REG with AR Track (which uses double numbers)
+        if (s.serviceType === 'REG') isARChange = true;
     } else if (serviceType === 'insurance') {
         if (checked) {
             let currentVal = s.options.insuranceVal || "";
