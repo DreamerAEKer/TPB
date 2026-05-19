@@ -231,20 +231,64 @@ function copyKey() {
     });
 }
 
+function safeLocalStorageSave(key, data) {
+    // Try saving; if storage is full, trim oldest entries and retry
+    const maxRetries = 20;
+    let retries = 0;
+    while (retries < maxRetries) {
+        try {
+            localStorage.setItem(key, JSON.stringify(data));
+            return true; // success
+        } catch (e) {
+            if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
+                // Storage full: remove oldest entry and try again
+                if (data.length > 1) {
+                    data.pop(); // remove last (oldest)
+                    retries++;
+                } else {
+                    // Can't shrink further, clear completely
+                    localStorage.removeItem(key);
+                    return false;
+                }
+            } else {
+                console.error('localStorage error:', e);
+                return false;
+            }
+        }
+    }
+    return false;
+}
+
 function saveKey() {
     if (!lastRecord) return;
-    const history = JSON.parse(localStorage.getItem('tpb_keys') || '[]');
+    let history = [];
+    try { history = JSON.parse(localStorage.getItem('tpb_keys') || '[]'); } catch(e) { history = []; }
+
     // Avoid duplicates
-    if (!history.find(r => r.key === lastRecord.key)) {
-        history.unshift(lastRecord);
-        if (history.length > 100) history.pop();
-        localStorage.setItem('tpb_keys', JSON.stringify(history));
+    if (history.find(r => r.key === lastRecord.key)) {
+        const btn = document.querySelector('.btn-save');
+        btn.textContent = 'ℹ️ มีแล้ว';
+        setTimeout(() => btn.textContent = '💾 บันทึกลงประวัติ', 2000);
+        return;
     }
+
+    history.unshift(lastRecord);
+    if (history.length > 100) history.splice(100); // keep max 100
+
+    const ok = safeLocalStorageSave('tpb_keys', history);
     renderHistory();
+
     const btn = document.querySelector('.btn-save');
-    btn.textContent = '✅ บันทึกแล้ว!';
-    setTimeout(() => btn.textContent = '💾 บันทึกลงประวัติ', 2000);
+    if (ok) {
+        btn.textContent = '✅ บันทึกแล้ว!';
+        btn.style.color = '#4ade80';
+    } else {
+        btn.textContent = '⚠️ พื้นที่เต็ม — บันทึกไม่ได้';
+        btn.style.color = '#f97316';
+    }
+    setTimeout(() => { btn.textContent = '💾 บันทึกลงประวัติ'; btn.style.color = ''; }, 3000);
 }
+
 
 function renderHistory() {
     const history = JSON.parse(localStorage.getItem('tpb_keys') || '[]');
