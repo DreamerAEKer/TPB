@@ -3375,7 +3375,7 @@ function togglePaymentFields(val) {
     validatePaymentLicenseRealtime();
 }
 
-document.getElementById('set-payment-type').onchange = (e) => {
+document.getElementById('set-payment-type').addEventListener('change', (e) => {
     const val = e.target.value;
     const oldVal = settings.paymentType || 'เงินสด';
     
@@ -3390,7 +3390,7 @@ document.getElementById('set-payment-type').onchange = (e) => {
     
     document.getElementById('meter-settings-fields').style.display = (val === 'เครื่องประทับไปรษณียากร') ? 'block' : 'none';
     togglePaymentFields(val);
-};
+});
 
 
 
@@ -4192,7 +4192,7 @@ async function initApp() {
         }
     }
     if (paymentTypeSelect) {
-        paymentTypeSelect.onchange = syncAdminSectionVisibility;
+        paymentTypeSelect.addEventListener('change', syncAdminSectionVisibility);
         syncAdminSectionVisibility(); // run once on init
     }
 
