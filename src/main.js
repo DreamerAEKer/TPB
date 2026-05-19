@@ -4535,6 +4535,241 @@ if (toggleBatchBtn && batchHelperPanel) {
         toggleBatchBtn.style.background = isHidden ? '#eff6ff' : '#f8fafc';
         toggleBatchBtn.style.color = isHidden ? '#1d4ed8' : '#64748b';
         toggleBatchBtn.style.borderColor = isHidden ? '#bfdbfe' : '#cbd5e1';
+        
+        if (isHidden) {
+            const excelImportPanel = document.getElementById('excel-import-panel');
+            if (excelImportPanel) excelImportPanel.style.display = 'none';
+        }
+    };
+}
+
+// --- EXCEL/CSV IMPORT OPERATION HELPER LOGIC ---
+function loadSheetJS() {
+    return new Promise((resolve, reject) => {
+        if (window.XLSX) {
+            resolve(window.XLSX);
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+        script.onload = () => resolve(window.XLSX);
+        script.onerror = () => reject(new Error('Failed to load SheetJS'));
+        document.head.appendChild(script);
+    });
+}
+
+async function generateExcelTemplate() {
+    try {
+        const XLSX = await loadSheetJS();
+        
+        // Define sample rows
+        const data = [
+            ["เลขที่พัสดุ 13 หลัก (ตัวอย่าง)", "ชื่อผู้รับ", "รหัสไปรษณีย์", "น้ำหนัก (กรัม)"],
+            ["EQ123456789TH", "นายสมชาย รักดี", "10500", 550],
+            ["EQ990909397TH", "นางสาวสมศรี สุขใจ", "20000", 250],
+            ["", "หากไม่ระบุน้ำหนัก ระบบจะนำไปคำนวณราคาเป็น 0 บาทให้อัตโนมัติ", "", ""]
+        ];
+
+        // Create sheet and workbook
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Template");
+
+        // Save file
+        XLSX.writeFile(wb, "tpb_import_template.xlsx");
+    } catch (err) {
+        alert('❌ ไม่สามารถดาวน์โหลดไฟล์ต้นแบบได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตครับ');
+    }
+}
+
+async function parseAndImportExcelFile() {
+    const fileInput = document.getElementById('excel-file-input');
+    const file = fileInput.files[0];
+    if (!file) {
+        alert('⚠️ กรุณาเลือกไฟล์ Excel หรือ CSV ก่อนเริ่มนำเข้าครับ');
+        return;
+    }
+
+    const statusEl = document.getElementById('excel-import-status');
+    statusEl.style.display = 'block';
+    statusEl.textContent = '⏳ กำลังประมวลผลไฟล์...';
+
+    const isCSV = file.name.endsWith('.csv');
+
+    try {
+        let rows = [];
+
+        if (isCSV) {
+            // Native CSV parser
+            const text = await file.text();
+            const lines = text.split('\n');
+            for (let line of lines) {
+                const cols = line.split(',').map(c => c.replace(/^["']|["']$/g, '').trim());
+                if (cols.length > 0 && cols[0]) {
+                    rows.push(cols);
+                }
+            }
+        } else {
+            // SheetJS XLSX parser
+            const XLSX = await loadSheetJS();
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        }
+
+        if (rows.length <= 1) {
+            alert('❌ ไม่พบข้อมูลพัสดุในไฟล์ หรือไฟล์ไม่มีข้อมูล');
+            statusEl.style.display = 'none';
+            return;
+        }
+
+        let importedCount = 0;
+        let skippedCount = 0;
+
+        // Determine current service type based on active tab
+        const isSpecialTab = currentServiceTab === 'EMS_SPECIAL';
+        const activeServiceType = isSpecialTab ? 'EMS' : currentServiceTab;
+
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
+
+            const rawTracking = (row[0] || '').toString().trim().toUpperCase();
+            if (!rawTracking) continue;
+
+            // Basic tracking verification: should have letters/digits
+            const tracking = rawTracking.replace(/[^A-Z0-9]/g, '');
+            if (tracking.length < 5) {
+                skippedCount++;
+                continue;
+            }
+
+            const name = (row[1] || '').toString().trim();
+            const zip = (row[2] || '').toString().trim();
+            const rawWeight = parseFloat(row[3]) || 0;
+
+            // Remote area flags
+            const isAlwaysRemote = !!REMOTE_AREAS[zip] && !PARTIAL_REMOTE_ZIPS.includes(zip);
+            const isIslandPotential = PARTIAL_REMOTE_ZIPS.includes(zip);
+
+            // Create shipment object
+            const s = {
+                serviceType: activeServiceType,
+                trackingFormatted: formatTrackingNum(tracking),
+                name: name,
+                destination: zip,
+                weight: rawWeight > 0 ? rawWeight : '',
+                fee: '',
+                isIsland: false,
+                options: {
+                    ar: false,
+                    arTracking: false,
+                    insurance: false,
+                    insuranceValue: 0,
+                    isRemote: isAlwaysRemote,
+                    isSpecialEms: isSpecialTab
+                }
+            };
+
+            // Calculate base fee if weight is given
+            if (rawWeight > 0 && activeServiceType !== 'CUSTOM') {
+                let base = calculateBaseFee(activeServiceType, rawWeight, s.options);
+                if (settings.fuelSurcharge && (activeServiceType === 'EMS' || activeServiceType === 'ECO')) {
+                    base += 3;
+                }
+                s.fee = base;
+            }
+
+            // Append to global shipments
+            shipments.push(s);
+            importedCount++;
+        }
+
+        // Save and Refresh UI
+        await updateHistory();
+        updatePreview();
+        renderShipments();
+        updateSummary();
+        updateMeterStatus();
+        renderStats();
+
+        statusEl.textContent = `🎉 นำเข้าพัสดุสำเร็จ ${importedCount} รายการ! (ข้าม ${skippedCount} รายการ)`;
+        alert(`🎉 นำเข้าข้อมูลพัสดุจากไฟล์สำเร็จเรียบร้อยแล้ว!\n\nนำเข้าสำเร็จ: ${importedCount} รายการ\nข้ามรายการไม่สมบูรณ์: ${skippedCount} รายการ`);
+
+        // Reset file input and dropzone
+        fileInput.value = '';
+        document.getElementById('excel-file-dropzone').textContent = '📁 คลิกที่นี่ หรือลากไฟล์ Excel / CSV มาวางเพื่อเลือกไฟล์';
+    } catch (err) {
+        console.error(err);
+        statusEl.textContent = '❌ เกิดข้อผิดพลาดในการอ่านไฟล์';
+        alert('❌ เกิดข้อผิดพลาดในการอ่านไฟล์ กรุณาตรวจสอบความถูกต้องของไฟล์ Excel หรือใช้ไฟล์ CSV แทนครับ');
+    }
+}
+
+// Bind Excel UI Elements
+const toggleExcelImportBtn = document.getElementById('toggle-excel-import-btn');
+const excelImportPanel = document.getElementById('excel-import-panel');
+
+if (toggleExcelImportBtn && excelImportPanel) {
+    toggleExcelImportBtn.onclick = () => {
+        const isHidden = excelImportPanel.style.display === 'none';
+        excelImportPanel.style.display = isHidden ? 'block' : 'none';
+        
+        // Hide batch helper if open
+        const batchHelperPanel = document.getElementById('batch-helper-panel');
+        if (batchHelperPanel && isHidden) {
+            batchHelperPanel.style.display = 'none';
+        }
+    };
+}
+
+const downloadTemplateBtn = document.getElementById('download-template-btn');
+if (downloadTemplateBtn) {
+    downloadTemplateBtn.onclick = generateExcelTemplate;
+}
+
+const excelUploadBtn = document.getElementById('excel-upload-btn');
+if (excelUploadBtn) {
+    excelUploadBtn.onclick = parseAndImportExcelFile;
+}
+
+const excelFileDropzone = document.getElementById('excel-file-dropzone');
+const excelFileInput = document.getElementById('excel-file-input');
+
+if (excelFileDropzone && excelFileInput) {
+    excelFileDropzone.onclick = () => excelFileInput.click();
+    
+    excelFileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            excelFileDropzone.textContent = `📄 ไฟล์ที่เลือก: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        }
+    };
+
+    // Drag & Drop
+    excelFileDropzone.ondragover = (e) => {
+        e.preventDefault();
+        excelFileDropzone.style.borderColor = '#22c55e';
+        excelFileDropzone.style.background = '#f0fdf4';
+    };
+
+    excelFileDropzone.ondragleave = (e) => {
+        e.preventDefault();
+        excelFileDropzone.style.borderColor = '#86efac';
+        excelFileDropzone.style.background = 'white';
+    };
+
+    excelFileDropzone.ondrop = (e) => {
+        e.preventDefault();
+        excelFileDropzone.style.borderColor = '#86efac';
+        excelFileDropzone.style.background = 'white';
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            excelFileInput.files = e.dataTransfer.files;
+            excelFileDropzone.textContent = `📄 ไฟล์ที่เลือก: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        }
     };
 }
 

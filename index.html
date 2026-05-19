@@ -31,7 +31,7 @@
             </button>
             <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
                 <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-                <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v7.1.1</div>
+                <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v7.2.0</div>
             </div>
         </div>
     </div>
@@ -312,6 +312,44 @@
                         <button type="button" id="toggle-batch-btn" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
                             ⚡ เครื่องมือช่วยแก้ไขข้อมูลแบบกลุ่ม (Batch Helper)
                         </button>
+                        <button type="button" id="toggle-excel-import-btn" style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                            📊 นำเข้าจาก Excel / CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Excel/CSV Import Panel -->
+                <div id="excel-import-panel" style="display: none; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-bottom: 1px solid #bbf7d0; padding: 16px; transition: all 0.2s;">
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <div style="font-size: 0.85rem; font-weight: bold; color: #166534; display: flex; align-items: center; gap: 5px;">
+                                📊 ระบบนำเข้าข้อมูลพัสดุผ่านไฟล์ Excel / CSV
+                            </div>
+                            <button type="button" id="download-template-btn" style="background: white; color: #166534; border: 1px solid #bbf7d0; padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                                📥 ดาวน์โหลดฟอร์มต้นแบบ (.xlsx)
+                            </button>
+                        </div>
+                        <div style="font-size: 0.72rem; color: #3f6212; line-height: 1.4;">
+                            ฟอร์มต้นแบบ Excel จะประกอบไปด้วย 4 คอลัมน์หลัก: 
+                            <b>1. เลขที่พัสดุ 13 หลัก</b>, 
+                            <b>2. ชื่อผู้รับ</b>, 
+                            <b>3. รหัสไปรษณีย์</b>, 
+                            <b>4. น้ำหนัก (กรัม - ไม่บังคับ)</b>
+                        </div>
+                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 250px; position: relative;">
+                                <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" style="display: none;">
+                                <div id="excel-file-dropzone" style="border: 2px dashed #86efac; border-radius: 8px; background: white; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s; font-size: 0.8rem; color: #15803d; font-weight: 500;">
+                                    📁 คลิกที่นี่ หรือลากไฟล์ Excel / CSV มาวางเพื่อเลือกไฟล์
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px; shrink: 0;">
+                                <button type="button" id="excel-upload-btn" style="background: #166534; color: white; border: none; padding: 10px 16px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s; height: 42px;">
+                                    🚀 เริ่มนำเข้าข้อมูลพัสดุ
+                                </button>
+                            </div>
+                        </div>
+                        <div id="excel-import-status" style="font-size: 0.75rem; font-weight: 600; color: #166534; display: none;"></div>
                     </div>
                 </div>
 
@@ -1014,7 +1052,7 @@
         <div style="color: #64748b; margin-top: 0.5rem;">กรุณารอสักครู่ (อาจใช้เวลา 1-5 วินาที สำหรับรายการจำนวนมาก)</div>
     </div>
 
-    <script src="src/qrious.min.js?v=7.1.1"></script>
-    <script src="src/main.js?v=7.1.1"></script>
+    <script src="src/qrious.min.js?v=7.2.0"></script>
+    <script src="src/main.js?v=7.2.0"></script>
 </body>
 </html>
