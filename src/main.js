@@ -1338,6 +1338,22 @@ function generateMeterLineHtml() {
 }
 
 // --- PRINTING LOGIC ---
+function getFormattedPhoneForPrint(settings) {
+    if (!settings) return '......................................';
+    const paymentType = settings.paymentType || 'เงินสด';
+    const mobile = (settings.mobilePhone || (settings.phone && !settings.phone.includes('ต่อ') ? settings.phone : '')).trim();
+
+    if (paymentType === 'เงินเชื่อ' && settings.creditUseOffice && settings.creditOfficePhone) {
+        const officePart = settings.creditOfficePhone.trim() + (settings.creditOfficeExt ? ` ต่อ ${settings.creditOfficeExt.trim()}` : '');
+        return mobile ? `${mobile}, ${officePart}` : officePart;
+    } else if (paymentType === 'เครื่องประทับไปรษณียากร' && settings.meterUseOffice && settings.meterOfficePhone) {
+        const officePart = settings.meterOfficePhone.trim() + (settings.meterOfficeExt ? ` ต่อ ${settings.meterOfficeExt.trim()}` : '');
+        return mobile ? `${mobile}, ${officePart}` : officePart;
+    }
+    
+    return mobile || settings.phone || '......................................';
+}
+
 function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     const ITEMS_PER_PAGE = 25;
     const totalPages = Math.ceil(itemsToPrint.length / ITEMS_PER_PAGE) || 1;
@@ -1371,7 +1387,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     });
     
     const company = settings.company || '......................................';
-    const phone = settings.phone || '......................................';
+    const phone = getFormattedPhoneForPrint(settings);
     const address = settings.address || '............................................................................';
     let licenseHeaderHtml = '';
     const paymentType = settings.paymentType || 'เงินสด';
@@ -1688,7 +1704,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
 
     const company = settings.company || '......................................';
     const address = settings.address || '............................................................................';
-    const phone = settings.phone || '......................................';
+    const phone = getFormattedPhoneForPrint(settings);
     let licenseSummaryHtml = '';
     const paymentType = settings.paymentType || 'เงินสด';
     const postOffice = settings.postOffice || 'ไปรษณีย์กลาง 10501';
