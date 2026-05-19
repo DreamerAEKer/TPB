@@ -3209,6 +3209,19 @@ function updateLicenseLabel(paymentType) {
 
 document.getElementById('set-payment-type').onchange = (e) => {
     const val = e.target.value;
+    const oldVal = settings.paymentType || 'เงินสด';
+    
+    if (val !== oldVal && shipments.length > 0) {
+        const msg = `⚠️ มีข้อมูลพัสดุค้างอยู่ในตาราง ${shipments.length} รายการ\n\n` +
+                    `การเปลี่ยนประเภทการชำระเงินเป็น "${val}" จะส่งผลต่อวิธีคิดราคา (เช่น ยกเลิกส่วนลดราคาพิเศษ EMS หากสลับไปเป็นเครื่องประทับตรา) และรูปแบบของสรุปใบนำส่ง\n\n` +
+                    `คุณต้องการดำเนินการสลับระบบและคำนวณราคาใหม่ทั้งหมดของรายการปัจจุบันเมื่อกดบันทึกใช่หรือไม่?`;
+        
+        if (!confirm(msg)) {
+            e.target.value = oldVal;
+            return;
+        }
+    }
+    
     document.getElementById('meter-settings-fields').style.display = (val === 'เครื่องประทับไปรษณียากร') ? 'block' : 'none';
     updateLicenseLabel(val);
 };
