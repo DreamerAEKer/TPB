@@ -660,7 +660,6 @@ function renderShipments() {
                 if (w > 0) {
                     const base = calculateBaseFee(s.serviceType, w, s.options || {});
                     let total = base;
-                    if (s.options?.isRemote) total += 20;
                     if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
                     s.fee = total;
                 } else {
@@ -808,7 +807,6 @@ window.toggleRowService = async (i, serviceType, checked) => {
     if (s.serviceType === 'CUSTOM' || parseFloat(s.weight) > 0) {
         const base = calculateBaseFee(s.serviceType, s.weight, s.options);
         let total = base;
-        if (s.options.isRemote) total += 20;
         if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
         s.fee = total;
     } else {
@@ -853,7 +851,6 @@ window.updateRowInsuranceVal = async (i, val) => {
     if (s.serviceType === 'CUSTOM' || parseFloat(s.weight) > 0) {
         const base = calculateBaseFee(s.serviceType, s.weight, s.options);
         let total = base;
-        if (s.options.isRemote) total += 20;
         if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
         s.fee = total;
     } else {
