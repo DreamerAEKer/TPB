@@ -3360,6 +3360,13 @@ function togglePaymentFields(val) {
     } else if (val === 'เงินเชื่อ') {
         const creditEl = document.getElementById('license-fields-credit');
         if (creditEl) creditEl.style.display = 'block';
+        
+        // Dynamic visibility of Credit THP wrapper based on presence of License Key
+        const hasKey = !!(settings.specialEmsLicenseKey || '').trim();
+        const creditThpWrapper = document.getElementById('credit-thp-wrapper');
+        if (creditThpWrapper) {
+            creditThpWrapper.style.display = hasKey ? 'block' : 'none';
+        }
     } else if (val === 'เครื่องประทับไปรษณียากร') {
         const meterEl = document.getElementById('license-fields-meter');
         if (meterEl) meterEl.style.display = 'block';
@@ -3938,7 +3945,7 @@ window.saveLicenseFromModal = async function() {
     if (settingsKeyEl) settingsKeyEl.value = key;
     
     // Trigger real-time status update in settings modal if it is open
-    validatePaymentLicenseRealtime();
+    togglePaymentFields(document.getElementById('set-payment-type').value);
     
     updateNavLicenseDot();
     updateSummary();
@@ -3963,6 +3970,7 @@ window.clearLicenseKey = async function() {
     const statusEl = document.getElementById('license-modal-status');
     if (statusEl) statusEl.style.display = 'none';
     updateNavLicenseDot();
+    togglePaymentFields(document.getElementById('set-payment-type').value);
     updateSummary();
     updatePreview();
 };
