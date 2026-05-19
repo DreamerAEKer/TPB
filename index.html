@@ -31,7 +31,7 @@
             </button>
             <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
                 <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-                <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v6.0.6</div>
+                <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v6.0.7</div>
             </div>
         </div>
     </div>
@@ -749,10 +749,51 @@
                 <label>ชื่อที่ทำการไปรษณีย์</label>
                 <input type="text" id="set-post-office" placeholder="ไปรษณีย์กลาง 10501">
             </div>
-            <div class="form-group" style="margin-bottom: 1rem;">
-                <label id="label-license">ใบอนุญาตพิเศษที่</label>
-                <input type="text" id="set-license" placeholder="พ. 123 / 2569">
+            <!-- Dynamic License Settings Fields based on Payment Type -->
+            <div id="license-fields-cash" class="payment-fields" style="display: none; background: #fafafa; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 1rem;">
+                <div style="font-weight: bold; color: #1e293b; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 5px; font-size: 0.9rem;">💵 ข้อมูลสมาชิก Post Family</div>
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                    <label style="font-size: 0.8rem; font-weight: bold;">เลขสมาชิก Post Family (THP: XXXXXXXX)</label>
+                    <input type="text" id="set-cash-thp" placeholder="ระบุเลข 8 หลัก เช่น THP-12345678" style="font-family: monospace;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                    <label style="font-size: 0.8rem; font-weight: bold;">ชื่อสมาชิก Post Family (สำหรับตรวจสอบเมื่อรับฝาก)</label>
+                    <input type="text" id="set-cash-member-name" placeholder="ชื่อ-นามสกุล หรือชื่อบริษัทผู้สมัครสมาชิก">
+                </div>
+                <!-- Real-time License Check Status -->
+                <div id="cash-license-status" style="font-size: 0.75rem; margin-top: 5px; font-weight: 600;"></div>
             </div>
+
+            <div id="license-fields-credit" class="payment-fields" style="display: none; background: #fafafa; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 1rem;">
+                <div style="font-weight: bold; color: #1e293b; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 5px; font-size: 0.9rem;">💳 ข้อมูลใบอนุญาตพิเศษ (เงินเชื่อ)</div>
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                    <label style="font-size: 0.8rem; font-weight: bold;">ใบอนุญาตพิเศษที่ <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="set-credit-license" placeholder="เช่น พ. 123 / 2569">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                    <label style="font-size: 0.8rem; font-weight: bold;">เลขสมาชิก Post Family (สำหรับรับเรทพิเศษ - ถ้ามี)</label>
+                    <input type="text" id="set-credit-thp" placeholder="ระบุเลข 8 หลัก เช่น THP-12345678 (กรอกหากได้รับเรท EMS ราคาพิเศษ)" style="font-family: monospace;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                    <label style="font-size: 0.8rem; font-weight: bold;">ชื่อสมาชิก Post Family (สำหรับตรวจสอบเมื่อรับฝาก)</label>
+                    <input type="text" id="set-credit-member-name" placeholder="ระบุคู่กับเลขสมาชิกเมื่อใช้เรทพิเศษ">
+                </div>
+                <!-- Real-time License Check Status -->
+                <div id="credit-license-status" style="font-size: 0.75rem; margin-top: 5px; font-weight: 600;"></div>
+            </div>
+
+            <div id="license-fields-meter" class="payment-fields" style="display: none; background: #fafafa; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 1rem;">
+                <div style="font-weight: bold; color: #1e293b; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 5px; font-size: 0.9rem;">📠 ข้อมูลใบอนุญาตพิเศษ (เครื่องประทับ)</div>
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                    <label style="font-size: 0.8rem; font-weight: bold;">เลขหมายอนุญาต (มิเตอร์) <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="set-meter-number" placeholder="เช่น H130, H135">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                    <label style="font-size: 0.8rem; font-weight: bold;">ใบอนุญาตพิเศษที่ (มิเตอร์) <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="set-meter-license" placeholder="เช่น พ. 123 / 2569">
+                </div>
+            </div>
+
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label>รหัสไปรษณีย์ผู้ฝาก (ใช้เช็คพื้นที่ห่างไกล)</label>
                 <input type="text" id="settings-home-zip" placeholder="เช่น 10501" maxlength="5">
@@ -845,9 +886,9 @@
                         </select>
                     </div>
                     <div style="font-size: 0.75rem; color: #0369a1; line-height: 1.4; background: #e0f2fe; padding: 8px; border-radius: 6px;">
-                        💡 <b>เงื่อนไขการเปิดใช้งานอัตโนมัติในระบบ:</b><br>
-                        • <b>เงินสด:</b> ต้องระบุรหัส <code>THP-XXXXXXXX</code> ในช่องใบอนุญาตพิเศษ<br>
-                        • <b>เงินเชื่อ:</b> ต้องมีทั้งเลขที่อนุญาต และ <code>THP-XXXXXXXX</code> ในช่องใบอนุญาตพิเศษ
+                        💡 <b>เงื่อนไขการเปิดใช้งานเรทพิเศษ (EMS ราคาพิเศษ):</b><br>
+                        • <b>เงินสด:</b> ต้องกรอก <b>เลขสมาชิก Post Family</b> ให้ตรงกับ License Key<br>
+                        • <b>เงินเชื่อ:</b> ต้องมี <b>ใบอนุญาตพิเศษที่</b> และกรอก <b>เลขสมาชิก Post Family</b> ให้ตรงกับ License Key
                     </div>
                 </div>
             </div>

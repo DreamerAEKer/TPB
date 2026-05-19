@@ -183,25 +183,38 @@ function isSpecialEmsActive() {
     // Block meter payment type always
     if (settings.paymentType === 'เครื่องประทับไปรษณียากร') return false;
 
-    // Priority 1: Valid License Key (no admin password needed)
+    // Get the current THP number configured based on payment type
+    let thpInput = '';
+    if (settings.paymentType === 'เงินสด') {
+        thpInput = settings.cashThp || '';
+    } else if (settings.paymentType === 'เงินเชื่อ') {
+        thpInput = settings.creditThp || '';
+    }
+    const thpMatch = thpInput.match(/(?:THP-)?(\d{8})/i);
+    const thpNum = thpMatch ? thpMatch[1] : null;
+
+    // Priority 1: Valid License Key
     if (settings.specialEmsLicenseKey) {
         const r = validateLicenseKey(settings.specialEmsLicenseKey);
         if (r && r.valid) {
-            // Optionally tie to THP in license field (security layer)
-            const thpInLicense = (settings.license || '').match(/THP-(\d{8})/i);
-            if (thpInLicense && thpInLicense[1] !== r.thpNum) return false;
-            return true;
+            // Require the THP in settings to match the one in the License Key
+            if (thpNum && thpNum === r.thpNum) {
+                return true;
+            }
+            return false;
         }
     }
 
-    // Priority 2: Manual admin enable (existing flow)
+    // Priority 2: Manual admin enable (fallback flow)
     if (!settings.specialEmsEnabled) return false;
-    const licenseVal = (settings.license || '').trim();
-    const hasThp = /THP-/i.test(licenseVal);
-    if (settings.paymentType === 'เงินสด') return hasThp;
+    
+    // For manual enable, a THP number is still required
+    if (settings.paymentType === 'เงินสด') {
+        return !!thpNum;
+    }
     if (settings.paymentType === 'เงินเชื่อ') {
-        const clean = licenseVal.replace(/THP-\d+/gi, '').replace(/THP-/gi, '').trim();
-        return hasThp && clean.length > 0;
+        const hasLicense = (settings.creditLicense || '').trim().length > 0;
+        return hasLicense && !!thpNum;
     }
     return false;
 }
@@ -1360,13 +1373,24 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     const company = settings.company || '......................................';
     const phone = settings.phone || '......................................';
     const address = settings.address || '............................................................................';
-    const licenseRaw = settings.license || '';
-    // Extract THP code and display license separately
-    const thpMatch = licenseRaw.match(/THP-[\w\d]+/i);
-    const thpCode = thpMatch ? thpMatch[0].toUpperCase() : null;
-    const licenseClean = licenseRaw.replace(/THP-[\w\d]+/gi, '').trim().replace(/^[,\s]+|[,\s]+$/g, '') || 'พ. ...... / 2569';
-    const license = licenseClean || 'พ. ...... / 2569';
-    const showThp = thpCode && settings.paymentType !== 'เครื่องประทับไปรษณียากร';
+    let licenseHeaderHtml = '';
+    const paymentType = settings.paymentType || 'เงินสด';
+    const postOffice = settings.postOffice || 'ไปรษณีย์กลาง 10501';
+
+    if (paymentType === 'เงินสด') {
+        const thp = settings.cashThp ? settings.cashThp.trim().toUpperCase() : '................';
+        const name = settings.cashMemberName ? settings.cashMemberName.trim() : '';
+        licenseHeaderHtml = `<span style="font-weight: bold; font-size: 11.5pt;">${postOffice}</span> &nbsp;|&nbsp; สมาชิก Post Family: <b>${thp}</b>${name ? ` (<b>${name}</b>)` : ''}`;
+    } else if (paymentType === 'เงินเชื่อ') {
+        const lic = settings.creditLicense ? settings.creditLicense.trim() : 'พ. ...... / 2569';
+        const thp = settings.creditThp ? settings.creditThp.trim().toUpperCase() : '';
+        const name = settings.creditMemberName ? settings.creditMemberName.trim() : '';
+        licenseHeaderHtml = `<span style="font-weight: bold; font-size: 11.5pt;">${postOffice}</span> &nbsp;|&nbsp; ใบอนุญาตพิเศษที่ <b>${lic}</b>${thp ? ` &nbsp;|&nbsp; THP: <b>${thp}</b>${name ? ` (<b>${name}</b>)` : ''}` : ''}`;
+    } else if (paymentType === 'เครื่องประทับไปรษณียากร') {
+        const lic = settings.meterLicense ? settings.meterLicense.trim() : 'พ. ...... / 2569';
+        const num = settings.meterNumber ? settings.meterNumber.trim().toUpperCase() : '............';
+        licenseHeaderHtml = `<span style="font-weight: bold; font-size: 11.5pt;">${postOffice}</span> &nbsp;|&nbsp; ใบอนุญาตพิเศษที่ <b>${lic}</b> &nbsp;|&nbsp; เลขหมายอนุญาต: <b>${num}</b>`;
+    }
     
     let printDate = settings.date ? settings.date.trim() : '';
     if (!printDate) {
@@ -1428,7 +1452,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         <h2 style="margin: 0; font-size: 14pt;">ใบนำส่งสิ่งของทางไปรษณีย์ โดยชำระค่าบริการเป็น${settings.paymentType || 'เงินสด'}</h2>
                         ${titleSuffix ? `<div style="font-size: 12pt; font-weight: bold;">(${titleSuffix})</div>` : ''}
                         <div style="font-size: 11pt; margin-top: 5px;">วันที่ <b>${printDate}</b> ฝากส่งครั้งที่ <b>${printSession}</b> ใบที่ <b>${p + 1} / ${totalPages}</b></div>
-                        <div style="font-size: 11pt;">${showThp ? `<span style="font-size: 10pt; color: #0369a1; font-weight: bold;">THP: <b>${thpCode}</b> &nbsp;|&nbsp; </span>` : ''}<span style="font-weight: bold; font-size: 12pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</span> ใบอนุญาตพิเศษที่ <b>${license}</b></div>
+                        <div style="font-size: 11pt;">${licenseHeaderHtml}</div>
                     </div>
                 </div>
                 <div style="margin-bottom: 2px;">
@@ -1665,12 +1689,36 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     const company = settings.company || '......................................';
     const address = settings.address || '............................................................................';
     const phone = settings.phone || '......................................';
-    const licenseRawS = settings.license || '';
-    const thpMatchS = licenseRawS.match(/THP-[\w\d]+/i);
-    const thpCodeS = thpMatchS ? thpMatchS[0].toUpperCase() : null;
-    const licenseCleanS = licenseRawS.replace(/THP-[\w\d]+/gi, '').trim().replace(/^[,\s]+|[,\s]+$/g, '') || 'พ. ...... / 2569';
-    const license = licenseCleanS || 'พ. ...... / 2569';
-    const showThpS = thpCodeS && settings.paymentType !== 'เครื่องประทับไปรษณียากร';
+    let licenseSummaryHtml = '';
+    const paymentType = settings.paymentType || 'เงินสด';
+    const postOffice = settings.postOffice || 'ไปรษณีย์กลาง 10501';
+
+    if (paymentType === 'เงินสด') {
+        const thp = settings.cashThp ? settings.cashThp.trim().toUpperCase() : '................';
+        const name = settings.cashMemberName ? settings.cashMemberName.trim() : '';
+        licenseSummaryHtml = `
+            <span style="font-weight: bold; font-size: 12pt;">${postOffice}</span>
+            <span>สมาชิก Post Family: <b>${thp}</b></span>
+            ${name ? `<span>ชื่อสมาชิก: <b>${name}</b></span>` : ''}
+        `;
+    } else if (paymentType === 'เงินเชื่อ') {
+        const lic = settings.creditLicense ? settings.creditLicense.trim() : 'พ. ...... / 2569';
+        const thp = settings.creditThp ? settings.creditThp.trim().toUpperCase() : '';
+        const name = settings.creditMemberName ? settings.creditMemberName.trim() : '';
+        licenseSummaryHtml = `
+            <span style="font-weight: bold; font-size: 12pt;">${postOffice}</span>
+            <span>ใบอนุญาตพิเศษที่ <b>${lic}</b></span>
+            ${thp ? `<span>THP: <b>${thp}</b>${name ? ` (<b>${name}</b>)` : ''}</span>` : ''}
+        `;
+    } else if (paymentType === 'เครื่องประทับไปรษณียากร') {
+        const lic = settings.meterLicense ? settings.meterLicense.trim() : 'พ. ...... / 2569';
+        const num = settings.meterNumber ? settings.meterNumber.trim().toUpperCase() : '............';
+        licenseSummaryHtml = `
+            <span style="font-weight: bold; font-size: 12pt;">${postOffice}</span>
+            <span>ใบอนุญาตพิเศษที่ <b>${lic}</b></span>
+            <span>เลขหมายอนุญาต: <b>${num}</b></span>
+        `;
+    }
     
     let printDate = settings.date ? settings.date.trim() : '';
     if (!printDate) {
@@ -1694,9 +1742,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 <div style="text-align: right; font-size: 11pt;">
                     <div style="margin-bottom: 4px;">วันที่ <b>${printDate}</b>${settings.session ? ` <span style="margin-left: 10px;">ฝากส่งครั้งที่ <b>${settings.session}</b></span>` : ''}</div>
                     <div style="display: flex; flex-direction: column; align-items: flex-end;">
-                        <span style="font-weight: bold; font-size: 12pt;">${settings.postOffice || 'ไปรษณีย์กลาง 10501'}</span>
-                        <span>ใบอนุญาตพิเศษที่ <b>${license}</b></span>
-                        ${showThpS ? `<span style="color: #0369a1; font-weight: bold; font-size: 11pt;">THP: <b>${thpCodeS}</b></span>` : ''}
+                        ${licenseSummaryHtml}
                     </div>
                 </div>
             </div>
@@ -3098,8 +3144,45 @@ saveSettingsBtn.onclick = async () => {
     settings.company = document.getElementById('set-company').value;
     settings.address = document.getElementById('set-address').value;
     settings.phone = document.getElementById('set-phone').value;
-    settings.license = document.getElementById('set-license').value;
-    settings.paymentType = document.getElementById('set-payment-type').value;
+    const paymentType = document.getElementById('set-payment-type').value;
+
+    // Validate payment type constraints
+    if (paymentType === 'เงินเชื่อ') {
+        const creditLicense = document.getElementById('set-credit-license').value.trim();
+        if (!creditLicense) {
+            alert('⚠️ สำหรับประเภทเงินเชื่อ กรุณาระบุ "ใบอนุญาตพิเศษที่"');
+            return;
+        }
+    } else if (paymentType === 'เครื่องประทับไปรษณียากร') {
+        const meterNumber = document.getElementById('set-meter-number').value.trim();
+        const meterLicense = document.getElementById('set-meter-license').value.trim();
+        if (!meterNumber || !meterLicense) {
+            alert('⚠️ สำหรับเครื่องประทับไปรษณียากร กรุณาระบุทั้ง "เลขหมายอนุญาต" และ "ใบอนุญาตพิเศษที่" ให้ครบถ้วน');
+            return;
+        }
+    }
+
+    settings.paymentType = paymentType;
+    settings.cashThp = document.getElementById('set-cash-thp').value.trim();
+    settings.cashMemberName = document.getElementById('set-cash-member-name').value.trim();
+    settings.creditLicense = document.getElementById('set-credit-license').value.trim();
+    settings.creditThp = document.getElementById('set-credit-thp').value.trim();
+    settings.creditMemberName = document.getElementById('set-credit-member-name').value.trim();
+    settings.meterNumber = document.getElementById('set-meter-number').value.trim();
+    settings.meterLicense = document.getElementById('set-meter-license').value.trim();
+
+    // Map settings.license for backward compatibility
+    if (paymentType === 'เงินสด') {
+        settings.license = settings.cashThp;
+    } else if (paymentType === 'เงินเชื่อ') {
+        let lic = settings.creditLicense;
+        if (settings.creditThp) {
+            lic += (lic ? ', ' : '') + settings.creditThp;
+        }
+        settings.license = lic;
+    } else if (paymentType === 'เครื่องประทับไปรษณียากร') {
+        settings.license = settings.meterLicense;
+    }
     settings.fuelSurcharge = setFuelSurcharge.checked;
     settings.postOffice = document.getElementById('set-post-office').value || 'ไปรษณีย์กลาง 10501';
     
@@ -3190,21 +3273,72 @@ saveSettingsBtn.onclick = async () => {
     alert('บันทึกการตั้งค่าสำเร็จ');
 };
 
-function updateLicenseLabel(paymentType) {
-    const label = document.getElementById('label-license');
-    const input = document.getElementById('set-license');
-    if (!label || !input) return;
+function validatePaymentLicenseRealtime() {
+    const paymentType = document.getElementById('set-payment-type').value;
+    const key = (settings.specialEmsLicenseKey || '').trim().toUpperCase();
+    const keyR = key ? validateLicenseKey(key) : null;
+    
+    const cashStatus = document.getElementById('cash-license-status');
+    const creditStatus = document.getElementById('credit-license-status');
+    if (cashStatus) cashStatus.innerHTML = '';
+    if (creditStatus) creditStatus.innerHTML = '';
     
     if (paymentType === 'เงินสด') {
-        label.innerHTML = 'เลขสมาชิก Post Family (THP-XXXXXXXX)';
-        input.placeholder = 'เช่น THP-12345678';
+        const thpVal = document.getElementById('set-cash-thp').value.trim();
+        const thpMatch = thpVal.match(/(?:THP-)?(\d{8})/i);
+        const thpNum = thpMatch ? thpMatch[1] : null;
+        
+        if (keyR && keyR.valid) {
+            if (thpNum === keyR.thpNum) {
+                cashStatus.innerHTML = `<span style="color: #059669;">✓ เลขสมาชิกตรงกับ License Key (เรทพิเศษ ${keyR.pkgCode} เปิดใช้งานแล้ว)</span>`;
+            } else if (!thpNum) {
+                cashStatus.innerHTML = `<span style="color: #d97706;">⚠️ โปรดกรอกเลขสมาชิกให้ตรงกับคีย์เพื่อเปิดใช้งานเรทพิเศษ (ต้องการ THP-${keyR.thpNum})</span>`;
+            } else {
+                cashStatus.innerHTML = `<span style="color: #dc2626;">❌ เลขสมาชิกไม่ตรงกับคีย์ (คีย์ต้องการ THP-${keyR.thpNum})</span>`;
+            }
+        } else if (key) {
+            cashStatus.innerHTML = `<span style="color: #dc2626;">❌ มีการระบุ License Key แต่คีย์ไม่ถูกต้องหรือหมดอายุ</span>`;
+        } else {
+            cashStatus.innerHTML = `<span style="color: #64748b;">💡 กรอกเลขสมาชิก Post Family (ถ้ามีคีย์ License Key จะได้รับอัตราพิเศษ EMS)</span>`;
+        }
     } else if (paymentType === 'เงินเชื่อ') {
-        label.innerHTML = 'ใบอนุญาตพิเศษที่';
-        input.placeholder = 'เช่น พ. 123 / 2569';
-    } else if (paymentType === 'เครื่องประทับไปรษณียากร') {
-        label.innerHTML = 'ใบอนุญาตพิเศษที่ (มิเตอร์)';
-        input.placeholder = 'เช่น พ. 123 / 2569';
+        const thpVal = document.getElementById('set-credit-thp').value.trim();
+        const thpMatch = thpVal.match(/(?:THP-)?(\d{8})/i);
+        const thpNum = thpMatch ? thpMatch[1] : null;
+        
+        if (keyR && keyR.valid) {
+            if (thpNum === keyR.thpNum) {
+                creditStatus.innerHTML = `<span style="color: #059669;">✓ เลขสมาชิกตรงกับ License Key (เรทพิเศษ ${keyR.pkgCode} เปิดใช้งานแล้วสำหรับเงินเชื่อ)</span>`;
+            } else if (!thpNum) {
+                creditStatus.innerHTML = `<span style="color: #d97706;">💡 กรอกเลขสมาชิกให้ตรงกับคีย์หากมีสิทธิ์ EMS เรทราคาพิเศษ (ต้องการ THP-${keyR.thpNum})</span>`;
+            } else {
+                creditStatus.innerHTML = `<span style="color: #dc2626;">❌ เลขสมาชิกไม่ตรงกับคีย์ (คีย์ต้องการ THP-${keyR.thpNum})</span>`;
+            }
+        } else if (key) {
+            creditStatus.innerHTML = `<span style="color: #dc2626;">❌ มีการระบุ License Key แต่คีย์ไม่ถูกต้องหรือหมดอายุ</span>`;
+        } else {
+            creditStatus.innerHTML = `<span style="color: #64748b;">💡 หากบริษัทท่านได้รับ EMS เรทพิเศษร่วมด้วย ให้กรอกเลขสมาชิก Post Family และชื่อสมาชิกด้วย</span>`;
+        }
     }
+}
+
+function togglePaymentFields(val) {
+    // Hide all payment fields
+    document.querySelectorAll('.payment-fields').forEach(el => el.style.display = 'none');
+    
+    // Show selected payment fields
+    if (val === 'เงินสด') {
+        const cashEl = document.getElementById('license-fields-cash');
+        if (cashEl) cashEl.style.display = 'block';
+    } else if (val === 'เงินเชื่อ') {
+        const creditEl = document.getElementById('license-fields-credit');
+        if (creditEl) creditEl.style.display = 'block';
+    } else if (val === 'เครื่องประทับไปรษณียากร') {
+        const meterEl = document.getElementById('license-fields-meter');
+        if (meterEl) meterEl.style.display = 'block';
+    }
+    
+    validatePaymentLicenseRealtime();
 }
 
 document.getElementById('set-payment-type').onchange = (e) => {
@@ -3223,7 +3357,7 @@ document.getElementById('set-payment-type').onchange = (e) => {
     }
     
     document.getElementById('meter-settings-fields').style.display = (val === 'เครื่องประทับไปรษณียากร') ? 'block' : 'none';
-    updateLicenseLabel(val);
+    togglePaymentFields(val);
 };
 
 
@@ -3759,18 +3893,41 @@ window.saveLicenseFromModal = async function() {
     settings.specialEmsEnabled = true;
     settings.specialEmsPackage = r.pkgCode;
     await saveToDB('settings', settings);
-    // Sync settings modal field if it exists
+    
+    // Check for matching THP in settings
+    let currentThp = '';
+    if (settings.paymentType === 'เงินสด') {
+        currentThp = settings.cashThp || '';
+    } else if (settings.paymentType === 'เงินเชื่อ') {
+        currentThp = settings.creditThp || '';
+    }
+    const thpMatch = currentThp.match(/(?:THP-)?(\d{8})/i);
+    const thpNum = thpMatch ? thpMatch[1] : null;
+
+    let warningMsg = '';
+    if (!thpNum) {
+        warningMsg = `<br><span style="color:#d97706; font-size:0.75rem;">💡 อย่าลืมไปที่ "⚙️ ตั้งค่า" เพื่อระบุเลขสมาชิก THP-${r.thpNum} ให้ตรงกันเพื่อเปิดใช้เรทราคาพิเศษ</span>`;
+    } else if (thpNum !== r.thpNum) {
+        warningMsg = `<br><span style="color:#dc2626; font-size:0.75rem;">⚠️ เลขสมาชิกที่ตั้งไว้ (THP-${thpNum}) ไม่ตรงกับคีย์ (ต้องการ THP-${r.thpNum}) กรุณาแก้ไขเพื่อเปิดใช้เรทราคาพิเศษ</span>`;
+    }
+
+    // Sync settings modal fields
     const settingsKeyEl = document.getElementById('set-license-key');
     if (settingsKeyEl) settingsKeyEl.value = key;
+    
+    // Trigger real-time status update in settings modal if it is open
+    validatePaymentLicenseRealtime();
+    
     updateNavLicenseDot();
     updateSummary();
     renderShipments();
     updatePreview();
+    
     // Show success then close
     statusEl.style.display = 'block';
     statusEl.style.background = '#f0fdf4'; statusEl.style.color = '#166534'; statusEl.style.border = '1px solid #bbf7d0';
-    statusEl.innerHTML = `✅ เปิดใช้งานสำเร็จ! Package <b>${r.pkgCode}</b> — หมดอายุ ${r.expiryLabel}`;
-    setTimeout(() => { document.getElementById('license-modal').style.display = 'none'; }, 1800);
+    statusEl.innerHTML = `✅ เปิดใช้งานสำเร็จ! Package <b>${r.pkgCode}</b> — หมดอายุ ${r.expiryLabel}${warningMsg}`;
+    setTimeout(() => { document.getElementById('license-modal').style.display = 'none'; }, warningMsg ? 3500 : 1800);
 };
 
 // Clear license key
@@ -3818,6 +3975,28 @@ async function initApp() {
         }
         settings = { ...settings, ...savedSettings };
         if (!settings.defaultPrefixes) settings.defaultPrefixes = {};
+
+        // Migrate settings.license to new specific fields if not already done
+        if (settings.license && !settings.licenseFieldsMigrated) {
+            const val = settings.license.trim();
+            const payType = settings.paymentType || 'เงินสด';
+            
+            if (payType === 'เงินสด') {
+                settings.cashThp = val;
+            } else if (payType === 'เงินเชื่อ') {
+                const thpMatch = val.match(/THP-[\w\d]+/i);
+                if (thpMatch) {
+                    settings.creditThp = thpMatch[0];
+                    settings.creditLicense = val.replace(/THP-[\w\d]+/gi, '').trim().replace(/^[,\s]+|[,\s]+$/g, '');
+                } else {
+                    settings.creditLicense = val;
+                }
+            } else if (payType === 'เครื่องประทับไปรษณียากร') {
+                settings.meterLicense = val;
+                settings.meterNumber = 'H130';
+            }
+            settings.licenseFieldsMigrated = true;
+        }
     }
     localStorage.setItem('paymentTypeDefaultMigrated', 'true');
     
@@ -3838,9 +4017,22 @@ async function initApp() {
     document.getElementById('set-company').value = settings.company || '';
     document.getElementById('set-address').value = settings.address || '';
     document.getElementById('set-phone').value = settings.phone || '';
-    document.getElementById('set-license').value = settings.license || '';
+    
+    // Set values in dedicated inputs
+    document.getElementById('set-cash-thp').value = settings.cashThp || '';
+    document.getElementById('set-cash-member-name').value = settings.cashMemberName || '';
+    document.getElementById('set-credit-license').value = settings.creditLicense || '';
+    document.getElementById('set-credit-thp').value = settings.creditThp || '';
+    document.getElementById('set-credit-member-name').value = settings.creditMemberName || '';
+    document.getElementById('set-meter-number').value = settings.meterNumber || '';
+    document.getElementById('set-meter-license').value = settings.meterLicense || '';
+    
+    // Bind real-time input listeners
+    document.getElementById('set-cash-thp').oninput = validatePaymentLicenseRealtime;
+    document.getElementById('set-credit-thp').oninput = validatePaymentLicenseRealtime;
+
     document.getElementById('set-payment-type').value = settings.paymentType || 'เงินสด';
-    updateLicenseLabel(settings.paymentType || 'เงินสด');
+    togglePaymentFields(settings.paymentType || 'เงินสด');
     setFuelSurcharge.checked = settings.fuelSurcharge;
     document.getElementById('set-post-office').value = settings.postOffice || 'ไปรษณีย์กลาง 10501';
     document.getElementById('settings-home-zip').value = settings.homeZip || '';
