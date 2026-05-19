@@ -258,7 +258,7 @@ let shipments = [];
 let history = [];
 let historyIndex = 0;
 let currentServiceTab = 'EMS';
-let settings = { company: '', address: '', phone: '', license: '', fuelSurcharge: true, paymentType: 'เงินสด', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left', postOffice: 'ไปรษณีย์กลาง 10501', meterDescending: 0, meterAscending: 0, meterTopUps: [], homeZip: '', specialEmsEnabled: false, specialEmsPackage: 'A12', specialEmsLicenseKey: '' };
+let settings = { company: '', address: '', phone: '', mobilePhone: '', creditUseOffice: false, creditOfficePhone: '', creditOfficeExt: '', meterUseOffice: false, meterOfficePhone: '', meterOfficeExt: '', license: '', fuelSurcharge: true, paymentType: 'เงินสด', defaultPrefixes: {}, showSignatureNames: false, responsibleName: '', senderName: '', logo: null, logoWidth: 150, logoAlign: 'left', postOffice: 'ไปรษณีย์กลาง 10501', meterDescending: 0, meterAscending: 0, meterTopUps: [], homeZip: '', specialEmsEnabled: false, specialEmsPackage: 'A12', specialEmsLicenseKey: '' };
 let editingArchiveId = null;
 let currentView = 'dashboard';
 let currentWeightUnit = 'g';
@@ -3143,8 +3143,57 @@ saveSettingsBtn.onclick = async () => {
     settings.session = document.getElementById('set-session').value;
     settings.company = document.getElementById('set-company').value;
     settings.address = document.getElementById('set-address').value;
-    settings.phone = document.getElementById('set-phone').value;
+    
     const paymentType = document.getElementById('set-payment-type').value;
+    const phoneInput = document.getElementById('set-phone');
+    const rawMobile = phoneInput.value.trim();
+    const mobileDigits = rawMobile.replace(/\D/g, '');
+
+    // Validate phone number constraints based on payment type and office selection
+    let needsMobileValidation = false;
+    let needsOfficeValidation = false;
+    let officePhoneVal = '';
+    let officeExtVal = '';
+
+    if (paymentType === 'เงินสด') {
+        needsMobileValidation = true;
+    } else if (paymentType === 'เงินเชื่อ') {
+        const useOffice = document.getElementById('set-credit-use-office').checked;
+        if (useOffice) {
+            needsOfficeValidation = true;
+            officePhoneVal = document.getElementById('set-credit-office-phone').value.trim();
+            officeExtVal = document.getElementById('set-credit-office-ext').value.trim();
+        } else {
+            needsMobileValidation = true;
+        }
+    } else if (paymentType === 'เครื่องประทับไปรษณียากร') {
+        const useOffice = document.getElementById('set-meter-use-office').checked;
+        if (useOffice) {
+            needsOfficeValidation = true;
+            officePhoneVal = document.getElementById('set-meter-office-phone').value.trim();
+            officeExtVal = document.getElementById('set-meter-office-ext').value.trim();
+        } else {
+            needsMobileValidation = true;
+        }
+    }
+
+    if (needsMobileValidation) {
+        if (mobileDigits.length !== 10) {
+            alert(`⚠️ เบอร์โทรศัพท์มือถือต้องมีครบ 10 หลัก\n\n(ขณะนี้กรอกมา ${mobileDigits.length} หลัก: "${rawMobile}")\nกรุณาตรวจสอบและกรอกให้ถูกต้องครับ`);
+            phoneInput.focus();
+            return;
+        }
+    }
+
+    if (needsOfficeValidation) {
+        const officeDigits = officePhoneVal.replace(/\D/g, '');
+        if (officeDigits.length !== 9) {
+            alert(`⚠️ เบอร์โทรศัพท์สำนักงานต้องมีครบ 9 หลัก\n\n(ขณะนี้กรอกมา ${officeDigits.length} หลัก: "${officePhoneVal}")\nกรุณาตรวจสอบและกรอกให้ถูกต้องครับ`);
+            const officeInputId = paymentType === 'เงินเชื่อ' ? 'set-credit-office-phone' : 'set-meter-office-phone';
+            document.getElementById(officeInputId).focus();
+            return;
+        }
+    }
 
     // Validate payment type constraints
     if (paymentType === 'เงินสด') {
@@ -3183,6 +3232,31 @@ saveSettingsBtn.onclick = async () => {
     settings.creditMemberName = document.getElementById('set-credit-member-name').value.trim();
     settings.meterNumber = document.getElementById('set-meter-number').value.trim();
     settings.meterLicense = document.getElementById('set-meter-license').value.trim();
+
+    // Save phone properties
+    settings.mobilePhone = rawMobile;
+    settings.creditUseOffice = document.getElementById('set-credit-use-office').checked;
+    settings.creditOfficePhone = document.getElementById('set-credit-office-phone').value.trim();
+    settings.creditOfficeExt = document.getElementById('set-credit-office-ext').value.trim();
+    settings.meterUseOffice = document.getElementById('set-meter-use-office').checked;
+    settings.meterOfficePhone = document.getElementById('set-meter-office-phone').value.trim();
+    settings.meterOfficeExt = document.getElementById('set-meter-office-ext').value.trim();
+
+    if (paymentType === 'เงินสด') {
+        settings.phone = rawMobile;
+    } else if (paymentType === 'เงินเชื่อ') {
+        if (settings.creditUseOffice) {
+            settings.phone = settings.creditOfficePhone + (settings.creditOfficeExt ? ` ต่อ ${settings.creditOfficeExt}` : '');
+        } else {
+            settings.phone = rawMobile;
+        }
+    } else if (paymentType === 'เครื่องประทับไปรษณียากร') {
+        if (settings.meterUseOffice) {
+            settings.phone = settings.meterOfficePhone + (settings.meterOfficeExt ? ` ต่อ ${settings.meterOfficeExt}` : '');
+        } else {
+            settings.phone = rawMobile;
+        }
+    }
 
     // Map settings.license for backward compatibility
     if (paymentType === 'เงินสด') {
@@ -4056,7 +4130,10 @@ async function initApp() {
     document.getElementById('set-session').value = settings.session || '';
     document.getElementById('set-company').value = settings.company || '';
     document.getElementById('set-address').value = settings.address || '';
-    document.getElementById('set-phone').value = settings.phone || '';
+    
+    // Set mobile phone (with backward compatibility migration)
+    settings.mobilePhone = settings.mobilePhone || (settings.phone && !settings.phone.includes('ต่อ') ? settings.phone : '') || '';
+    document.getElementById('set-phone').value = settings.mobilePhone;
     
     // Set values in dedicated inputs
     document.getElementById('set-cash-thp').value = settings.cashThp || '';
@@ -4067,6 +4144,26 @@ async function initApp() {
     document.getElementById('set-meter-number').value = settings.meterNumber || '';
     document.getElementById('set-meter-license').value = settings.meterLicense || '';
     
+    // Load Office Phone settings for Credit
+    document.getElementById('set-credit-use-office').checked = settings.creditUseOffice || false;
+    document.getElementById('set-credit-office-phone').value = settings.creditOfficePhone || '';
+    document.getElementById('set-credit-office-ext').value = settings.creditOfficeExt || '';
+    document.getElementById('credit-office-wrapper').style.display = settings.creditUseOffice ? 'flex' : 'none';
+    
+    // Load Office Phone settings for Meter
+    document.getElementById('set-meter-use-office').checked = settings.meterUseOffice || false;
+    document.getElementById('set-meter-office-phone').value = settings.meterOfficePhone || '';
+    document.getElementById('set-meter-office-ext').value = settings.meterOfficeExt || '';
+    document.getElementById('meter-office-wrapper').style.display = settings.meterUseOffice ? 'flex' : 'none';
+    
+    // Bind checkbox event listeners to toggle wrappers in settings UI
+    document.getElementById('set-credit-use-office').onchange = (e) => {
+        document.getElementById('credit-office-wrapper').style.display = e.target.checked ? 'flex' : 'none';
+    };
+    document.getElementById('set-meter-use-office').onchange = (e) => {
+        document.getElementById('meter-office-wrapper').style.display = e.target.checked ? 'flex' : 'none';
+    };
+
     // Bind real-time input listeners
     document.getElementById('set-cash-thp').oninput = validatePaymentLicenseRealtime;
     document.getElementById('set-credit-thp').oninput = validatePaymentLicenseRealtime;

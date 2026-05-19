@@ -31,7 +31,7 @@
             </button>
             <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
                 <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-                <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v7.0.7</div>
+                <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v7.0.8</div>
             </div>
         </div>
     </div>
@@ -746,8 +746,8 @@
                 <input type="text" id="set-address" placeholder="123 ถนนตัวอย่าง แขวง เขต กทม.">
             </div>
             <div class="form-group" style="margin-bottom: 1rem;">
-                <label>โทรศัพท์</label>
-                <input type="text" id="set-phone" placeholder="02-123-4567">
+                <label>เบอร์มือถือ</label>
+                <input type="text" id="set-phone" placeholder="เช่น 081-234-5678" style="font-family: monospace;">
             </div>
             <div class="form-group" style="margin-bottom: 1rem;">
                 <label>ชื่อที่ทำการไปรษณีย์</label>
@@ -783,6 +783,22 @@
                         <input type="text" id="set-credit-member-name" placeholder="ชื่อ-สกุล">
                     </div>
                 </div>
+                <!-- Office Phone Option for Credit -->
+                <div style="margin-top: 0.5rem; border-top: 1px dashed #cbd5e1; padding-top: 0.5rem;">
+                    <label style="font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="set-credit-use-office"> 🏢 ใช้เบอร์โทรศัพท์สำนักงานแทนเบอร์มือถือ
+                    </label>
+                    <div id="credit-office-wrapper" style="display: none; margin-top: 0.5rem; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.75rem; font-weight: bold; display: block; margin-bottom: 2px;">เบอร์สำนักงาน (9 หลัก)</label>
+                            <input type="text" id="set-credit-office-phone" placeholder="เช่น 02-123-4567" style="font-family: monospace; font-size: 0.8rem; padding: 6px; width: 100%; box-sizing: border-box; border: 1px solid #dee2e6; border-radius: 4px;">
+                        </div>
+                        <div style="width: 100px;">
+                            <label style="font-size: 0.75rem; font-weight: bold; display: block; margin-bottom: 2px;">เบอร์ต่อ (ถ้ามี)</label>
+                            <input type="text" id="set-credit-office-ext" placeholder="เช่น 123" style="font-family: monospace; font-size: 0.8rem; padding: 6px; width: 100%; box-sizing: border-box; border: 1px solid #dee2e6; border-radius: 4px;">
+                        </div>
+                    </div>
+                </div>
                 <!-- Real-time License Check Status -->
                 <div id="credit-license-status" style="font-size: 0.75rem; margin-top: 5px; font-weight: 600;"></div>
             </div>
@@ -796,6 +812,22 @@
                 <div class="form-group" style="margin-bottom: 0.5rem;">
                     <label style="font-size: 0.8rem; font-weight: bold;">ใบอนุญาตพิเศษที่ (มิเตอร์) <span style="color: #ef4444;">*</span></label>
                     <input type="text" id="set-meter-license" placeholder="เช่น 123 / 2569">
+                </div>
+                <!-- Office Phone Option for Meter -->
+                <div style="margin-top: 0.5rem; border-top: 1px dashed #cbd5e1; padding-top: 0.5rem;">
+                    <label style="font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="set-meter-use-office"> 🏢 ใช้เบอร์โทรศัพท์สำนักงานแทนเบอร์มือถือ
+                    </label>
+                    <div id="meter-office-wrapper" style="display: none; margin-top: 0.5rem; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.75rem; font-weight: bold; display: block; margin-bottom: 2px;">เบอร์สำนักงาน (9 หลัก)</label>
+                            <input type="text" id="set-meter-office-phone" placeholder="เช่น 02-123-4567" style="font-family: monospace; font-size: 0.8rem; padding: 6px; width: 100%; box-sizing: border-box; border: 1px solid #dee2e6; border-radius: 4px;">
+                        </div>
+                        <div style="width: 100px;">
+                            <label style="font-size: 0.75rem; font-weight: bold; display: block; margin-bottom: 2px;">เบอร์ต่อ (ถ้ามี)</label>
+                            <input type="text" id="set-meter-office-ext" placeholder="เช่น 123" style="font-family: monospace; font-size: 0.8rem; padding: 6px; width: 100%; box-sizing: border-box; border: 1px solid #dee2e6; border-radius: 4px;">
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -954,7 +986,7 @@
         <div style="color: #64748b; margin-top: 0.5rem;">กรุณารอสักครู่ (อาจใช้เวลา 1-5 วินาที สำหรับรายการจำนวนมาก)</div>
     </div>
 
-    <script src="src/qrious.min.js?v=7.0.7"></script>
-    <script src="src/main.js?v=7.0.7"></script>
+    <script src="src/qrious.min.js?v=7.0.8"></script>
+    <script src="src/main.js?v=7.0.8"></script>
 </body>
 </html>
