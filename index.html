@@ -31,7 +31,7 @@
             </button>
             <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
                 <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-                <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v7.1.0</div>
+                <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v7.1.1</div>
             </div>
         </div>
     </div>
@@ -372,6 +372,34 @@
                             <button type="button" id="batch-apply-btn" style="width: 100%; background: #0284c7; color: white; border: none; padding: 7px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.2s;">
                                 ⚡ ยืนยันปรับปรุง (Apply)
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- Divider -->
+                    <div style="margin: 12px 0; border-top: 1px dashed #bae6fd;"></div>
+
+                    <!-- Bulk Import Section -->
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="font-size: 0.8rem; font-weight: bold; color: #0369a1; display: flex; align-items: center; gap: 5px;">
+                            📋 นำเข้าข้อมูลผู้รับและรหัสไปรษณีย์แบบกลุ่ม (Bulk Recipient & Zip Import)
+                        </div>
+                        <div style="font-size: 0.72rem; color: #64748b; margin-bottom: 2px;">
+                            วางรายชื่อและรหัสไปรษณีย์ที่นี่ (บรรทัดละ 1 รายการ เช่น: <b>นายสมชาย 10500</b> หรือคัดลอกจาก Excel / ตารางได้เลย ระบบจะดึงข้อมูลให้อัตโนมัติ)
+                        </div>
+                        <div style="display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap;">
+                            <textarea id="batch-import-textarea" rows="3" placeholder="ตัวอย่างการกรอก:
+นายสมชาย รักดี 10500
+นางสาวสมศรี สุขใจ 20000
+หรือคัดลอกเป็นคอลัมน์ชื่อคู่กับรหัสไปรษณีย์จาก Excel มาวางได้เลย" style="flex: 1; min-width: 250px; padding: 8px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; font-family: monospace; resize: vertical; min-height: 70px; box-sizing: border-box;"></textarea>
+                            
+                            <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 8px; width: 190px; shrink: 0;">
+                                <label style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: bold; color: #0369a1; cursor: pointer; user-select: none;">
+                                    <input type="checkbox" id="batch-import-clear-existing" checked> ล้างข้อมูลผู้รับเก่าก่อนนำเข้า
+                                </label>
+                                <button type="button" id="batch-import-btn" style="background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: background 0.2s; height: 38px;">
+                                    📥 นำเข้าข้อมูลแบบกลุ่ม
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -986,7 +1014,7 @@
         <div style="color: #64748b; margin-top: 0.5rem;">กรุณารอสักครู่ (อาจใช้เวลา 1-5 วินาที สำหรับรายการจำนวนมาก)</div>
     </div>
 
-    <script src="src/qrious.min.js?v=7.1.0"></script>
-    <script src="src/main.js?v=7.1.0"></script>
+    <script src="src/qrious.min.js?v=7.1.1"></script>
+    <script src="src/main.js?v=7.1.1"></script>
 </body>
 </html>

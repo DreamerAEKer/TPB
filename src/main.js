@@ -4745,7 +4745,150 @@ async function applyBatchChanges() {
     alert(`🎉 ปรับปรุงข้อมูลแบบกลุ่มสำเร็จเรียบร้อยแล้ว จำนวน ${updatedCount} รายการ!`);
 }
 
+async function applyBulkImport() {
+    const textarea = document.getElementById('batch-import-textarea');
+    if (!textarea) return;
+
+    const text = textarea.value;
+    if (!text.trim()) {
+        alert('⚠️ กรุณากรอกหรือวางข้อมูลผู้รับและรหัสไปรษณีย์ในช่องนำเข้าก่อนครับ');
+        return;
+    }
+
+    // Filter to get only the shipments currently visible in the active tab
+    const isSpecialTab = currentServiceTab === 'EMS_SPECIAL';
+    const filtered = shipments.map((s, originalIdx) => ({ ...s, originalIdx }))
+                             .filter(s => {
+                                 if (isSpecialTab) return s.serviceType === 'EMS' && s.options?.isSpecialEms;
+                                 return s.serviceType === currentServiceTab;
+                             });
+
+    if (filtered.length === 0) {
+        alert('❌ ไม่มีรายการพัสดุในตารางของแท็บปัจจุบันที่จะนำเข้าข้อมูลผู้รับ');
+        return;
+    }
+
+    // Parse the pasted lines
+    const lines = text.split('\n');
+    const parsedData = [];
+    for (let line of lines) {
+        line = line.trim();
+        if (!line) continue;
+
+        // Find a 5-digit number in the line using regex
+        const zipMatch = line.match(/\b\d{5}\b/);
+        let zip = '';
+        let name = line;
+
+        if (zipMatch) {
+            zip = zipMatch[0];
+            // Remove the zip code from the name
+            name = line.replace(zip, '').trim();
+        } else {
+            // Fallback: If no 5-digit zip code is found, see if there is any number at the end
+            const lastNumberMatch = line.match(/\b\d+\b$/);
+            if (lastNumberMatch) {
+                zip = lastNumberMatch[0];
+                name = line.substring(0, line.lastIndexOf(zip)).trim();
+            }
+        }
+
+        // Clean up name: remove commas, hyphens, tabs, spaces at the ends
+        name = name.replace(/^[,-\s\t]+|[,-\s\t]+$/g, '').trim();
+        name = name.replace(/[\s\t]+/g, ' ');
+
+        parsedData.push({ name, zip });
+    }
+
+    if (parsedData.length === 0) {
+        alert('❌ ไม่สามารถวิเคราะห์ข้อมูลผู้รับและรหัสไปรษณีย์จากข้อความที่วางได้ กรุณาตรวจสอบรูปแบบข้อความอีกครั้งครับ');
+        return;
+    }
+
+    const clearExisting = document.getElementById('batch-import-clear-existing').checked;
+
+    // Respect the range type if the user specified a range in the Batch Helper
+    const rangeType = document.getElementById('batch-range-type').value;
+    let startIdx = 1;
+    let endIdx = filtered.length;
+
+    if (rangeType === 'range') {
+        const startVal = parseInt(document.getElementById('batch-start-idx').value);
+        const endVal = parseInt(document.getElementById('batch-end-idx').value);
+
+        if (!isNaN(startVal) && !isNaN(endVal) && startVal >= 1 && endVal >= startVal && startVal <= filtered.length) {
+            startIdx = startVal;
+            endIdx = Math.min(endVal, filtered.length);
+        }
+    }
+
+    let updatedCount = 0;
+    let dataIdx = 0;
+
+    // Loop through the selected range of visible items
+    for (let i = startIdx - 1; i <= endIdx - 1; i++) {
+        if (dataIdx >= parsedData.length) break; // Paste data exhausted
+
+        const originalIdx = filtered[i].originalIdx;
+        const targetShipment = shipments[originalIdx];
+        const data = parsedData[dataIdx];
+
+        // Apply recipient name
+        if (clearExisting || !targetShipment.name) {
+            targetShipment.name = data.name;
+        }
+
+        // Apply zip code
+        if (clearExisting || !targetShipment.destination) {
+            targetShipment.destination = data.zip;
+        }
+
+        // Trigger remote area updates if any
+        const zip = data.zip;
+        if (zip) {
+            const isAlwaysRemote = !!REMOTE_AREAS[zip] && !PARTIAL_REMOTE_ZIPS.includes(zip);
+            const isIslandPotential = PARTIAL_REMOTE_ZIPS.includes(zip);
+            if (!targetShipment.options) targetShipment.options = {};
+            targetShipment.options.isRemote = isAlwaysRemote;
+            if (isAlwaysRemote) {
+                targetShipment.isIsland = false;
+            } else if (!isIslandPotential) {
+                targetShipment.isIsland = false;
+            }
+        }
+
+        // Recalculate fee if weight is set
+        const w = parseFloat(targetShipment.weight) || 0;
+        if (w > 0 && targetShipment.serviceType !== 'CUSTOM') {
+            let base = calculateBaseFee(targetShipment.serviceType, w, targetShipment.options || {});
+            if (settings.fuelSurcharge && (targetShipment.serviceType === 'EMS' || targetShipment.serviceType === 'ECO')) {
+                base += 3;
+            }
+            targetShipment.fee = base;
+        }
+
+        updatedCount++;
+        dataIdx++;
+    }
+
+    // Save and Refresh UI
+    await updateHistory();
+    updatePreview();
+    renderShipments();
+    updateSummary();
+    updateMeterStatus();
+    renderStats();
+
+    alert(`🎉 นำเข้าข้อมูลผู้รับและรหัสไปรษณีย์แบบกลุ่มสำเร็จเรียบร้อยแล้ว จำนวน ${updatedCount} รายการ!`);
+    textarea.value = '';
+}
+
 const batchApplyBtn = document.getElementById('batch-apply-btn');
 if (batchApplyBtn) {
     batchApplyBtn.onclick = applyBatchChanges;
+}
+
+const batchImportBtn = document.getElementById('batch-import-btn');
+if (batchImportBtn) {
+    batchImportBtn.onclick = applyBulkImport;
 }
