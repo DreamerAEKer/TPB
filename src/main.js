@@ -3381,7 +3381,10 @@ document.getElementById('set-payment-type').onchange = (e) => {
     
     if (val !== oldVal && shipments.length > 0) {
         alert(`⚠️ ไม่สามารถเปลี่ยนประเภทการชำระเงินได้เนื่องจากมีข้อมูลพัสดุค้างอยู่ในตาราง ${shipments.length} รายการ\n\nกรุณาจัดการพิมพ์ใบนำส่ง/ใบสรุปเพื่อปิดยอด หรือลบข้อมูลพัสดุชุดเดิมออกจากตารางให้เรียบร้อยก่อนทำการเปลี่ยนประเภทการชำระเงิน`);
-        e.target.value = oldVal;
+        // Wrap in setTimeout to ensure browser repaints and visually reverts select value to oldVal
+        setTimeout(() => {
+            e.target.value = oldVal;
+        }, 50);
         return;
     }
     
