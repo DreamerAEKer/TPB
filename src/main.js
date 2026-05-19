@@ -568,11 +568,7 @@ function renderShipments() {
       tr.innerHTML = `
       <td>${displayIdx + 1}</td>
       <td class="editable-cell" contenteditable="true" data-field="recipient" data-index="${i}" data-placeholder="ระบุผู้รับ...">${s.recipient || ''}</td>
-      <td class="editable-cell" data-index="${i}">
-        <div contenteditable="true" data-field="destination" data-index="${i}" data-placeholder="ระบุปลายทาง..." style="outline:none; width: 100%;">
-            ${highlightPostcode(s.destination, isRemoteActive)}
-        </div>
-      </td>
+      <td class="editable-cell" contenteditable="true" data-field="destination" data-index="${i}" data-placeholder="ระบุปลายทาง..." style="outline:none;">${highlightPostcode(s.destination, isRemoteActive)}</td>
       <td class="editable-cell tracking-cell" contenteditable="true" data-field="trackingFormatted" data-index="${i}" style="font-weight: 600; white-space: pre; outline: none;">${displayTracking}</td>
       <td class="services-cell">
         <div style="display: flex; gap: 8px; flex-wrap: nowrap; justify-content: center;">
@@ -670,7 +666,27 @@ function renderShipments() {
             applySmartPricing(idx);
             if (s.fee !== oldFee) needsRender = true;
         } else if (field === 'destination') {
-            if (s.serviceType !== 'CUSTOM') applySmartPricing(idx);
+            if (s.serviceType !== 'CUSTOM') {
+                const zipMatch = s.destination.match(/\d{5}/);
+                const zip = zipMatch ? zipMatch[0] : null;
+                const hasIslandText = s.destination.includes('เกาะ');
+                const isAlwaysRemote = zip && !!REMOTE_AREAS[zip] && !PARTIAL_REMOTE_ZIPS.includes(zip);
+                const isIslandPotential = zip && PARTIAL_REMOTE_ZIPS.includes(zip);
+                
+                // Update remote status in options
+                if (!s.options) s.options = {};
+                s.options.isRemote = isAlwaysRemote || (isIslandPotential && hasIslandText);
+                
+                // Recalculate fee based on new destination
+                const w = parseFloat(s.weight) || 0;
+                if (w > 0) {
+                    const base = calculateBaseFee(s.serviceType, w, s.options);
+                    let total = base;
+                    if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
+                    s.fee = total;
+                }
+                applySmartPricing(idx);
+            }
             needsRender = true;
         } else if (field === 'trackingFormatted') {
             let raw = (s.trackingFormatted || '').replace(/\s+/g, '').toUpperCase();
