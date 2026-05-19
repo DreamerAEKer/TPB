@@ -79,6 +79,18 @@
 
     <div class="row2">
       <div>
+        <label>ชื่อผู้ใช้ / บริษัท <span style="color:#ef4444;">*</span></label>
+        <input type="text" id="inp-name" placeholder="จำเป็นต้องกรอก" style="border-color:#334155;">
+      </div>
+      <div>
+        <label>เบอร์โทร (ไม่บังคับ)</label>
+        <input type="text" id="inp-phone" placeholder="เช่น 0812345678" maxlength="20"
+          oninput="this.value=this.value.replace(/[^\d\-+() ]/g,'')">
+      </div>
+    </div>
+
+    <div class="row2">
+      <div>
         <label>วันที่เริ่มสัญญา</label>
         <input type="date" id="inp-start">
       </div>
@@ -192,6 +204,8 @@ function generate() {
     const pkg = document.getElementById('inp-pkg').value;
     const startDate = document.getElementById('inp-start').value;
     const pfLevel = document.getElementById('inp-pf-level').value;
+    const custName = document.getElementById('inp-name').value.trim();
+    const custPhone = document.getElementById('inp-phone').value.trim();
 
     if (!/^\d{8}$/.test(thpNum)) { alert('⚠️ กรุณากรอกเลข Post Family No. 8 หลัก'); return; }
 
@@ -213,7 +227,7 @@ function generate() {
     `;
     document.getElementById('key-output-wrap').style.display = 'block';
 
-    lastRecord = { key, thpNum, pkg, mm, yy, startDate, pfLevel, ts: new Date().toISOString() };
+    lastRecord = { key, thpNum, pkg, mm, yy, startDate, pfLevel, custName, custPhone, ts: new Date().toISOString() };
 }
 
 function formatDateThai(dateStr) {
@@ -261,6 +275,14 @@ function safeLocalStorageSave(key, data) {
 
 function saveKey() {
     if (!lastRecord) return;
+    // Validate required name field
+    const nameEl = document.getElementById('inp-name');
+    if (!lastRecord.custName) {
+        if (nameEl) { nameEl.style.borderColor = '#ef4444'; nameEl.focus(); }
+        alert('⚠️ กรุณากรอกชื่อผู้ใช้ / บริษัท ก่อนบันทึก');
+        return;
+    }
+    if (nameEl) nameEl.style.borderColor = '';
     let history = [];
     try { history = JSON.parse(localStorage.getItem('tpb_keys') || '[]'); } catch(e) { history = []; }
 
@@ -300,10 +322,12 @@ function renderHistory() {
     el.innerHTML = history.map((r, i) => {
         const pfBadge = PF_BADGE[r.pfLevel] || '';
         const expLabel = `${MONTH_TH[parseInt(r.mm)]} ${2000+parseInt(r.yy)}`;
-        const startLabel = r.startDate ? formatDateThai(r.startDate) : '—';
+        const nameStr = r.custName ? `<b style="color:#e2e8f0;">${r.custName}</b>` : '<span style="color:#475569;">ไม่ระบุ</span>';
+        const phoneStr = r.custPhone ? ` &nbsp;📞 ${r.custPhone}` : '';
         return `
           <div class="hist-item">
             <div style="flex:1; min-width:0;">
+              <div style="margin-bottom:3px;">${nameStr}${phoneStr}</div>
               <div class="hist-key">${r.key}</div>
               <div class="hist-info">
                 <strong>THP-${r.thpNum}</strong> &nbsp;|&nbsp; ${pfBadge} ${r.pfLevel || ''} &nbsp;|&nbsp;
@@ -326,11 +350,11 @@ function quickCopy(key, btn) {
 function exportCSV() {
     const history = JSON.parse(localStorage.getItem('tpb_keys') || '[]');
     if (history.length === 0) { alert('ยังไม่มีข้อมูล'); return; }
-    let csv = 'Key,THP No.,Package,Post Family Level,เริ่มสัญญา,หมดอายุ\n';
+    let csv = 'ชื่อผู้ใช้,เบอร์โทร,Key,THP No.,Package,Post Family Level,เริ่มสัญญา,หมดอายุ\n';
     history.forEach(r => {
         const expLabel = `${MONTH_TH[parseInt(r.mm)]} ${2000+parseInt(r.yy)}`;
         const startLabel = r.startDate ? formatDateThai(r.startDate) : '—';
-        csv += `"${r.key}","THP-${r.thpNum}","${r.pkg}","${r.pfLevel || ''}","${startLabel}","${expLabel}"\n`;
+        csv += `"${r.custName||''}","${r.custPhone||''}","${r.key}","THP-${r.thpNum}","${r.pkg}","${r.pfLevel||''}","${startLabel}","${expLabel}"\n`;
     });
     const blob = new Blob(['\ufeff'+csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
