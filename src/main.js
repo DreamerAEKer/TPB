@@ -265,6 +265,14 @@ let currentWeightUnit = 'g';
 let bulkBackup = { ar: null, ins: null, 'ar-track': null };
 let pendingFocus = null;
 
+// --- CELL SELECTION & DRAG-TO-FILL STATE (v7.4.0) ---
+let dragStartCell = null;
+let isDragSelecting = false;
+let selectedCellsRange = null; // { field, startRow, endRow }
+let isFillDragging = false;
+let fillDragStartCell = null;
+let fillDragCurrentCell = null;
+
 const prefixInput = document.getElementById('prefix');
 const prefixDropdownToggle = document.getElementById('prefix-dropdown-toggle');
 const prefixDropdownList = document.getElementById('prefix-dropdown-list');
@@ -646,6 +654,7 @@ function renderShipments() {
   document.querySelectorAll('.editable-cell[contenteditable="true"]').forEach(cell => {
     cell.onfocus = (e) => {
         e.target.setAttribute('data-old-val', e.target.innerText.trim());
+        positionFillHandle(e.target);
     };
 
     cell.oninput = async (e) => {
@@ -699,6 +708,12 @@ function renderShipments() {
     };
 
     cell.onblur = async (e) => {
+        setTimeout(() => {
+            if (activeFocusedCell === e.target) {
+                hideFillHandle();
+                activeFocusedCell = null;
+            }
+        }, 150);
         const field = e.target.dataset.field;
         const idx = e.target.dataset.index;
         const s = shipments[idx];
@@ -4428,7 +4443,378 @@ async function initApp() {
             }
         };
     }
+    
+    // Initialize Table Selection and Drag-to-Fill (v7.4.0)
+    initTableSelectionAndDrag();
 }
+
+// --- EXCEL-STYLE CELL RANGE SELECTION & DRAG-TO-FILL (v7.4.0) ---
+let activeFocusedCell = null;
+
+function getRowNumber(cell) {
+    const row = cell.closest('tr');
+    if (row && row.cells[0]) {
+        return parseInt(row.cells[0].innerText) || 1;
+    }
+    return 1;
+}
+
+function positionFillHandle(cell) {
+    let handle = document.getElementById('tpb-fill-handle');
+    if (!handle) {
+        handle = document.createElement('div');
+        handle.id = 'tpb-fill-handle';
+        handle.className = 'tpb-fill-handle';
+        handle.title = 'ลากเพื่อคัดลอกค่าลงด้านล่าง (Drag to copy down)';
+        document.body.appendChild(handle);
+        
+        handle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (activeFocusedCell) {
+                isFillDragging = true;
+                fillDragStartCell = activeFocusedCell;
+                fillDragCurrentCell = activeFocusedCell;
+                initDragOverlay(activeFocusedCell);
+            }
+        });
+    }
+    
+    const rect = cell.getBoundingClientRect();
+    handle.style.left = (window.scrollX + rect.right - 5) + 'px';
+    handle.style.top = (window.scrollY + rect.bottom - 5) + 'px';
+    handle.style.display = 'block';
+    
+    activeFocusedCell = cell;
+}
+
+function hideFillHandle() {
+    const handle = document.getElementById('tpb-fill-handle');
+    if (handle) handle.style.display = 'none';
+}
+
+function initDragOverlay(startCell) {
+    let overlay = document.getElementById('tpb-drag-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'tpb-drag-overlay';
+        overlay.className = 'tpb-drag-overlay';
+        document.body.appendChild(overlay);
+    }
+    const rect = startCell.getBoundingClientRect();
+    overlay.style.left = (window.scrollX + rect.left) + 'px';
+    overlay.style.top = (window.scrollY + rect.top) + 'px';
+    overlay.style.width = rect.width + 'px';
+    overlay.style.height = rect.height + 'px';
+    overlay.style.display = 'block';
+}
+
+function updateDragOverlay(startCell, currentCell) {
+    const overlay = document.getElementById('tpb-drag-overlay');
+    if (!overlay) return;
+    
+    const rectStart = startCell.getBoundingClientRect();
+    const rectEnd = currentCell.getBoundingClientRect();
+    
+    const top = Math.min(rectStart.top, rectEnd.top);
+    const bottom = Math.max(rectStart.bottom, rectEnd.bottom);
+    
+    overlay.style.left = (window.scrollX + rectStart.left) + 'px';
+    overlay.style.width = rectStart.width + 'px';
+    overlay.style.top = (window.scrollY + top) + 'px';
+    overlay.style.height = (bottom - top) + 'px';
+    overlay.style.display = 'block';
+}
+
+function clearCellSelection() {
+    document.querySelectorAll('.tpb-cell-selected').forEach(el => {
+        el.classList.remove('tpb-cell-selected');
+    });
+    selectedCellsRange = null;
+}
+
+function highlightRange(field, startRow, endRow) {
+    clearCellSelection();
+    
+    const minRow = Math.min(startRow, endRow);
+    const maxRow = Math.max(startRow, endRow);
+    
+    const rows = shipmentList.querySelectorAll('tr');
+    rows.forEach(row => {
+        const rowNum = parseInt(row.cells[0].innerText);
+        if (rowNum >= minRow && rowNum <= maxRow) {
+            const targetCell = row.querySelector(`[data-field="${field}"]`);
+            if (targetCell) {
+                targetCell.classList.add('tpb-cell-selected');
+            }
+        }
+    });
+    
+    selectedCellsRange = { field, startRow: minRow, endRow: maxRow };
+    syncSelectionToBatchEdit(minRow, maxRow, field);
+}
+
+function syncSelectionToBatchEdit(startRow, endRow, field) {
+    const rangeTypeSelect = document.getElementById('batch-range-type');
+    const rangeInputs = document.getElementById('batch-range-inputs');
+    const startIdxInput = document.getElementById('batch-start-idx');
+    const endIdxInput = document.getElementById('batch-end-idx');
+    
+    if (rangeTypeSelect) {
+        rangeTypeSelect.value = 'range';
+        const event = new Event('change');
+        rangeTypeSelect.dispatchEvent(event);
+    }
+    
+    if (rangeInputs) rangeInputs.style.display = 'flex';
+    if (startIdxInput) startIdxInput.value = startRow;
+    if (endIdxInput) endIdxInput.value = endRow;
+    
+    // Auto-tick appropriate batch edit checkbox and activate input
+    if (field === 'weight') {
+        const enableWeightChk = document.getElementById('batch-enable-weight');
+        const weightInputVal = document.getElementById('batch-weight-input');
+        if (enableWeightChk && !enableWeightChk.checked) {
+            enableWeightChk.checked = true;
+            const chgEvent = new Event('change');
+            enableWeightChk.dispatchEvent(chgEvent);
+            if (weightInputVal) {
+                weightInputVal.focus();
+                weightInputVal.select();
+            }
+        }
+    }
+}
+
+async function fillRangeValues(field, startRow, endRow, sourceValue) {
+    const isSpecialTab = currentServiceTab === 'EMS_SPECIAL';
+    const filtered = shipments.map((s, originalIdx) => ({ ...s, originalIdx }))
+                             .filter(s => {
+                                 if (isSpecialTab) return s.serviceType === 'EMS' && s.options?.isSpecialEms;
+                                 return s.serviceType === currentServiceTab;
+                             });
+                             
+    if (filtered.length === 0) return;
+    
+    const minRow = Math.max(1, Math.min(startRow, endRow));
+    const maxRow = Math.min(filtered.length, Math.max(startRow, endRow));
+    
+    let updatedCount = 0;
+    
+    for (let rowNum = minRow; rowNum <= maxRow; rowNum++) {
+        const filteredIdx = rowNum - 1;
+        const originalIdx = filtered[filteredIdx].originalIdx;
+        const s = shipments[originalIdx];
+        if (!s) continue;
+        
+        s[field] = sourceValue;
+        
+        if (field === 'weight') {
+            const w = parseFloat(sourceValue) || 0;
+            if (w > 0) {
+                const base = calculateBaseFee(s.serviceType, w, s.options || {});
+                let total = base;
+                if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
+                s.fee = total;
+            } else {
+                s.fee = '';
+            }
+            applySmartPricing(originalIdx);
+        } else if (field === 'destination') {
+            s.destination = normalizeDestinationText(sourceValue || '');
+            if (s.serviceType !== 'CUSTOM') {
+                const zipMatch = s.destination.match(/\d{5}/);
+                const zip = zipMatch ? zipMatch[0] : null;
+                const hasIslandText = s.destination.includes('เกาะ');
+                const isAlwaysRemote = zip && !!REMOTE_AREAS[zip] && !PARTIAL_REMOTE_ZIPS.includes(zip);
+                const isIslandPotential = zip && PARTIAL_REMOTE_ZIPS.includes(zip);
+                
+                if (!s.options) s.options = {};
+                s.options.isRemote = isAlwaysRemote || (isIslandPotential && hasIslandText);
+                
+                const w = parseFloat(s.weight) || 0;
+                if (w > 0) {
+                    const base = calculateBaseFee(s.serviceType, w, s.options);
+                    let total = base;
+                    if (settings.fuelSurcharge && (s.serviceType === 'EMS' || s.serviceType === 'ECO')) total += 3;
+                    s.fee = total;
+                }
+                applySmartPricing(originalIdx);
+            }
+        } else if (field === 'fee') {
+            s.fee = parseFloat(sourceValue) || 0;
+        }
+        
+        updatedCount++;
+    }
+    
+    if (updatedCount > 0) {
+        await updateHistory();
+        updateSummary();
+        renderShipments();
+        renderStats();
+        updateMeterStatus();
+    }
+    
+    clearCellSelection();
+    hideFloatingPill();
+}
+
+function showFloatingPill(field, maxRow) {
+    let pill = document.getElementById('tpb-floating-pill');
+    if (!pill) {
+        pill = document.createElement('button');
+        pill.id = 'tpb-floating-pill';
+        pill.className = 'tpb-floating-pill';
+        pill.innerHTML = `<span>⚡ คัดลอกลงข้างล่าง (Fill Down)</span>`;
+        document.body.appendChild(pill);
+        
+        pill.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            triggerFillDown();
+        });
+    }
+    
+    const rows = shipmentList.querySelectorAll('tr');
+    let targetCell = null;
+    rows.forEach(row => {
+        const rowNum = parseInt(row.cells[0].innerText);
+        if (rowNum === maxRow) {
+            targetCell = row.querySelector(`[data-field="${field}"]`);
+        }
+    });
+    
+    if (targetCell) {
+        const rect = targetCell.getBoundingClientRect();
+        pill.style.left = (window.scrollX + rect.left + (rect.width - 155) / 2) + 'px';
+        pill.style.top = (window.scrollY + rect.bottom + 8) + 'px';
+        pill.style.display = 'flex';
+    }
+}
+
+function hideFloatingPill() {
+    const pill = document.getElementById('tpb-floating-pill');
+    if (pill) pill.style.display = 'none';
+}
+
+function triggerFillDown() {
+    if (!selectedCellsRange) return;
+    
+    const { field, startRow, endRow } = selectedCellsRange;
+    
+    const rows = shipmentList.querySelectorAll('tr');
+    let topCell = null;
+    rows.forEach(row => {
+        const rowNum = parseInt(row.cells[0].innerText);
+        if (rowNum === startRow) {
+            topCell = row.querySelector(`[data-field="${field}"]`);
+        }
+    });
+    
+    if (topCell) {
+        const sourceValue = topCell.innerText.trim();
+        fillRangeValues(field, startRow, endRow, sourceValue);
+    }
+}
+
+function initTableSelectionAndDrag() {
+    window.addEventListener('scroll', () => {
+        if (activeFocusedCell && activeFocusedCell.offsetParent !== null) {
+            positionFillHandle(activeFocusedCell);
+        }
+    }, { passive: true });
+    
+    window.addEventListener('resize', () => {
+        if (activeFocusedCell && activeFocusedCell.offsetParent !== null) {
+            positionFillHandle(activeFocusedCell);
+        }
+    });
+
+    shipmentList.addEventListener('mousedown', (e) => {
+        const cell = e.target.closest('.editable-cell[contenteditable="true"]');
+        if (!cell) return;
+        
+        if (e.shiftKey && activeFocusedCell && activeFocusedCell.dataset.field === cell.dataset.field) {
+            e.preventDefault();
+            const startRow = getRowNumber(activeFocusedCell);
+            const currRow = getRowNumber(cell);
+            highlightRange(cell.dataset.field, startRow, currRow);
+        } else {
+            dragStartCell = {
+                element: cell,
+                field: cell.dataset.field,
+                index: parseInt(cell.dataset.index),
+                rowNum: getRowNumber(cell)
+            };
+            isDragSelecting = true;
+            
+            clearCellSelection();
+            hideFloatingPill();
+        }
+    });
+    
+    shipmentList.addEventListener('mouseover', (e) => {
+        if (!isDragSelecting || !dragStartCell) return;
+        
+        const cell = e.target.closest('.editable-cell[contenteditable="true"]');
+        if (!cell || cell.dataset.field !== dragStartCell.field) return;
+        
+        const currRow = getRowNumber(cell);
+        highlightRange(dragStartCell.field, dragStartCell.rowNum, currRow);
+        
+        window.getSelection().removeAllRanges();
+    });
+    
+    document.addEventListener('mouseup', (e) => {
+        if (isDragSelecting) {
+            isDragSelecting = false;
+            if (selectedCellsRange && selectedCellsRange.startRow !== selectedCellsRange.endRow) {
+                showFloatingPill(selectedCellsRange.field, selectedCellsRange.endRow);
+            }
+        }
+        
+        if (isFillDragging) {
+            isFillDragging = false;
+            const overlay = document.getElementById('tpb-drag-overlay');
+            if (overlay) overlay.style.display = 'none';
+            
+            if (fillDragStartCell && fillDragCurrentCell && fillDragStartCell !== fillDragCurrentCell) {
+                const field = fillDragStartCell.dataset.field;
+                const startRow = getRowNumber(fillDragStartCell);
+                const endRow = getRowNumber(fillDragCurrentCell);
+                const sourceValue = fillDragStartCell.innerText.trim();
+                
+                fillRangeValues(field, startRow, endRow, sourceValue);
+            }
+            
+            fillDragStartCell = null;
+            fillDragCurrentCell = null;
+        }
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (!isFillDragging || !fillDragStartCell) return;
+        
+        const hoverEl = document.elementFromPoint(e.clientX, e.clientY);
+        const cell = hoverEl ? hoverEl.closest('.editable-cell[contenteditable="true"]') : null;
+        
+        if (cell && cell.dataset.field === fillDragStartCell.dataset.field) {
+            fillDragCurrentCell = cell;
+            updateDragOverlay(fillDragStartCell, fillDragCurrentCell);
+        }
+    });
+    
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+            if (selectedCellsRange && selectedCellsRange.startRow !== selectedCellsRange.endRow) {
+                e.preventDefault();
+                triggerFillDown();
+            }
+        }
+    });
+}
+
 
 function setupFluentNavigation() {
     const fields = [
@@ -5054,6 +5440,19 @@ async function applyBatchChanges() {
         return;
     }
 
+    // Filter to get only the shipments currently visible in the active tab
+    const isSpecialTab = currentServiceTab === 'EMS_SPECIAL';
+    const filtered = shipments.map((s, originalIdx) => ({ ...s, originalIdx }))
+                             .filter(s => {
+                                 if (isSpecialTab) return s.serviceType === 'EMS' && s.options?.isSpecialEms;
+                                 return s.serviceType === currentServiceTab;
+                             });
+
+    if (filtered.length === 0) {
+        alert('❌ ไม่มีรายการพัสดุในตารางของแท็บปัจจุบันที่จะแก้ไข');
+        return;
+    }
+
     const enableWeight = document.getElementById('batch-enable-weight').checked;
     const enableAR = document.getElementById('batch-enable-ar').checked;
     const enableIns = document.getElementById('batch-enable-ins').checked;
@@ -5065,7 +5464,7 @@ async function applyBatchChanges() {
 
     const rangeType = document.getElementById('batch-range-type').value;
     let startIdx = 1;
-    let endIdx = shipments.length;
+    let endIdx = filtered.length;
 
     if (rangeType === 'range') {
         const startVal = parseInt(document.getElementById('batch-start-idx').value);
@@ -5076,8 +5475,8 @@ async function applyBatchChanges() {
             return;
         }
 
-        if (startVal > shipments.length || endVal > shipments.length) {
-            alert(`❌ ลำดับที่คุณระบุเกินจำนวนรายการพัสดุจริงในระบบ (ปัจจุบันมี ${shipments.length} รายการ)`);
+        if (startVal > filtered.length || endVal > filtered.length) {
+            alert(`❌ ลำดับที่คุณระบุเกินจำนวนรายการพัสดุจริงในแท็บปัจจุบัน (ปัจจุบันมี ${filtered.length} รายการ)`);
             return;
         }
 
@@ -5104,7 +5503,8 @@ async function applyBatchChanges() {
 
     // Standard arrays are 0-based, range indices are 1-based
     for (let i = startIdx - 1; i <= endIdx - 1; i++) {
-        const s = shipments[i];
+        const originalIdx = filtered[i].originalIdx;
+        const s = shipments[originalIdx];
         if (!s) continue;
         if (!s.options) s.options = {};
 
