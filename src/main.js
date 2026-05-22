@@ -372,6 +372,31 @@ function sanitizeNumeric(val, allowDecimal = false) {
     return result.replace(/\D/g, '');
 }
 
+window.validateStrictNumericKeyPress = function(e, allowDecimal) {
+    if (
+        e.ctrlKey || e.metaKey || e.altKey ||
+        e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Tab' || e.key === 'Escape' || e.key === 'Enter' ||
+        e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown' ||
+        e.key === 'Home' || e.key === 'End' || e.key === 'PageUp' || e.key === 'PageDown'
+    ) {
+        return; // Allow control keys and shortcuts
+    }
+
+    if (allowDecimal && (e.key === '.' || e.key === 'Decimal' || e.key === 'Period')) {
+        const val = e.target.value !== undefined ? e.target.value : e.target.innerText;
+        if (!val.includes('.')) {
+            return; // Allow first decimal point
+        }
+    }
+
+    // Allow Arabic digits, Thai digits, and Thai keyboard characters that map to numbers
+    const isDigit = /^[0-9๐-๙ๅ\/\-ภถุึคตจ๏๚๛]$/.test(e.key);
+    if (!isDigit) {
+        e.preventDefault();
+    }
+};
+
+
 function normalizeDestinationText(text) {
     if (!text) return '';
     
@@ -718,7 +743,7 @@ function renderShipments() {
             ${s.serviceType === 'EMS' ? `
                 <div style="display: flex; align-items: center; gap: 4px;">
                     <label class="svc-mini" title="ประกัน"><input type="checkbox" ${s.options?.insurance ? 'checked' : ''} onchange="toggleRowService(${i}, 'insurance', this.checked)"> 🛡️</label>
-                    ${s.options?.insurance ? `<input type="text" class="mini-input ${ (s.options.insuranceVal < 2100 || s.options.insuranceVal > 50000) ? 'error-input' : '' }" style="width: 60px; font-size: 0.75rem; padding: 2px;" value="${(parseFloat(s.options.insuranceVal) || 0).toLocaleString()}" oninput="this.value = sanitizeNumeric(this.value); updateRowInsuranceVal(${i}, this.value)" onblur="validateRowInsurance(${i}, this)">` : ''}
+                    ${s.options?.insurance ? `<input type="text" class="mini-input ${ (s.options.insuranceVal < 2100 || s.options.insuranceVal > 50000) ? 'error-input' : '' }" style="width: 60px; font-size: 0.75rem; padding: 2px;" value="${(parseFloat(s.options.insuranceVal) || 0).toLocaleString()}" onkeydown="validateStrictNumericKeyPress(event, false)" oninput="this.value = sanitizeNumeric(this.value); updateRowInsuranceVal(${i}, this.value)" onblur="validateRowInsurance(${i}, this)">` : ''}
                 </div>
             ` : ''}
             ${(s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && destinationVal.includes('เกาะ')) ? `<label class="svc-mini" title="พื้นที่ห่างไกล"><input type="checkbox" ${s.options?.isRemote ? 'checked' : ''} onchange="toggleRowService(${i}, 'isRemote', this.checked)"> 🏝️</label>` : ''}
@@ -781,7 +806,8 @@ function renderShipments() {
         let val = e.target.innerText.replace(' บาท', '').trim();
         
         if (field === 'weight' || field === 'fee') {
-            const sanitized = sanitizeNumeric(val, field === 'fee');
+            const allowDecimal = (field === 'weight' && currentWeightUnit === 'kg');
+            const sanitized = sanitizeNumeric(val, allowDecimal);
             if (val !== sanitized) {
                 // Save cursor position
                 const selection = window.getSelection();
@@ -805,6 +831,13 @@ function renderShipments() {
     };
     
     cell.onkeydown = (e) => {
+        const field = e.target.dataset.field;
+        if (field === 'weight' || field === 'fee') {
+            const allowDecimal = (field === 'weight' && currentWeightUnit === 'kg');
+            validateStrictNumericKeyPress(e, allowDecimal);
+        }
+        if (e.defaultPrevented) return;
+
         if (e.key === 'Enter') {
             e.preventDefault();
             const field = e.target.dataset.field;
@@ -2233,12 +2266,18 @@ batchCountInput.oninput = (e) => {
     e.target.value = sanitizeNumeric(e.target.value);
     syncBatchInputs('count');
 };
+weightInput.onkeydown = (e) => {
+    validateStrictNumericKeyPress(e, currentWeightUnit === 'kg');
+};
 weightInput.oninput = (e) => {
     e.target.value = sanitizeNumeric(e.target.value, currentWeightUnit === 'kg');
     updatePreview();
 };
+feeInput.onkeydown = (e) => {
+    validateStrictNumericKeyPress(e, false);
+};
 feeInput.oninput = (e) => {
-    e.target.value = sanitizeNumeric(e.target.value, true);
+    e.target.value = sanitizeNumeric(e.target.value, false);
     updatePreview();
 };
 optAR.onchange = () => {
@@ -2251,6 +2290,9 @@ optInsurance.onchange = () => {
         if (currentVal < 2100) insuranceVal.value = 2100;
     }
     updatePreview();
+};
+insuranceVal.onkeydown = (e) => {
+    validateStrictNumericKeyPress(e, false);
 };
 insuranceVal.oninput = (e) => {
     e.target.value = sanitizeNumeric(e.target.value);
@@ -2275,13 +2317,22 @@ optArTracking.onchange = () => {
     adjustSidebarTrackingNumberForStep();
     updatePreview();
 };
+dimW.onkeydown = (e) => {
+    validateStrictNumericKeyPress(e, false);
+};
 dimW.oninput = (e) => {
     e.target.value = sanitizeNumeric(e.target.value);
     updatePreview();
 };
+dimL.onkeydown = (e) => {
+    validateStrictNumericKeyPress(e, false);
+};
 dimL.oninput = (e) => {
     e.target.value = sanitizeNumeric(e.target.value);
     updatePreview();
+};
+dimH.onkeydown = (e) => {
+    validateStrictNumericKeyPress(e, false);
 };
 dimH.oninput = (e) => {
     e.target.value = sanitizeNumeric(e.target.value);
@@ -2342,6 +2393,7 @@ const upcQtyInput = document.getElementById('ordinary-upc-qty');
 const upcFeeInput = document.getElementById('ordinary-upc-fee');
 
 if (bkkWInput) {
+    bkkWInput.onkeydown = (e) => validateStrictNumericKeyPress(e, false);
     bkkWInput.oninput = (e) => {
         e.target.value = sanitizeNumeric(e.target.value);
         const w = parseFloat(e.target.value) || 0;
@@ -2354,6 +2406,7 @@ if (bkkWInput) {
     };
 }
 if (upcWInput) {
+    upcWInput.onkeydown = (e) => validateStrictNumericKeyPress(e, false);
     upcWInput.oninput = (e) => {
         e.target.value = sanitizeNumeric(e.target.value);
         const w = parseFloat(e.target.value) || 0;
@@ -2365,10 +2418,22 @@ if (upcWInput) {
         updatePreview();
     };
 }
-if (bkkQtyInput) bkkQtyInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
-if (bkkFeeInput) bkkFeeInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
-if (upcQtyInput) upcQtyInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
-if (upcFeeInput) upcFeeInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
+if (bkkQtyInput) {
+    bkkQtyInput.onkeydown = (e) => validateStrictNumericKeyPress(e, false);
+    bkkQtyInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
+}
+if (bkkFeeInput) {
+    bkkFeeInput.onkeydown = (e) => validateStrictNumericKeyPress(e, false);
+    bkkFeeInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
+}
+if (upcQtyInput) {
+    upcQtyInput.onkeydown = (e) => validateStrictNumericKeyPress(e, false);
+    upcQtyInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
+}
+if (upcFeeInput) {
+    upcFeeInput.onkeydown = (e) => validateStrictNumericKeyPress(e, false);
+    upcFeeInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
+}
 
 customServiceManualInput.oninput = updatePreview;
 
