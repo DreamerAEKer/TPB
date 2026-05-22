@@ -654,6 +654,10 @@ function renderShipments() {
   document.querySelectorAll('.editable-cell[contenteditable="true"]').forEach(cell => {
     cell.onfocus = (e) => {
         e.target.setAttribute('data-old-val', e.target.innerText.trim());
+        if (e.target.dataset.field === 'fee' && currentServiceTab !== 'CUSTOM') {
+            hideFillHandle();
+            return;
+        }
         positionFillHandle(e.target);
     };
 
@@ -4460,6 +4464,10 @@ function getRowNumber(cell) {
 }
 
 function positionFillHandle(cell) {
+    if (cell.dataset.field === 'fee' && currentServiceTab !== 'CUSTOM') {
+        hideFillHandle();
+        return;
+    }
     let handle = document.getElementById('tpb-fill-handle');
     if (!handle) {
         handle = document.createElement('div');
@@ -4587,6 +4595,7 @@ function syncSelectionToBatchEdit(startRow, endRow, field) {
 }
 
 async function fillRangeValues(field, startRow, endRow, sourceValue) {
+    if (field === 'fee' && currentServiceTab !== 'CUSTOM') return;
     const isSpecialTab = currentServiceTab === 'EMS_SPECIAL';
     const filtered = shipments.map((s, originalIdx) => ({ ...s, originalIdx }))
                              .filter(s => {
@@ -4734,6 +4743,7 @@ function initTableSelectionAndDrag() {
     shipmentList.addEventListener('mousedown', (e) => {
         const cell = e.target.closest('.editable-cell[contenteditable="true"]');
         if (!cell) return;
+        if (cell.dataset.field === 'fee' && currentServiceTab !== 'CUSTOM') return;
         
         if (e.shiftKey && activeFocusedCell && activeFocusedCell.dataset.field === cell.dataset.field) {
             e.preventDefault();
@@ -4759,6 +4769,7 @@ function initTableSelectionAndDrag() {
         
         const cell = e.target.closest('.editable-cell[contenteditable="true"]');
         if (!cell || cell.dataset.field !== dragStartCell.field) return;
+        if (cell.dataset.field === 'fee' && currentServiceTab !== 'CUSTOM') return;
         
         const currRow = getRowNumber(cell);
         highlightRange(dragStartCell.field, dragStartCell.rowNum, currRow);
@@ -4800,6 +4811,7 @@ function initTableSelectionAndDrag() {
         const cell = hoverEl ? hoverEl.closest('.editable-cell[contenteditable="true"]') : null;
         
         if (cell && cell.dataset.field === fillDragStartCell.dataset.field) {
+            if (cell.dataset.field === 'fee' && currentServiceTab !== 'CUSTOM') return;
             fillDragCurrentCell = cell;
             updateDragOverlay(fillDragStartCell, fillDragCurrentCell);
         }
