@@ -362,6 +362,34 @@ function sanitizeNumeric(val, allowDecimal = false) {
     }
     return result.replace(/\D/g, '');
 }
+
+function normalizeDestinationText(text) {
+    if (!text) return '';
+    
+    // 1. Translate all Thai numerals globally
+    const thaiNumMap = { '๐':'0','๑':'1','๒':'2','๓':'3','๔':'4','๕':'5','๖':'6','๗':'7','๘':'8','๙':'9' };
+    let normalized = text.replace(/[๐-๙]/g, m => thaiNumMap[m]);
+    
+    // 2. Search for mistyped 5-character zip codes and correct them in-place
+    const mistypedPattern = /[0-9ๅ\/\-ภถุึคตจ๏๚๛]{5}/g;
+    const mistypedMap = {
+        'ๅ': '1', '/': '2', '-': '3', 'ภ': '4', 'ถ': '5', 'ุ': '6', 'ึ': '7', 'ค': '8', 'ต': '9', 'จ': '0',
+        '๏': '0', '๚': '1', '๛': '2'
+    };
+    
+    normalized = normalized.replace(mistypedPattern, (match) => {
+        let translatedZip = '';
+        for (let char of match) {
+            translatedZip += mistypedMap[char] || char;
+        }
+        if (/^\d{5}$/.test(translatedZip)) {
+            return translatedZip;
+        }
+        return match;
+    });
+    
+    return normalized;
+}
 function getServiceType(p) {
   if (currentServiceTab === 'CUSTOM') return 'CUSTOM';
   p = p.toUpperCase();
@@ -561,7 +589,8 @@ function renderShipments() {
 
     const displayTracking = (!isNewGroup) ? s.trackingFormatted : `<u>${s.trackingFormatted.substring(0, 2)}</u>${s.trackingFormatted.substring(2)}`;
 
-    const zipMatch = s.destination.match(/\d{5}/);
+    const destinationVal = s.destination || '';
+    const zipMatch = destinationVal.match(/\d{5}/);
     const zip = zipMatch ? zipMatch[0] : null;
     const isAlwaysRemote = zip && !!REMOTE_AREAS[zip] && !PARTIAL_REMOTE_ZIPS.includes(zip);
     const isIslandPotential = zip && PARTIAL_REMOTE_ZIPS.includes(zip);
@@ -582,7 +611,7 @@ function renderShipments() {
       tr.innerHTML = `
       <td>${displayIdx + 1}</td>
       <td class="editable-cell" contenteditable="true" data-field="recipient" data-index="${i}" data-placeholder="ระบุผู้รับ...">${s.recipient || ''}</td>
-      <td class="editable-cell" contenteditable="true" data-field="destination" data-index="${i}" data-placeholder="ระบุปลายทาง..." style="outline:none;">${highlightPostcode(s.destination, isRemoteActive)}</td>
+      <td class="editable-cell" contenteditable="true" data-field="destination" data-index="${i}" data-placeholder="ระบุปลายทาง..." style="outline:none;">${highlightPostcode(destinationVal, isRemoteActive)}</td>
       <td class="editable-cell tracking-cell" contenteditable="true" data-field="trackingFormatted" data-index="${i}" style="font-weight: 600; white-space: pre; outline: none;">${displayTracking}</td>
       <td class="services-cell">
         <div style="display: flex; gap: 8px; flex-wrap: nowrap; justify-content: center;">
@@ -594,7 +623,7 @@ function renderShipments() {
                     ${s.options?.insurance ? `<input type="text" class="mini-input ${ (s.options.insuranceVal < 2100 || s.options.insuranceVal > 50000) ? 'error-input' : '' }" style="width: 60px; font-size: 0.75rem; padding: 2px;" value="${(parseFloat(s.options.insuranceVal) || 0).toLocaleString()}" oninput="this.value = sanitizeNumeric(this.value); updateRowInsuranceVal(${i}, this.value)" onblur="validateRowInsurance(${i}, this)">` : ''}
                 </div>
             ` : ''}
-            ${(s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && s.destination.includes('เกาะ')) ? `<label class="svc-mini" title="พื้นที่ห่างไกล"><input type="checkbox" ${s.options?.isRemote ? 'checked' : ''} onchange="toggleRowService(${i}, 'isRemote', this.checked)"> 🏝️</label>` : ''}
+            ${(s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && destinationVal.includes('เกาะ')) ? `<label class="svc-mini" title="พื้นที่ห่างไกล"><input type="checkbox" ${s.options?.isRemote ? 'checked' : ''} onchange="toggleRowService(${i}, 'isRemote', this.checked)"> 🏝️</label>` : ''}
         </div>
       </td>
       <td class="editable-cell" contenteditable="true" data-field="weight" data-index="${i}" style="${volWeightStyle}" ${volWeightTitle}>${parseFloat(s.weight) > 0 ? parseFloat(s.weight).toLocaleString() : ''}</td>
@@ -694,6 +723,7 @@ function renderShipments() {
             applySmartPricing(idx);
             if (s.fee !== oldFee) needsRender = true;
         } else if (field === 'destination') {
+            s.destination = normalizeDestinationText(s.destination || '');
             if (s.serviceType !== 'CUSTOM') {
                 const zipMatch = s.destination.match(/\d{5}/);
                 const zip = zipMatch ? zipMatch[0] : null;
@@ -985,9 +1015,10 @@ function applySmartPricing(i) {
         return;
     }
     
-    const zipMatch = s.destination.match(/\d{5}/);
+    const destinationVal = s.destination || '';
+    const zipMatch = destinationVal.match(/\d{5}/);
     const zip = zipMatch ? zipMatch[0] : null;
-    const hasIslandText = s.destination.includes('เกาะ');
+    const hasIslandText = destinationVal.includes('เกาะ');
     const canHaveRemote = (s.serviceType !== 'PARCEL' && s.serviceType !== 'REG' && s.serviceType !== 'CUSTOM');
     const isActuallyRemote = zip && isRemoteArea(zip, s.isIsland || hasIslandText) && canHaveRemote && hasIslandText;
     const base = calculateBaseFee(s.serviceType, s.weight, s.options || {});
@@ -1111,9 +1142,8 @@ function updatePreview() {
       }
   }
   
-  // Rule: Parcel and REG do not have remote surcharge
-  const canHaveRemote = (activeSvc !== 'PARCEL' && activeSvc !== 'REG' && activeSvc !== 'CUSTOM');
-  const destinationZip = destInput.value.match(/\d{5}/);
+  const destinationVal = normalizeDestinationText(destInput.value || '');
+  const destinationZip = destinationVal.match(/\d{5}/);
   const zip = destinationZip ? destinationZip[0] : null;
   const badge = document.getElementById('remote-status-badge');
   
@@ -2074,7 +2104,7 @@ insuranceVal.onblur = (e) => {
 };
 recipientInput.oninput = updatePreview;
 destInput.oninput = (e) => {
-    e.target.value = sanitizeNumeric(e.target.value);
+    e.target.value = normalizeDestinationText(e.target.value);
     updatePreview();
 };
 optArTracking.onchange = () => {
@@ -2585,9 +2615,10 @@ addBtn.onclick = async (e) => {
           }
       }
 
+          const normDest = normalizeDestinationText(destInput.value || '');
           shipments.push({
               recipient: recipientInput.value || '',
-              destination: destInput.value || '',
+              destination: normDest,
               serviceType: type,
               customServiceName: type === 'CUSTOM' ? (customServiceNameInput.value || customServiceManualInput.value || 'กำหนดเอง') : null,
               weight: finalWeight,
@@ -2604,7 +2635,7 @@ addBtn.onclick = async (e) => {
                 isSpecialEms: (type === 'EMS' && isSpecialEmsActive()),
                 specialEmsPackage: settings.specialEmsPackage || 'A12'
               },
-              isIsland: optRemote.checked && PARTIAL_REMOTE_ZIPS.includes(destInput.value.match(/\d{5}/)?.[0]),
+              isIsland: optRemote.checked && PARTIAL_REMOTE_ZIPS.includes(normDest.match(/\d{5}/)?.[0]),
               trackingFormatted: trackingFormatted,
               fee: (w > 0 || type === 'CUSTOM') ? (feeInput.value || '0').toString().replace(/[^0-9.]/g, '') : ''
           });
@@ -4784,7 +4815,8 @@ async function parseAndImportExcelFile() {
             }
 
             const recipient = (row[1] || '').toString().trim();
-            const zip = (row[2] || '').toString().trim();
+            const rawZip = (row[2] || '').toString().trim();
+            const normZip = normalizeDestinationText(rawZip);
             const rawWeight = parseFloat(row[3]) || 0;
             
             // Dimensions
@@ -4826,8 +4858,10 @@ async function parseAndImportExcelFile() {
             }
 
             // Remote area flags
-            const isAlwaysRemote = !!REMOTE_AREAS[zip] && !PARTIAL_REMOTE_ZIPS.includes(zip);
-            const isIslandPotential = PARTIAL_REMOTE_ZIPS.includes(zip);
+            const zipMatch = normZip.match(/\d{5}/);
+            const extractedZip = zipMatch ? zipMatch[0] : '';
+            const isAlwaysRemote = !!REMOTE_AREAS[extractedZip] && !PARTIAL_REMOTE_ZIPS.includes(extractedZip);
+            const isIslandPotential = PARTIAL_REMOTE_ZIPS.includes(extractedZip);
 
             // Volumetric Weight calculation
             let calcWeight = rawWeight;
@@ -4848,7 +4882,7 @@ async function parseAndImportExcelFile() {
                 serviceType: targetServiceType,
                 trackingFormatted: trackingFormatted,
                 recipient: recipient,
-                destination: zip,
+                destination: normZip,
                 weight: calcWeight > 0 ? calcWeight : '',
                 fee: '',
                 isIsland: false,
@@ -5207,7 +5241,7 @@ async function applyBulkImport() {
     const lines = text.split('\n');
     const parsedData = [];
     for (let line of lines) {
-        line = line.trim();
+        line = normalizeDestinationText(line.trim());
         if (!line) continue;
 
         // Find a 5-digit number in the line using regex
