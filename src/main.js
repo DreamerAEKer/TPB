@@ -2533,8 +2533,16 @@ async function adjustSidebarTrackingNumberForStep() {
     num8StartInput.dispatchEvent(new Event('input'));
 }
 
+let isAddingItem = false;
 addBtn.onclick = async (e) => {
   e.preventDefault();
+
+  // Guard against double-click / rapid-click causing duplicate entries
+  if (isAddingItem) return;
+  isAddingItem = true;
+  addBtn.disabled = true;
+
+  try {
 
   const selectedCustomSvc = customServiceNameInput.value;
   const isOrdinary = currentServiceTab === 'CUSTOM' && (selectedCustomSvc === 'จดหมาย ในประเทศ' || selectedCustomSvc === 'สิ่งพิมพ์ ในประเทศ');
@@ -2932,6 +2940,12 @@ addBtn.onclick = async (e) => {
               startField.select();
           }
       }, 50);
+  }
+
+  } finally {
+      // Always re-enable button after processing completes or errors
+      isAddingItem = false;
+      addBtn.disabled = false;
   }
 };
 
