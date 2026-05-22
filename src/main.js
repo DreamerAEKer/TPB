@@ -264,6 +264,7 @@ let currentView = 'dashboard';
 let currentWeightUnit = 'g';
 let bulkBackup = { ar: null, ins: null, 'ar-track': null };
 let pendingFocus = null;
+let selectedShipmentIndices = new Set();
 
 // --- CELL SELECTION & DRAG-TO-FILL STATE (v7.4.0) ---
 let dragStartCell = null;
@@ -558,6 +559,95 @@ function updateMeterStatus() {
     }
 }
 
+// --- MULTI-ROW DELETION HELPERS (v7.4.4) ---
+window.toggleRowSelection = (originalIdx, checked) => {
+    if (checked) {
+        selectedShipmentIndices.add(originalIdx);
+    } else {
+        selectedShipmentIndices.delete(originalIdx);
+    }
+    updateSelectAllCheckboxState();
+    updateDeleteSelectedBtnVisibility();
+};
+
+window.toggleSelectAllShipments = (checked) => {
+    const isSpecialTab = currentServiceTab === 'EMS_SPECIAL';
+    const activeTabShipments = shipments.map((s, originalIdx) => ({ ...s, originalIdx }))
+        .filter(s => {
+            if (isSpecialTab) return s.serviceType === 'EMS' && s.options?.isSpecialEms;
+            return s.serviceType === currentServiceTab;
+        });
+
+    activeTabShipments.forEach(s => {
+        if (checked) {
+            selectedShipmentIndices.add(s.originalIdx);
+        } else {
+            selectedShipmentIndices.delete(s.originalIdx);
+        }
+    });
+
+    renderShipments();
+    updateDeleteSelectedBtnVisibility();
+};
+
+function updateSelectAllCheckboxState() {
+    const selectAllCheckbox = document.getElementById('select-all-shipments');
+    if (!selectAllCheckbox) return;
+
+    const isSpecialTab = currentServiceTab === 'EMS_SPECIAL';
+    const activeTabShipments = shipments.map((s, originalIdx) => ({ ...s, originalIdx }))
+        .filter(s => {
+            if (isSpecialTab) return s.serviceType === 'EMS' && s.options?.isSpecialEms;
+            return s.serviceType === currentServiceTab;
+        });
+
+    if (activeTabShipments.length === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.disabled = true;
+        return;
+    }
+    selectAllCheckbox.disabled = false;
+
+    const selectedCountInActiveTab = activeTabShipments.filter(s => selectedShipmentIndices.has(s.originalIdx)).length;
+
+    if (selectedCountInActiveTab === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    } else if (selectedCountInActiveTab === activeTabShipments.length) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+    } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+
+function updateDeleteSelectedBtnVisibility() {
+    const deleteBtn = document.getElementById('delete-selected-btn');
+    const deleteCount = document.getElementById('delete-selected-count');
+    if (!deleteBtn || !deleteCount) return;
+
+    const isSpecialTab = currentServiceTab === 'EMS_SPECIAL';
+    const activeTabShipmentIndices = new Set(
+        shipments.map((s, originalIdx) => ({ ...s, originalIdx }))
+            .filter(s => {
+                if (isSpecialTab) return s.serviceType === 'EMS' && s.options?.isSpecialEms;
+                return s.serviceType === currentServiceTab;
+            })
+            .map(s => s.originalIdx)
+    );
+
+    const activeSelectedCount = Array.from(selectedShipmentIndices).filter(idx => activeTabShipmentIndices.has(idx)).length;
+
+    if (activeSelectedCount > 0) {
+        deleteCount.textContent = activeSelectedCount;
+        deleteBtn.style.display = 'flex';
+    } else {
+        deleteBtn.style.display = 'none';
+    }
+}
+
 function renderShipments() {
   shipmentList.innerHTML = '';
 
@@ -636,20 +726,40 @@ function renderShipments() {
       </td>
       <td class="editable-cell" contenteditable="true" data-field="weight" data-index="${i}" style="${volWeightStyle}" ${volWeightTitle}>${parseFloat(s.weight) > 0 ? parseFloat(s.weight).toLocaleString() : ''}</td>
       <td class="editable-cell ${priceClass}" contenteditable="true" data-field="fee" data-index="${i}" title="${priceClass ? 'พื้นที่ปกติ แต่มีการบวกเพิ่ม 20 บาท?' : ''}">${(parseFloat(s.weight) > 0 || s.serviceType === 'CUSTOM') ? parseFloat(s.fee).toLocaleString() : ''}</td>
-      <td contenteditable="false"><button class="btn-icon delete-btn" data-index="${i}">ลบ</button></td>
+      <td contenteditable="false" style="text-align: center; white-space: nowrap;">
+        <input type="checkbox" class="row-select-checkbox" data-index="${i}" ${selectedShipmentIndices.has(i) ? 'checked' : ''} onchange="toggleRowSelection(${i}, this.checked)" style="cursor: pointer; transform: scale(1.15); vertical-align: middle; margin-right: 8px;">
+        <button class="btn-icon delete-btn" data-index="${i}" style="vertical-align: middle;">ลบ</button>
+      </td>
     `;
     shipmentList.appendChild(tr);
   });
 
   document.querySelectorAll('.delete-btn').forEach(btn => {
     btn.onclick = async (e) => {
-      const idx = e.currentTarget.dataset.index;
+      const idx = parseInt(e.currentTarget.dataset.index, 10);
+      selectedShipmentIndices.delete(idx);
       shipments.splice(idx, 1);
+      
+      // Update shifted selection indices
+      const newSelected = new Set();
+      selectedShipmentIndices.forEach(val => {
+        if (val > idx) {
+          newSelected.add(val - 1);
+        } else if (val < idx) {
+          newSelected.add(val);
+        }
+      });
+      selectedShipmentIndices = newSelected;
+
       await updateHistory();
       renderShipments();
       updateSummary();
     };
   });
+
+  // Update selection UI states after drawing list
+  updateSelectAllCheckboxState();
+  updateDeleteSelectedBtnVisibility();
 
   document.querySelectorAll('.editable-cell[contenteditable="true"]').forEach(cell => {
     cell.onfocus = (e) => {
@@ -3029,6 +3139,7 @@ document.querySelectorAll('.service-tab').forEach(tab => {
         optArTracking.checked = false;
         optRemote.checked = false;
         
+        selectedShipmentIndices.clear();
         renderShipments();
         updateSummary();
         adjustSidebarTrackingNumberForStep(); // Adjust number on tab switch
@@ -4496,6 +4607,50 @@ async function initApp() {
 
     // Initialize Table Selection and Drag-to-Fill (v7.4.0)
     initTableSelectionAndDrag();
+
+    // Initialize Multi-Row Deletion (v7.4.4)
+    const deleteSelectedBtn = document.getElementById('delete-selected-btn');
+    if (deleteSelectedBtn) {
+        deleteSelectedBtn.onclick = async () => {
+            const isSpecialTab = currentServiceTab === 'EMS_SPECIAL';
+            const activeTabShipmentIndices = new Set(
+                shipments.map((s, originalIdx) => ({ ...s, originalIdx }))
+                    .filter(s => {
+                        if (isSpecialTab) return s.serviceType === 'EMS' && s.options?.isSpecialEms;
+                        return s.serviceType === currentServiceTab;
+                    })
+                    .map(s => s.originalIdx)
+            );
+
+            const indicesToDelete = Array.from(selectedShipmentIndices).filter(idx => activeTabShipmentIndices.has(idx));
+            if (indicesToDelete.length === 0) return;
+
+            let tabName = currentServiceTab;
+            if (currentServiceTab === 'EMS') tabName = 'EMS';
+            else if (currentServiceTab === 'REG') tabName = 'ลงทะเบียน';
+            else if (currentServiceTab === 'ECO') tabName = 'eCo-Post';
+            else if (currentServiceTab === 'PARCEL') tabName = 'พัสดุ';
+            else if (currentServiceTab === 'CUSTOM') tabName = 'อื่นๆ (กำหนดเอง)';
+            else if (currentServiceTab === 'EMS_SPECIAL') tabName = 'EMS ราคาพิเศษ';
+
+            const confirmDelete = confirm(`⚠️ คุณต้องการลบพัสดุที่เลือกทั้งหมดจำนวน ${indicesToDelete.length} รายการ ในแท็บ [${tabName}] ใช่หรือไม่?\n\n(คุณสามารถกดปุ่ม "ย้อนกลับ" เพื่อกู้คืนข้อมูลได้หากลบผิดพลาด)`);
+            
+            if (confirmDelete) {
+                // Sort descending to prevent shifting issue
+                indicesToDelete.sort((a, b) => b - a);
+
+                indicesToDelete.forEach(idx => {
+                    shipments.splice(idx, 1);
+                });
+
+                selectedShipmentIndices.clear();
+
+                await updateHistory();
+                renderShipments();
+                updateSummary();
+            }
+        };
+    }
 }
 
 // --- EXCEL-STYLE CELL RANGE SELECTION & DRAG-TO-FILL (v7.4.0) ---
@@ -5099,6 +5254,8 @@ if (clearTabBtn) {
                 }
                 return s.serviceType !== currentServiceTab;
             });
+            
+            selectedShipmentIndices.clear();
             
             // Save & Update history
             await updateHistory();
