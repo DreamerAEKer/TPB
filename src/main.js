@@ -2448,11 +2448,15 @@ async function checkTrackingDuplicateHistory(prefix, d, cd) {
         return {
             trackingFormatted,
             source: 'current',
-            matches: currentMatches.map(m => ({
-                recipient: m.recipient || '(ยังไม่ได้ระบุ)',
-                destination: m.destination || '(ยังไม่ได้ระบุ)',
-                index: m.idx + 1
-            }))
+            matches: currentMatches.map(m => {
+                const tabIndex = shipments.slice(0, m.idx).filter(s => s.serviceType === m.serviceType).length + 1;
+                return {
+                    recipient: m.recipient || '(ยังไม่ได้ระบุ)',
+                    destination: m.destination || '(ยังไม่ได้ระบุ)',
+                    serviceType: m.serviceType,
+                    index: tabIndex
+                };
+            })
         };
     }
     
@@ -2751,7 +2755,12 @@ addBtn.onclick = async (e) => {
           uniqueSkipped.slice(0, 10).forEach(rec => {
               msg += `❌ เลขที่ข้าม: ${rec.trackingFormatted}\n`;
               if (rec.source === 'current') {
-                  msg += `   • กำลังใช้อยู่ในใบนำส่งปัจจุบัน แถวที่: ${rec.matches.map(m => m.index).join(', ')}\n`;
+                  const tabNames = { 'EMS': 'EMS', 'REG': 'ลงทะเบียน', 'ECO': 'eCo-Post', 'PARCEL': 'พัสดุธรรมดา', 'CUSTOM': 'อื่นๆ (กำหนดเอง)' };
+                  const matchInfo = rec.matches.map(m => {
+                      const name = tabNames[m.serviceType] || m.serviceType;
+                      return `แท็บ ${name} แถวที่: ${m.index}`;
+                  }).join(', ');
+                  msg += `   • กำลังใช้อยู่ในใบนำส่งปัจจุบัน (${matchInfo})\n`;
               } else {
                   rec.matches.forEach(m => {
                       msg += `   • เคยใช้ในใบนำส่ง: ${m.archiveId} (วันที่ ${m.date || 'ไม่ระบุ'})\n`;
@@ -2783,7 +2792,12 @@ addBtn.onclick = async (e) => {
               nextAvail.duplicateRecords.forEach(rec => {
                   msg += `❌ เลขที่ซ้ำ: ${rec.trackingFormatted}\n`;
                   if (rec.source === 'current') {
-                      msg += `   • กำลังใช้ในใบนำส่งปัจจุบัน แถวที่: ${rec.matches.map(m => m.index).join(', ')}\n`;
+                      const tabNames = { 'EMS': 'EMS', 'REG': 'ลงทะเบียน', 'ECO': 'eCo-Post', 'PARCEL': 'พัสดุธรรมดา', 'CUSTOM': 'อื่นๆ (กำหนดเอง)' };
+                      const matchInfo = rec.matches.map(m => {
+                          const name = tabNames[m.serviceType] || m.serviceType;
+                          return `แท็บ ${name} แถวที่: ${m.index}`;
+                      }).join(', ');
+                      msg += `   • กำลังใช้ในใบนำส่งปัจจุบัน (${matchInfo})\n`;
                   } else {
                       rec.matches.forEach(m => {
                           msg += `   • เคยใช้ในใบนำส่ง: ${m.archiveId} (วันที่ ${m.date || 'ไม่ระบุ'})\n`;
