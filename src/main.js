@@ -263,6 +263,7 @@ let editingArchiveId = null;
 let currentView = 'dashboard';
 let currentWeightUnit = 'g';
 let bulkBackup = { ar: null, ins: null, 'ar-track': null };
+let pendingFocus = null;
 
 const prefixInput = document.getElementById('prefix');
 const prefixDropdownToggle = document.getElementById('prefix-dropdown-toggle');
@@ -650,6 +651,20 @@ function renderShipments() {
     cell.onkeydown = (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
+            const field = e.target.dataset.field;
+            const tr = e.target.closest('tr');
+            if (tr) {
+                const nextTr = tr.nextElementSibling;
+                if (nextTr) {
+                    const nextCell = nextTr.querySelector(`[data-field="${field}"]`);
+                    if (nextCell) {
+                        pendingFocus = {
+                            index: nextCell.dataset.index,
+                            field: field
+                        };
+                    }
+                }
+            }
             e.target.blur();
         }
     };
@@ -755,9 +770,26 @@ function renderShipments() {
         
         updateSummary();
         await updateHistory();
-        if (needsRender) renderShipments();
+        if (needsRender || pendingFocus) renderShipments();
     }
   });
+
+  if (pendingFocus) {
+    const targetCell = shipmentList.querySelector(`[data-index="${pendingFocus.index}"][data-field="${pendingFocus.field}"]`);
+    if (targetCell) {
+        setTimeout(() => {
+            targetCell.focus();
+            try {
+                const range = document.createRange();
+                range.selectNodeContents(targetCell);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } catch (err) {}
+        }, 50);
+    }
+    pendingFocus = null;
+  }
 }
 
 function highlightPostcode(text, isRemote) {
