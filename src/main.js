@@ -2560,6 +2560,7 @@ addBtn.onclick = async (e) => {
       
       let finalD = startD;
       let nextAvail = null;
+      let trackingFormatted = startD;
       if (type !== 'CUSTOM') {
           const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
           nextAvail = await getNextAvailableTrackingNumber(p, startD, step);
