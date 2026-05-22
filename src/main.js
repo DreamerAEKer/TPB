@@ -702,47 +702,55 @@ function renderShipments() {
             }
             needsRender = true;
         } else if (field === 'trackingFormatted') {
-            let raw = (s.trackingFormatted || '').replace(/\s+/g, '').toUpperCase();
-            let parsedTracking = '';
-            const match = raw.match(/^([A-Z]{2})(\d{8})(\d)([A-Z]{2})$/);
-            if (match) {
-                parsedTracking = formatTrackingNumber(match[1], match[2], match[3]);
-            } else {
-                const simpleMatch = raw.match(/^([A-Z]{2})(\d{8})([A-Z]{2})$/);
-                if (simpleMatch) {
-                    const cd = calculateCheckDigit(simpleMatch[2]);
-                    parsedTracking = formatTrackingNumber(simpleMatch[1], simpleMatch[2], cd);
+            // Defer the entire tracking number validation, prompts, and re-rendering to prevent focus-lock / browser freezing.
+            const oldVal = e.target.getAttribute('data-old-val');
+            setTimeout(async () => {
+                let raw = (s.trackingFormatted || '').replace(/\s+/g, '').toUpperCase();
+                let parsedTracking = '';
+                const match = raw.match(/^([A-Z]{2})(\d{8})(\d)([A-Z]{2})$/);
+                if (match) {
+                    parsedTracking = formatTrackingNumber(match[1], match[2], match[3]);
+                } else {
+                    const simpleMatch = raw.match(/^([A-Z]{2})(\d{8})([A-Z]{2})$/);
+                    if (simpleMatch) {
+                        const cd = calculateCheckDigit(simpleMatch[2]);
+                        parsedTracking = formatTrackingNumber(simpleMatch[1], simpleMatch[2], cd);
+                    }
                 }
-            }
-            
-            if (parsedTracking) {
-                // Check if this new formatted tracking number is already used in shipments (excluding the current index idx)
-                const isDup = shipments.some((ship, sIdx) => sIdx !== parseInt(idx) && ship.trackingFormatted === parsedTracking);
-                if (isDup) {
-                    alert(`⚠️ ไม่สามารถใช้เลขที่สิ่งของนี้ได้ เนื่องจากมีการใช้งานเลขนี้ในระบบแล้วเพื่อป้องกันการซ้ำกัน!`);
-                    s.trackingFormatted = e.target.getAttribute('data-old-val') || s.trackingFormatted;
+                
+                if (parsedTracking) {
+                    // Check if this new formatted tracking number is already used in shipments (excluding the current index idx)
+                    const isDup = shipments.some((ship, sIdx) => sIdx !== parseInt(idx) && ship.trackingFormatted === parsedTracking);
+                    if (isDup) {
+                        alert(`⚠️ ไม่สามารถใช้เลขที่สิ่งของนี้ได้ เนื่องจากมีการใช้งานเลขนี้ในระบบแล้วเพื่อป้องกันการซ้ำกัน!`);
+                        s.trackingFormatted = oldVal || s.trackingFormatted;
+                        renderShipments();
+                        return;
+                    }
+                    s.trackingFormatted = parsedTracking;
+                } else {
+                    s.trackingFormatted = oldVal || s.trackingFormatted;
                     renderShipments();
                     return;
                 }
-                s.trackingFormatted = parsedTracking;
-            } else {
-                s.trackingFormatted = e.target.getAttribute('data-old-val') || s.trackingFormatted;
+                
+                const promptVal = prompt(
+                    "ต้องการให้ระบบจัดลำดับเลขพัสดุของรายการถัดๆ ไปโดยอัตโนมัติด้วยหรือไม่ เพื่อป้องกันการใช้เลขซ้ำ?\n\n" +
+                    "• กด 'ตกลง' (OK) เพื่อจัดลำดับใหม่ทั้งหมดจนถึงรายการสุดท้าย\n" +
+                    "• พิมพ์ตัวเลข (เช่น 5) เพื่อจัดลำดับเฉพาะ 5 รายการถัดไป\n" +
+                    "• กด 'ยกเลิก' (Cancel) เพื่อแก้ไขเฉพาะรายการนี้รายการเดียว",
+                    ""
+                );
+                if (promptVal !== null) {
+                    const limit = parseInt(promptVal.trim());
+                    recalculateTabSequencesFrom(s.serviceType, parseInt(idx), isNaN(limit) ? null : limit);
+                }
+                
+                updateSummary();
+                await updateHistory();
                 renderShipments();
-                return;
-            }
-            
-            const promptVal = prompt(
-                "ต้องการให้ระบบจัดลำดับเลขพัสดุของรายการถัดๆ ไปโดยอัตโนมัติด้วยหรือไม่ เพื่อป้องกันการใช้เลขซ้ำ?\n\n" +
-                "• กด 'ตกลง' (OK) เพื่อจัดลำดับใหม่ทั้งหมดจนถึงรายการสุดท้าย\n" +
-                "• พิมพ์ตัวเลข (เช่น 5) เพื่อจัดลำดับเฉพาะ 5 รายการถัดไป\n" +
-                "• กด 'ยกเลิก' (Cancel) เพื่อแก้ไขเฉพาะรายการนี้รายการเดียว",
-                ""
-            );
-            if (promptVal !== null) {
-                const limit = parseInt(promptVal.trim());
-                recalculateTabSequencesFrom(s.serviceType, parseInt(idx), isNaN(limit) ? null : limit);
-            }
-            needsRender = true;
+            }, 50);
+            return;
         }
         
         updateSummary();
@@ -861,16 +869,25 @@ window.toggleRowService = async (i, serviceType, checked) => {
               "• พิมพ์ตัวเลข (เช่น 5) เพื่อจัดลำดับเฉพาะ 5 รายการถัดไป\n" +
               "• กด 'ยกเลิก' (Cancel) เพื่อปล่อยแถวอื่นไว้เหมือนเดิม";
               
-        const promptVal = prompt(msg, "");
-        if (promptVal !== null) {
-            const limit = parseInt(promptVal.trim());
-            recalculateTabSequencesFrom(s.serviceType, i, isNaN(limit) ? null : limit);
-        }
+        renderShipments();
+        updateSummary();
+        await updateHistory();
+
+        setTimeout(async () => {
+            const promptVal = prompt(msg, "");
+            if (promptVal !== null) {
+                const limit = parseInt(promptVal.trim());
+                recalculateTabSequencesFrom(s.serviceType, i, isNaN(limit) ? null : limit);
+                renderShipments();
+                updateSummary();
+                await updateHistory();
+            }
+        }, 50);
+    } else {
+        renderShipments();
+        updateSummary();
+        await updateHistory();
     }
-    
-    renderShipments();
-    updateSummary();
-    await updateHistory();
 };
 
 window.updateRowInsuranceVal = async (i, val) => {
@@ -910,11 +927,15 @@ window.updateRowInsuranceVal = async (i, val) => {
 window.validateRowInsurance = (i, input) => {
     const val = parseFloat(input.value.replace(/,/g, '')) || 0;
     if (val < 2100) {
-        alert('(เนื่องจาก EMS ให้ความคุ้มครองสูงสุด 2,000 บาทอยู่แล้ว ชดใช้ตามจริง)');
+        setTimeout(() => {
+            alert('(เนื่องจาก EMS ให้ความคุ้มครองสูงสุด 2,000 บาทอยู่แล้ว ชดใช้ตามจริง)');
+        }, 50);
         input.value = "2,100";
         updateRowInsuranceVal(i, 2100);
     } else if (val > 50000) {
-        alert('⚠️ วงเงินรับประกันสูงสุดคือ 50,000 บาท ระบบจะปรับยอดเป็น 50,000 ให้อัตโนมัติ');
+        setTimeout(() => {
+            alert('⚠️ วงเงินรับประกันสูงสุดคือ 50,000 บาท ระบบจะปรับยอดเป็น 50,000 ให้อัตโนมัติ');
+        }, 50);
         input.value = "50,000";
         updateRowInsuranceVal(i, 50000);
     } else {
@@ -4547,6 +4568,47 @@ if (clearTabBtn) {
 const toggleBatchBtn = document.getElementById('toggle-batch-btn');
 const batchHelperPanel = document.getElementById('batch-helper-panel');
 
+// Segmented Tabs Elements
+const batchTabEditBtn = document.getElementById('batch-tab-edit-btn');
+const batchTabImportBtn = document.getElementById('batch-tab-import-btn');
+const batchEditSection = document.getElementById('batch-edit-section');
+const batchImportSection = document.getElementById('batch-import-section');
+
+function switchBatchTab(tab) {
+    if (tab === 'edit') {
+        if (batchEditSection) batchEditSection.style.display = 'grid';
+        if (batchImportSection) batchImportSection.style.display = 'none';
+        
+        if (batchTabEditBtn) {
+            batchTabEditBtn.style.background = 'white';
+            batchTabEditBtn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+        }
+        if (batchTabImportBtn) {
+            batchTabImportBtn.style.background = 'transparent';
+            batchTabImportBtn.style.boxShadow = 'none';
+        }
+    } else if (tab === 'import') {
+        if (batchEditSection) batchEditSection.style.display = 'none';
+        if (batchImportSection) batchImportSection.style.display = 'flex';
+        
+        if (batchTabImportBtn) {
+            batchTabImportBtn.style.background = 'white';
+            batchTabImportBtn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+        }
+        if (batchTabEditBtn) {
+            batchTabEditBtn.style.background = 'transparent';
+            batchTabEditBtn.style.boxShadow = 'none';
+        }
+    }
+}
+
+if (batchTabEditBtn) {
+    batchTabEditBtn.onclick = () => switchBatchTab('edit');
+}
+if (batchTabImportBtn) {
+    batchTabImportBtn.onclick = () => switchBatchTab('import');
+}
+
 if (toggleBatchBtn && batchHelperPanel) {
     toggleBatchBtn.onclick = () => {
         const isHidden = batchHelperPanel.style.display === 'none';
@@ -4558,6 +4620,8 @@ if (toggleBatchBtn && batchHelperPanel) {
         if (isHidden) {
             const excelImportPanel = document.getElementById('excel-import-panel');
             if (excelImportPanel) excelImportPanel.style.display = 'none';
+            // Default to the first tab (Edit) when opened
+            switchBatchTab('edit');
         }
     };
 }

@@ -355,7 +355,18 @@
 
                 <!-- Batch Helper Panel -->
                 <div id="batch-helper-panel" style="display: none; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-bottom: 1px solid #bae6fd; padding: 12px 16px; transition: all 0.2s;">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end;">
+                    <!-- Sleek Segmented Tab Control -->
+                    <div style="display: flex; gap: 4px; margin-bottom: 12px; background: rgba(3, 105, 161, 0.08); padding: 4px; border-radius: 8px; width: fit-content; border: 1px solid rgba(3, 105, 161, 0.12); user-select: none;">
+                        <button type="button" id="batch-tab-edit-btn" style="background: white; color: #0369a1; border: none; padding: 6px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                            ⚡ แก้ไขข้อมูลพัสดุแบบกลุ่ม (Batch Edit)
+                        </button>
+                        <button type="button" id="batch-tab-import-btn" style="background: transparent; color: #0369a1; border: none; padding: 6px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                            📋 นำเข้าผู้รับแบบกลุ่ม (Bulk Import)
+                        </button>
+                    </div>
+
+                    <!-- Grid for Batch Edit -->
+                    <div id="batch-edit-section" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end;">
                         <!-- Target Range -->
                         <div>
                             <label style="display: block; font-size: 0.75rem; font-weight: bold; color: #0369a1; margin-bottom: 4px;">🎯 ขอบเขตรายการ (Target Items)</label>
@@ -413,11 +424,8 @@
                         </div>
                     </div>
 
-                    <!-- Divider -->
-                    <div style="margin: 12px 0; border-top: 1px dashed #bae6fd;"></div>
-
                     <!-- Bulk Import Section -->
-                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div id="batch-import-section" style="display: none; flex-direction: column; gap: 8px;">
                         <div style="font-size: 0.8rem; font-weight: bold; color: #0369a1; display: flex; align-items: center; gap: 5px;">
                             📋 นำเข้าข้อมูลผู้รับและรหัสไปรษณีย์แบบกลุ่ม (Bulk Recipient & Zip Import)
                         </div>
