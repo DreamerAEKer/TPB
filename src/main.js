@@ -654,6 +654,10 @@ function renderShipments() {
   document.querySelectorAll('.editable-cell[contenteditable="true"]').forEach(cell => {
     cell.onfocus = (e) => {
         e.target.setAttribute('data-old-val', e.target.innerText.trim());
+        if (tableInputMode === 'horizontal') {
+            hideFillHandle();
+            return;
+        }
         if (e.target.dataset.field === 'fee' && currentServiceTab !== 'CUSTOM') {
             hideFillHandle();
             return;
@@ -694,16 +698,47 @@ function renderShipments() {
         if (e.key === 'Enter') {
             e.preventDefault();
             const field = e.target.dataset.field;
+            const idx = parseInt(e.target.dataset.index);
             const tr = e.target.closest('tr');
-            if (tr) {
-                const nextTr = tr.nextElementSibling;
-                if (nextTr) {
-                    const nextCell = nextTr.querySelector(`[data-field="${field}"]`);
-                    if (nextCell) {
-                        pendingFocus = {
-                            index: nextCell.dataset.index,
-                            field: field
-                        };
+            
+            if (tableInputMode === 'horizontal') {
+                const fields = (currentServiceTab === 'CUSTOM')
+                    ? ['recipient', 'destination', 'trackingFormatted', 'weight', 'fee']
+                    : ['recipient', 'destination', 'trackingFormatted', 'weight'];
+                
+                const currIdx = fields.indexOf(field);
+                if (currIdx !== -1 && currIdx < fields.length - 1) {
+                    // Move to the next field in the same row
+                    const nextField = fields[currIdx + 1];
+                    pendingFocus = {
+                        index: idx,
+                        field: nextField
+                    };
+                } else if (tr) {
+                    // Last field in row, move to recipient on next row
+                    const nextTr = tr.nextElementSibling;
+                    if (nextTr) {
+                        const nextCell = nextTr.querySelector('[data-field="recipient"]');
+                        if (nextCell) {
+                            pendingFocus = {
+                                index: nextCell.dataset.index,
+                                field: 'recipient'
+                            };
+                        }
+                    }
+                }
+            } else {
+                // Vertical (Excel) mode
+                if (tr) {
+                    const nextTr = tr.nextElementSibling;
+                    if (nextTr) {
+                        const nextCell = nextTr.querySelector(`[data-field="${field}"]`);
+                        if (nextCell) {
+                            pendingFocus = {
+                                index: nextCell.dataset.index,
+                                field: field
+                            };
+                        }
                     }
                 }
             }
@@ -4449,12 +4484,50 @@ async function initApp() {
         };
     }
     
+    // Initialize Table Input Mode Toggle (v7.4.3)
+    setTableInputMode(tableInputMode);
+    
+    const verticalBtn = document.getElementById('edit-mode-vertical-btn');
+    const horizontalBtn = document.getElementById('edit-mode-horizontal-btn');
+    if (verticalBtn && horizontalBtn) {
+        verticalBtn.addEventListener('click', () => setTableInputMode('vertical'));
+        horizontalBtn.addEventListener('click', () => setTableInputMode('horizontal'));
+    }
+
     // Initialize Table Selection and Drag-to-Fill (v7.4.0)
     initTableSelectionAndDrag();
 }
 
 // --- EXCEL-STYLE CELL RANGE SELECTION & DRAG-TO-FILL (v7.4.0) ---
+let tableInputMode = localStorage.getItem('tpb_table_input_mode') || 'vertical';
 let activeFocusedCell = null;
+
+function setTableInputMode(mode) {
+    tableInputMode = mode;
+    localStorage.setItem('tpb_table_input_mode', mode);
+    
+    const verticalBtn = document.getElementById('edit-mode-vertical-btn');
+    const horizontalBtn = document.getElementById('edit-mode-horizontal-btn');
+    
+    if (verticalBtn && horizontalBtn) {
+        if (mode === 'vertical') {
+            verticalBtn.style.background = '#3b82f6';
+            verticalBtn.style.color = 'white';
+            horizontalBtn.style.background = 'transparent';
+            horizontalBtn.style.color = '#475569';
+        } else {
+            horizontalBtn.style.background = '#3b82f6';
+            horizontalBtn.style.color = 'white';
+            verticalBtn.style.background = 'transparent';
+            verticalBtn.style.color = '#475569';
+            
+            // Clean up active Excel selections and drag handle when switching to horizontal mode
+            hideFillHandle();
+            clearCellSelection();
+            hideFloatingPill();
+        }
+    }
+}
 
 function getRowNumber(cell) {
     const row = cell.closest('tr');
@@ -4465,6 +4538,10 @@ function getRowNumber(cell) {
 }
 
 function positionFillHandle(cell) {
+    if (tableInputMode === 'horizontal') {
+        hideFillHandle();
+        return;
+    }
     if (cell.dataset.field === 'fee' && currentServiceTab !== 'CUSTOM') {
         hideFillHandle();
         return;
@@ -4730,18 +4807,21 @@ function triggerFillDown() {
 
 function initTableSelectionAndDrag() {
     window.addEventListener('scroll', () => {
+        if (tableInputMode === 'horizontal') return;
         if (activeFocusedCell && activeFocusedCell.offsetParent !== null) {
             positionFillHandle(activeFocusedCell);
         }
     }, { passive: true });
     
     window.addEventListener('resize', () => {
+        if (tableInputMode === 'horizontal') return;
         if (activeFocusedCell && activeFocusedCell.offsetParent !== null) {
             positionFillHandle(activeFocusedCell);
         }
     });
 
     shipmentList.addEventListener('mousedown', (e) => {
+        if (tableInputMode === 'horizontal') return;
         const cell = e.target.closest('.editable-cell[contenteditable="true"]');
         if (!cell) return;
         if (cell.dataset.field === 'fee' && currentServiceTab !== 'CUSTOM') return;
@@ -4766,6 +4846,7 @@ function initTableSelectionAndDrag() {
     });
     
     shipmentList.addEventListener('mouseover', (e) => {
+        if (tableInputMode === 'horizontal') return;
         if (!isDragSelecting || !dragStartCell) return;
         
         const cell = e.target.closest('.editable-cell[contenteditable="true"]');
@@ -4779,6 +4860,7 @@ function initTableSelectionAndDrag() {
     });
     
     document.addEventListener('mouseup', (e) => {
+        if (tableInputMode === 'horizontal') return;
         if (isDragSelecting) {
             isDragSelecting = false;
             if (selectedCellsRange && selectedCellsRange.startRow !== selectedCellsRange.endRow) {
@@ -4806,6 +4888,7 @@ function initTableSelectionAndDrag() {
     });
     
     document.addEventListener('mousemove', (e) => {
+        if (tableInputMode === 'horizontal') return;
         if (!isFillDragging || !fillDragStartCell) return;
         
         const hoverEl = document.elementFromPoint(e.clientX, e.clientY);
@@ -4819,6 +4902,7 @@ function initTableSelectionAndDrag() {
     });
     
     document.addEventListener('keydown', (e) => {
+        if (tableInputMode === 'horizontal') return;
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
             if (selectedCellsRange && selectedCellsRange.startRow !== selectedCellsRange.endRow) {
                 e.preventDefault();
