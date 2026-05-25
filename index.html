@@ -115,22 +115,22 @@
 
             <!-- Consolidated Entry Form -->
             <div class="sidebar-form-container">
-                <div id="prefix-container-group" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
+                <div id="prefix-container-group" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.75rem;">
                     <div style="flex: 1;">
                         <label for="prefix" style="font-size: 0.8rem; margin-bottom: 2px;">หมวดเลขที่ / บริการ</label>
                         <div style="position: relative; display: flex; flex-direction: column;">
                             <div style="display: flex; gap: 5px;">
                                 <div style="position: relative; flex: 1;">
-                                    <input type="text" id="prefix" placeholder="EJ" maxlength="20" value="EJ" style="font-size: 1.25rem; font-weight: bold; padding: 10px; width: 100%; padding-right: 45px;">
-                                    <button id="prefix-dropdown-toggle" class="dropdown-toggle-btn" title="ดูรายการโปรด">▼</button>
+                                    <input type="text" id="prefix" placeholder="EJ" maxlength="20" value="EJ" style="font-size: 1.1rem; font-weight: bold; padding: 6px 10px; width: 100%; padding-right: 40px; box-sizing: border-box; height: 36px;">
+                                    <button id="prefix-dropdown-toggle" class="dropdown-toggle-btn" title="ดูรายการโปรด" style="top: 50%; height: 100%; display: flex; align-items: center; justify-content: center; right: 2px; padding: 0 8px;">▼</button>
                                 </div>
-                                <button id="save-prefix-btn" class="btn-icon" title="บันทึกเข้าในรายการโปรด" style="background: #e2e8f0; color: #1e293b; border-radius: 6px; padding: 0 10px; font-size: 1.2rem; display: none; align-items: center; justify-content: center;">💾</button>
-                                <button id="delete-prefix-btn" class="btn-icon" title="ลบออกจากรายการโปรด" style="background: #fff1f2; color: #ef4444; border-radius: 6px; padding: 0 10px; font-size: 1.2rem; display: none; align-items: center; justify-content: center;">🗑️</button>
+                                <button id="save-prefix-btn" class="btn-icon" title="บันทึกเข้าในรายการโปรด" style="background: #e2e8f0; color: #1e293b; border-radius: 6px; padding: 0 8px; font-size: 1.1rem; display: none; align-items: center; justify-content: center; height: 36px;">💾</button>
+                                <button id="delete-prefix-btn" class="btn-icon" title="ลบออกจากรายการโปรด" style="background: #fff1f2; color: #ef4444; border-radius: 6px; padding: 0 8px; font-size: 1.1rem; display: none; align-items: center; justify-content: center; height: 36px;">🗑️</button>
                             </div>
-                            <div id="prefix-dropdown-list" class="custom-dropdown" style="display: none;"></div>
+                            <div id="prefix-dropdown-list" class="custom-dropdown" style="display: none; max-height: 200px;"></div>
                         </div>
 
-                        <div id="prefix-help-text" style="display: none; font-size: 0.75rem; color: #0369a1; margin-top: 6px; background: #e0f2fe; padding: 8px; border-radius: 6px; line-height: 1.4;">
+                        <div id="prefix-help-text" style="display: none; font-size: 0.75rem; color: #0369a1; margin-top: 4px; background: #e0f2fe; padding: 6px; border-radius: 6px; line-height: 1.3;">
                             💡 <b>คำแนะนำ:</b> โปรดเปลี่ยน 2 ตัวหน้าให้ตรงกับการใช้งาน แล้วกดปุ่ม 💾
                         </div>
 
@@ -138,75 +138,73 @@
                     <div id="tracking-preview" style="display: none;">-</div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 0.5rem;" id="bulk-toggle-group">
-                    <label class="bulk-toggle-label" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 8px; width: 100%; display: flex; align-items: center; cursor: pointer; transition: all 0.2s;">
-                        <input type="checkbox" id="bulk-mode-toggle" style="width: 18px; height: 18px; margin-right: 8px;"> 📋 เพิ่มแบบชุด (Bulk Entry)
+                <div class="form-group" style="margin-bottom: 0.35rem;" id="bulk-toggle-group">
+                    <label class="bulk-toggle-label" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 5px 8px; border-radius: 6px; width: 100%; display: flex; align-items: center; cursor: pointer; transition: all 0.2s; font-size: 0.75rem;">
+                        <input type="checkbox" id="bulk-mode-toggle" style="width: 15px; height: 15px; margin-right: 6px;"> 📋 เพิ่มแบบชุด (Bulk Entry)
                     </label>
                 </div>
 
-                <div id="single-tracking-group">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <label for="digits" id="digits-label">ตัวเลข (8 หลัก)</label>
-                    </div>
+                <div id="single-tracking-group" class="form-group">
+                    <label for="digits" id="digits-label" style="margin-bottom: 0;">ตัวเลข (8 หลัก)</label>
                     <div style="display:flex; gap:5px;">
-                        <input type="text" id="digits" placeholder="12345678" maxlength="8" style="flex:1;">
-                        <button id="next-num-btn" class="btn-icon" title="เพิ่มลำดับเลขถัดไป">+1</button>
+                        <input type="text" id="digits" placeholder="12345678" maxlength="8" style="flex:1; height: 34px; padding: 4px 8px; box-sizing: border-box;">
+                        <button id="next-num-btn" class="btn-icon" title="เพิ่มลำดับเลขถัดไป" style="padding: 0 10px; height: 34px; display: flex; align-items: center; justify-content: center;">+1</button>
                     </div>
                 </div>
 
-                <div class="form-group" id="bulk-inputs" style="display: none; background: #fff1f2; padding: 1rem; border-radius: 8px; border: 1px dashed var(--primary-color);">
+                <div class="form-group" id="bulk-inputs" style="display: none; background: #fff1f2; padding: 0.6rem 0.8rem; border-radius: 8px; border: 1px dashed var(--primary-color); gap: 0.25rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <label for="num8-start">ตัวเลข (8 หลัก)</label>
-                        <span id="num8-counter" style="font-size: 0.75rem; font-weight: 700; color: #ef4444;">0/8 หลัก</span>
+                        <label for="num8-start" style="font-size: 0.75rem;">ตัวเลข (8 หลัก)</label>
+                        <span id="num8-counter" style="font-size: 0.7rem; font-weight: 700; color: #ef4444;">0/8 หลัก</span>
                     </div>
-                    <input type="text" id="num8-start" placeholder="12345678" maxlength="8">
-                    <div id="num8-warn" style="font-size: 0.75rem; color: #ef4444; margin-top: 4px; margin-bottom: 8px; display: none; font-weight: 600;">⚠️ กรุณากรอกให้ครบ 8 หลัก</div>
+                    <input type="text" id="num8-start" placeholder="12345678" maxlength="8" style="height: 30px; padding: 4px 8px; font-size: 0.85rem;">
+                    <div id="num8-warn" style="font-size: 0.7rem; color: #ef4444; margin-top: 2px; margin-bottom: 4px; display: none; font-weight: 600;">⚠️ กรุณากรอกให้ครบ 8 หลัก</div>
                     
-                    <label for="num8-end">ถึงเลขที่</label>
-                    <input type="text" id="digits-end" placeholder="88888888" maxlength="8">
-                    <label>จำนวน</label>
-                    <input type="number" id="batch-count" placeholder="0" min="1">
+                    <label for="num8-end" style="font-size: 0.75rem; margin-top: 2px;">ถึงเลขที่</label>
+                    <input type="text" id="digits-end" placeholder="88888888" maxlength="8" style="height: 30px; padding: 4px 8px; font-size: 0.85rem;">
+                    <label style="font-size: 0.75rem; margin-top: 2px;">จำนวน</label>
+                    <input type="number" id="batch-count" placeholder="0" min="1" style="height: 30px; padding: 4px 8px; font-size: 0.85rem;">
                 </div>
 
                 <div class="form-group single-only">
                     <label for="recipient">ชื่อผู้รับ</label>
-                    <input type="text" id="recipient" placeholder="โปรดระบุ">
+                    <input type="text" id="recipient" placeholder="โปรดระบุ" style="height: 34px; padding: 4px 8px; box-sizing: border-box;">
                 </div>
 
                 <div class="form-group single-only">
                     <label for="destination">ปลายทาง (รหัสไปรษณีย์)</label>
-                    <input type="text" id="destination" placeholder="ระบุรหัสไปรษณีย์">
-                    <div id="remote-missing-warn" style="display: none; color: #ef4444; font-size: 0.75rem; margin-top: 4px; font-weight: 600;">⚠️ ไม่พบข้อมูลพื้นที่ห่างไกลสำหรับรหัสนี้</div>
+                    <input type="text" id="destination" placeholder="ระบุรหัสไปรษณีย์" style="height: 34px; padding: 4px 8px; box-sizing: border-box;">
+                    <div id="remote-missing-warn" style="display: none; color: #ef4444; font-size: 0.75rem; margin-top: 2px; font-weight: 600;">⚠️ ไม่พบข้อมูลพื้นที่ห่างไกลสำหรับรหัสนี้</div>
                 </div>
 
                 <!-- NEW: Registered Sub-types -->
-                <div id="reg-type-group" class="form-group" style="display: none; margin-top: 0.5rem; background: #eff6ff; padding: 10px; border-radius: 8px; border: 1px solid #dbeafe;">
-                    <label for="reg-type" style="color: #1e40af;">ประเภทลงทะเบียน</label>
-                    <select id="reg-type" style="padding: 8px; border-radius: 6px; border: 1px solid #bfdbfe; font-size: 0.9rem;">
+                <div id="reg-type-group" class="form-group" style="display: none; margin-top: 0.3rem; background: #eff6ff; padding: 6px 8px; border-radius: 8px; border: 1px solid #dbeafe;">
+                    <label for="reg-type" style="color: #1e40af; font-size: 0.75rem;">ประเภทลงทะเบียน</label>
+                    <select id="reg-type" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #bfdbfe; font-size: 0.85rem; height: 32px;">
                         <option value="ENVELOPE">✉️ ซอง (Envelope)</option>
                         <option value="BOX">📦 หีบห่อ (Box/Packet)</option>
                     </select>
                 </div>
 
                 <!-- NEW: EMS Dimensions -->
-                <div id="ems-dim-group" class="form-group" style="display: none; margin-top: 0.5rem; background: #fff1f2; padding: 10px; border-radius: 8px; border: 1px solid #fecaca;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                        <label style="color: #be123c; margin-bottom: 0;">ขนาดพัสดุ EMS (ซม.)</label>
-                        <span style="font-size: 0.7rem; color: #be123c; font-weight: 600;">* ถ้ามีด้านยาวเกิน 60 ซม. โปรดกรอก</span>
+                <div id="ems-dim-group" class="form-group" style="display: none; margin-top: 0.3rem; background: #fff1f2; padding: 6px 8px; border-radius: 8px; border: 1px solid #fecaca;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                        <label style="color: #be123c; margin-bottom: 0; font-size: 0.75rem;">ขนาดพัสดุ EMS (ซม.)</label>
+                        <span style="font-size: 0.65rem; color: #be123c; font-weight: 600;">* ด้านยาว > 60 ซม.</span>
                     </div>
                     <div style="display: flex; gap: 5px;">
-                        <input type="number" id="dim-w" placeholder="กว้าง" value="0" style="width: 100%; padding: 5px; font-size: 0.8rem;">
-                        <input type="number" id="dim-l" placeholder="ยาว" value="0" style="width: 100%; padding: 5px; font-size: 0.8rem;">
-                        <input type="number" id="dim-h" placeholder="สูง" value="0" style="width: 100%; padding: 5px; font-size: 0.8rem;">
+                        <input type="number" id="dim-w" placeholder="กว้าง" value="0" style="width: 100%; padding: 4px; font-size: 0.8rem; height: 28px;">
+                        <input type="number" id="dim-l" placeholder="ยาว" value="0" style="width: 100%; padding: 4px; font-size: 0.8rem; height: 28px;">
+                        <input type="number" id="dim-h" placeholder="สูง" value="0" style="width: 100%; padding: 4px; font-size: 0.8rem; height: 28px;">
                     </div>
-                    <div id="jumbo-badge" style="display: none; color: #be123c; font-weight: bold; font-size: 0.75rem; margin-top: 5px;">⚡ ตรวจพบเป็น EMS ขนาดใหญ่</div>
-                    <div id="vol-warn-badge" style="display: none; color: #ef4444; font-weight: bold; font-size: 0.75rem; margin-top: 5px;">⚠️ ค่าน้ำหนักที่ระบุ เกินมาตรฐาน (30 กก.)</div>
-                    <div id="dim-limit-badge" style="display: none; color: #ef4444; font-weight: bold; font-size: 0.75rem; margin-top: 5px;">❌ ขนาดรวม (ก+ย+ส) เกินมาตรฐาน 240 ซม.</div>
+                    <div id="jumbo-badge" style="display: none; color: #be123c; font-weight: bold; font-size: 0.7rem; margin-top: 3px;">⚡ ตรวจพบเป็น EMS ขนาดใหญ่</div>
+                    <div id="vol-warn-badge" style="display: none; color: #ef4444; font-weight: bold; font-size: 0.7rem; margin-top: 3px;">⚠️ ค่าน้ำหนัก เกินมาตรฐาน (30 กก.)</div>
+                    <div id="dim-limit-badge" style="display: none; color: #ef4444; font-weight: bold; font-size: 0.7rem; margin-top: 3px;">❌ ขนาดรวม เกินมาตรฐาน 240 ซม.</div>
                 </div>
 
-                <div id="custom-service-group" class="form-group" style="display: none; margin-top: 0.5rem; background: #f0fdf4; padding: 10px; border-radius: 8px; border: 1px solid #bbf7d0;">
-                    <label for="custom-service-name" style="color: #166534;">ชื่อบริการ</label>
-                    <select id="custom-service-name" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #86efac;">
+                <div id="custom-service-group" class="form-group" style="display: none; margin-top: 0.3rem; background: #f0fdf4; padding: 6px 8px; border-radius: 8px; border: 1px solid #bbf7d0;">
+                    <label for="custom-service-name" style="color: #166534; font-size: 0.75rem;">ชื่อบริการ</label>
+                    <select id="custom-service-name" style="width: 100%; padding: 4px 8px; border-radius: 6px; border: 1px solid #86efac; font-size: 0.85rem; height: 32px;">
                         <option value="จดหมาย ในประเทศ">✉️ จดหมาย ในประเทศ</option>
                         <option value="สิ่งพิมพ์ ในประเทศ">📑 สิ่งพิมพ์ ในประเทศ</option>
                         <option value="EMS World">🌍 EMS World</option>
@@ -218,143 +216,153 @@
                         <option value="พัสดุทางภาคพื้น">🚚 พัสดุทางภาคพื้น</option>
                         <option value="">-- อื่นๆ (กำหนดเอง) --</option>
                     </select>
-                    <input type="text" id="custom-service-manual" placeholder="ระบุชื่อบริการอื่นๆ..." style="margin-top: 8px; display: none; border-color: #86efac;">
+                    <input type="text" id="custom-service-manual" placeholder="ระบุชื่อบริการอื่นๆ..." style="margin-top: 6px; display: none; border-color: #86efac; height: 32px; padding: 4px 8px; font-size: 0.85rem;">
                 </div>
 
                 <!-- NEW: Bulk Ordinary Entry Panel (จดหมาย / สิ่งพิมพ์) -->
-                <div id="bulk-ordinary-panel" style="display: none; background: #f0fdf4; padding: 10px; border-radius: 8px; border: 1px solid #bbf7d0; margin-top: 10px; flex-direction: column; gap: 10px;">
-                    <div style="font-weight: bold; color: #166534; font-size: 0.9rem; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">
+                <div id="bulk-ordinary-panel" style="display: none; background: #f0fdf4; padding: 6px 8px; border-radius: 8px; border: 1px solid #bbf7d0; margin-top: 6px; flex-direction: column; gap: 6px;">
+                    <div style="font-weight: bold; color: #166534; font-size: 0.8rem; margin-bottom: 2px; display: flex; align-items: center; gap: 5px;">
                         <span>✍️</span> บันทึกยอดฝากส่งประจำวัน
                     </div>
                     
                     <!-- กรุงเทพฯ และปริมณฑล -->
-                    <div style="border-bottom: 1px dashed #bbf7d0; padding-bottom: 10px;">
-                        <div style="font-weight: bold; font-size: 0.8rem; color: #15803d; margin-bottom: 4px;">📍 กรุงเทพฯ และปริมณฑล</div>
-                        <div style="display: flex; gap: 5px;">
+                    <div style="border-bottom: 1px dashed #bbf7d0; padding-bottom: 6px;">
+                        <div style="font-weight: bold; font-size: 0.75rem; color: #15803d; margin-bottom: 2px;">📍 กรุงเทพฯ และปริมณฑล</div>
+                        <div style="display: flex; gap: 4px;">
                             <div style="flex: 1;">
-                                <label style="font-size: 0.7rem; color: #15803d; display: block; margin-bottom: 2px;">น้ำหนัก (กรัม)</label>
-                                <input type="text" id="ordinary-bkk-weight" placeholder="กรัม" style="padding: 6px; font-size: 0.85rem; width: 100%; border-radius: 4px; border: 1px solid #86efac;">
+                                <label style="font-size: 0.65rem; color: #15803d; display: block; margin-bottom: 2px;">น้ำหนัก (กรัม)</label>
+                                <input type="text" id="ordinary-bkk-weight" placeholder="กรัม" style="padding: 4px; font-size: 0.8rem; width: 100%; border-radius: 4px; border: 1px solid #86efac; height: 26px;">
                             </div>
                             <div style="flex: 1;">
-                                <label style="font-size: 0.7rem; color: #15803d; display: block; margin-bottom: 2px;">จำนวน (ฉบับ)</label>
-                                <input type="text" id="ordinary-bkk-qty" placeholder="ฉบับ" style="padding: 6px; font-size: 0.85rem; width: 100%; border-radius: 4px; border: 1px solid #86efac;">
+                                <label style="font-size: 0.65rem; color: #15803d; display: block; margin-bottom: 2px;">จำนวน (ฉบับ)</label>
+                                <input type="text" id="ordinary-bkk-qty" placeholder="ฉบับ" style="padding: 4px; font-size: 0.8rem; width: 100%; border-radius: 4px; border: 1px solid #86efac; height: 26px;">
                             </div>
                             <div style="flex: 1;">
-                                <label style="font-size: 0.7rem; color: #15803d; display: block; margin-bottom: 2px;">ค่าบริการ/ฉบับ</label>
-                                <input type="text" id="ordinary-bkk-fee" placeholder="บาท" style="padding: 6px; font-size: 0.85rem; width: 100%; border-radius: 4px; border: 1px solid #86efac;">
+                                <label style="font-size: 0.65rem; color: #15803d; display: block; margin-bottom: 2px;">ค่าบริการ/ฉบับ</label>
+                                <input type="text" id="ordinary-bkk-fee" placeholder="บาท" style="padding: 4px; font-size: 0.8rem; width: 100%; border-radius: 4px; border: 1px solid #86efac; height: 26px;">
                             </div>
                         </div>
                     </div>
                     
                     <!-- ต่างจังหวัด -->
                     <div>
-                        <div style="font-weight: bold; font-size: 0.8rem; color: #15803d; margin-bottom: 4px;">📍 ต่างจังหวัด</div>
-                        <div style="display: flex; gap: 5px;">
+                        <div style="font-weight: bold; font-size: 0.75rem; color: #15803d; margin-bottom: 2px;">📍 ต่างจังหวัด</div>
+                        <div style="display: flex; gap: 4px;">
                             <div style="flex: 1;">
-                                <label style="font-size: 0.7rem; color: #15803d; display: block; margin-bottom: 2px;">น้ำหนัก (กรัม)</label>
-                                <input type="text" id="ordinary-upc-weight" placeholder="กรัม" style="padding: 6px; font-size: 0.85rem; width: 100%; border-radius: 4px; border: 1px solid #86efac;">
+                                <label style="font-size: 0.65rem; color: #15803d; display: block; margin-bottom: 2px;">น้ำหนัก (กรัม)</label>
+                                <input type="text" id="ordinary-upc-weight" placeholder="กรัม" style="padding: 4px; font-size: 0.8rem; width: 100%; border-radius: 4px; border: 1px solid #86efac; height: 26px;">
                             </div>
                             <div style="flex: 1;">
-                                <label style="font-size: 0.7rem; color: #15803d; display: block; margin-bottom: 2px;">จำนวน (ฉบับ)</label>
-                                <input type="text" id="ordinary-upc-qty" placeholder="ฉบับ" style="padding: 6px; font-size: 0.85rem; width: 100%; border-radius: 4px; border: 1px solid #86efac;">
+                                <label style="font-size: 0.65rem; color: #15803d; display: block; margin-bottom: 2px;">จำนวน (ฉบับ)</label>
+                                <input type="text" id="ordinary-upc-qty" placeholder="ฉบับ" style="padding: 4px; font-size: 0.8rem; width: 100%; border-radius: 4px; border: 1px solid #86efac; height: 26px;">
                             </div>
                             <div style="flex: 1;">
-                                <label style="font-size: 0.7rem; color: #15803d; display: block; margin-bottom: 2px;">ค่าบริการ/ฉบับ</label>
-                                <input type="text" id="ordinary-upc-fee" placeholder="บาท" style="padding: 6px; font-size: 0.85rem; width: 100%; border-radius: 4px; border: 1px solid #86efac;">
+                                <label style="font-size: 0.65rem; color: #15803d; display: block; margin-bottom: 2px;">ค่าบริการ/ฉบับ</label>
+                                <input type="text" id="ordinary-upc-fee" placeholder="บาท" style="padding: 4px; font-size: 0.8rem; width: 100%; border-radius: 4px; border: 1px solid #86efac; height: 26px;">
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-group" id="weight-group">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1px;">
                         <label for="weight" style="margin-bottom: 0;">น้ำหนัก (<span id="weight-unit-label">กรัม</span>)</label>
-                        <button type="button" id="unit-toggle-btn" onclick="toggleWeightUnit()" style="font-size: 0.7rem; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 4px; color: #475569; cursor: pointer; transition: all 0.2s;">สลับเป็น KG</button>
+                        <button type="button" id="unit-toggle-btn" onclick="toggleWeightUnit()" style="font-size: 0.65rem; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 2px 6px; border-radius: 4px; color: #475569; cursor: pointer; transition: all 0.2s;">สลับเป็น KG</button>
                     </div>
-                    <input type="text" id="weight" placeholder="โปรดใส่น้ำหนัก" oninput="this.value = sanitizeNumeric(this.value, true); updatePreview()">
-                    <div id="volumetric-weight-status" style="display: none; color: #0284c7; font-weight: bold; font-size: 0.8rem; margin-top: 5px;">
+                    <input type="text" id="weight" placeholder="โปรดใส่น้ำหนัก" oninput="this.value = sanitizeNumeric(this.value, true); updatePreview()" style="height: 34px; padding: 4px 8px; box-sizing: border-box;">
+                    <div id="volumetric-weight-status" style="display: none; color: #0284c7; font-weight: bold; font-size: 0.75rem; margin-top: 3px;">
                         📦 ระบบกำลังคำนวณและใช้ "น้ำหนักปริมาตร" ในการจัดส่ง
                     </div>
                 </div>
 
-                <div class="options-group">
-                    <label style="color: var(--primary-color); display: block; margin-bottom: 5px;">บริการเสริม:</label>
-                    <label class="option-item" id="opt-ar-row"><input type="checkbox" id="opt-ar"> ตอบรับ (AR)</label>
-                    <label class="option-item" id="opt-ar-tracking-row" style="display: none; background: #f0f9ff; padding: 4px 8px; border-radius: 6px; border: 1px solid #bae6fd; margin: 5px 0;"><input type="checkbox" id="opt-ar-tracking"> ตอบรับแบบ Tracking (8 บาท)</label>
-                    <label class="option-item" id="opt-insurance-row"><input type="checkbox" id="opt-insurance"> รับประกัน (EMS)</label>
-                    <div id="insurance-detail" style="display: none; padding: 5px 0 5px 25px; gap: 5px; flex-direction: column;">
-                        <label style="font-size: 0.75rem;">วงเงิน (สูงสุด 50,000.-)</label>
-                        <input type="number" id="insurance-val" value="" placeholder="ระบุจำนวนเงิน" style="padding: 4px; font-size: 0.9rem;">
-                        <span id="ins-warn" style="color: var(--primary-color); font-size: 0.7rem; display: none;">ยอด 2,100 - 50,000 บาทเท่านั้น</span>
-                        <div style="font-size: 0.7rem; color: #475569; margin-top: 2px; line-height: 1.3;">💡 แนะนำเริ่มต้นที่ <b>2,100 บาท</b> ขึ้นไป</div>
+                <div class="options-group" style="display: flex; flex-direction: column; gap: 4px; margin-top: 2px;">
+                    <label style="color: var(--primary-color); display: block; margin-bottom: 2px; font-size: 0.8rem;">บริการเสริม:</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <label class="option-item" id="opt-ar-row" style="font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="checkbox" id="opt-ar" style="width: 14px; height: 14px;"> ตอบรับ (AR)</label>
+                        <label class="option-item" id="opt-insurance-row" style="font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="checkbox" id="opt-insurance" style="width: 14px; height: 14px;"> รับประกัน (EMS)</label>
                     </div>
-                    <div id="remote-check-container" class="hidden" style="margin-bottom: 10px; background: #fff1f2; padding: 8px; border-radius: 8px; border: 1px solid #fecaca; display: flex; align-items: center; gap: 8px;">
-                        <input type="checkbox" id="is-remote-check" onchange="updatePreview()">
-                        <label for="is-remote-check" style="margin: 0; font-size: 0.85rem; cursor: pointer;">
+                    <label class="option-item" id="opt-ar-tracking-row" style="display: none; background: #f0f9ff; padding: 3px 6px; border-radius: 6px; border: 1px solid #bae6fd; margin: 2px 0; font-size: 0.75rem; align-items: center; gap: 4px;"><input type="checkbox" id="opt-ar-tracking" style="width: 14px; height: 14px;"> ตอบรับแบบ Tracking (8 บาท)</label>
+                    <div id="insurance-detail" style="display: none; padding: 4px 0 4px 15px; gap: 4px; flex-direction: column; border-left: 2px solid #bae6fd; margin-left: 5px;">
+                        <label style="font-size: 0.7rem; font-weight: bold;">วงเงิน (สูงสุด 50,000.-)</label>
+                        <input type="number" id="insurance-val" value="" placeholder="ระบุจำนวนเงิน" style="padding: 4px; font-size: 0.85rem; height: 28px;">
+                        <span id="ins-warn" style="color: var(--primary-color); font-size: 0.65rem; display: none;">ยอด 2,100 - 50,000 บาทเท่านั้น</span>
+                        <div style="font-size: 0.65rem; color: #475569; margin-top: 1px; line-height: 1.2;">💡 เริ่มที่ <b>2,100 บาท</b> ขึ้นไป</div>
+                    </div>
+                    <div id="remote-check-container" class="hidden" style="margin-bottom: 5px; background: #fff1f2; padding: 6px; border-radius: 6px; border: 1px solid #fecaca; display: flex; align-items: center; gap: 6px;">
+                        <input type="checkbox" id="is-remote-check" onchange="updatePreview()" style="width: 14px; height: 14px;">
+                        <label for="is-remote-check" style="margin: 0; font-size: 0.8rem; cursor: pointer;">
                             🏝️ พื้นที่ห่างไกล/พิเศษ (+20.-)
-                            <span id="remote-label-hint" style="font-size: 0.7rem; display: block; color: #be123c;"></span>
+                            <span id="remote-label-hint" style="font-size: 0.65rem; display: block; color: #be123c;"></span>
                         </label>
                     </div>
-                    <div id="remote-status-badge" class="hidden" style="margin-bottom: 10px; border: 1px solid #fee2e2; background: #fff1f2; padding: 5px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px;">
-                        <span style="font-size: 1.1rem;">🏝️</span>
+                    <div id="remote-status-badge" class="hidden" style="margin-bottom: 5px; border: 1px solid #fee2e2; background: #fff1f2; padding: 3px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem;">
+                        <span style="font-size: 1rem;">🏝️</span>
                         <span class="badge-text">บวกพื้นที่ห่างไกล/เกาะ (+20 บาท)</span>
                     </div>
-                    <div id="fuel-surcharge-badge" class="hidden" style="margin-bottom: 10px; color: #be123c; font-size: 0.85rem; font-weight: 600;">
+                    <div id="fuel-surcharge-badge" class="hidden" style="margin-bottom: 5px; color: #be123c; font-size: 0.8rem; font-weight: 600;">
                         ⛽ มีการบวกเพิ่ม 3บาท ค่า Fuel Charge
                     </div>
                 </div>
 
                 <div class="form-group" id="fee-group">
-                    <label for="fee">ค่าบริการ <span id="fee-unit-label" style="display:none;">ต่อฉบับ</span> (บาท)</label>
-                    <input type="text" id="fee" placeholder="32" value="0">
-                    <div id="special-ems-badge" style="display: none; background: #e0f2fe; color: #0369a1; font-weight: bold; font-size: 0.8rem; padding: 6px 12px; border-radius: 6px; border: 1px solid #bae6fd; margin-top: 5px;">
-                        ✨ กำลังใช้เรทพิเศษ EMS (Package <span id="special-ems-pkg-name">A12</span>)
+                    <label for="fee" style="margin-bottom: 0;">ค่าบริการ <span id="fee-unit-label" style="display:none;">ต่อฉบับ</span> (บาท)</label>
+                    <input type="text" id="fee" placeholder="32" value="0" style="height: 34px; padding: 4px 8px; box-sizing: border-box;">
+                    <div id="special-ems-badge" style="display: none; background: #e0f2fe; color: #0369a1; font-weight: bold; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; border: 1px solid #bae6fd; margin-top: 4px; text-align: center;">
+                        ✨ ใช้เรทพิเศษ EMS (Package <span id="special-ems-pkg-name">A12</span>)
                     </div>
                 </div>
 
-                <button id="add-btn" class="btn-primary">เพิ่มรายการ (+)</button>
+                <button id="add-btn" class="btn-primary" style="height: 38px; display: flex; align-items: center; justify-content: center; margin-top: 4px;">เพิ่มรายการ (+)</button>
             </div>
         </aside>
 
         <main class="main-content">
-            <header class="header">
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <div>
-                        <h1>แผงควบคุมใบนำส่ง</h1>
-                        <p id="service-title" style="color: #888;">จัดการรายการ: EMS</p>
+            <header class="header" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; width: 100%;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                    <div style="line-height: 1.2;">
+                        <h1 style="font-size: 1.35rem; font-weight: bold; color: #1e293b; margin: 0;">แผงควบคุมใบนำส่ง</h1>
+                        <p id="service-title" style="color: #64748b; font-size: 0.8rem; margin: 0;">จัดการรายการ: EMS</p>
                     </div>
-                    <button id="settings-btn" class="btn-icon" title="ตั้งค่าข้อมูลบริษัท" style="font-size: 1.5rem;">⚙️</button>
-                    <button id="postal-guide-btn" class="btn-icon" title="คู่มืออัตราค่าบริการและพิกัดน้ำหนัก" style="font-size: 1.5rem;">📖</button>
+                    <button id="settings-btn" class="btn-icon" title="ตั้งค่าข้อมูลบริษัท" style="font-size: 1.1rem; padding: 4px 8px; border-radius: 6px;">⚙️</button>
+                    <button id="postal-guide-btn" class="btn-icon" title="คู่มืออัตราค่าบริการและพิกัดน้ำหนัก" style="font-size: 1.1rem; padding: 4px 8px; border-radius: 6px;">📖</button>
                     
+                    <!-- New Compact Stats Badge Pills -->
+                    <div style="display: flex; gap: 6px; align-items: center; user-select: none;">
+                        <div style="background: #fff1f2; border: 1px solid #fecaca; border-radius: 20px; padding: 3px 10px; display: flex; align-items: center; gap: 4px; font-size: 0.8rem; font-weight: 700; color: #be123c;" title="จำนวนชิ้นทั้งหมด">
+                            <span>📦</span>
+                            <span id="total-items">0</span>
+                            <span style="font-size: 0.7rem; color: #f43f5e; font-weight: normal; margin-left: 1px;">ชิ้น</span>
+                        </div>
+                        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 20px; padding: 3px 10px; display: flex; align-items: center; gap: 4px; font-size: 0.8rem; font-weight: 700; color: #0369a1;" title="ค่าบริการรวม">
+                            <span>💰</span>
+                            <span id="total-fee">0</span>
+                            <span style="font-size: 0.7rem; color: #0ea5e9; font-weight: normal; margin-left: 1px;">บาท</span>
+                        </div>
+                    </div>
+
                     <!-- Edit Mode Selector (v7.4.5) -->
-                    <div class="edit-mode-selector" style="display: flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 4px; border-radius: 8px; border: 1px solid #e2e8f0; margin-left: 15px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
-                        <span style="font-size: 0.75rem; color: #64748b; font-weight: bold; padding: 0 4px; white-space: nowrap;">โหมดป้อนตาราง:</span>
+                    <div class="edit-mode-selector" style="display: flex; align-items: center; gap: 4px; background: #f1f5f9; padding: 3px; border-radius: 8px; border: 1px solid #e2e8f0; margin-left: 5px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
+                        <span style="font-size: 0.7rem; color: #64748b; font-weight: bold; padding: 0 4px; white-space: nowrap;">โหมด:</span>
                         <div style="display: flex; background: #e2e8f0; padding: 2px; border-radius: 6px;">
-                            <button type="button" id="edit-mode-vertical-btn" style="border: none; background: #3b82f6; color: white; padding: 5px 12px; border-radius: 5px; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px; outline: none; white-space: nowrap;" title="เหมาะสำหรับการแก้ไขข้อมูลปริมาณมาก / ลากคัดลอกแบบ Excel (ปุ่ม Enter จะเลื่อนลงแนวตั้ง)">
-                                ↕️ แก้ไขแนวตั้ง
+                            <button type="button" id="edit-mode-vertical-btn" style="border: none; background: #3b82f6; color: white; padding: 4px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: bold; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 3px; outline: none; white-space: nowrap;" title="เหมาะสำหรับการแก้ไขข้อมูลปริมาณมาก / ลากคัดลอกแบบ Excel (ปุ่ม Enter จะเลื่อนลงแนวตั้ง)">
+                                ↕️ แนวตั้ง
                             </button>
-                            <button type="button" id="edit-mode-horizontal-btn" style="border: none; background: transparent; color: #475569; padding: 5px 12px; border-radius: 5px; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px; outline: none; white-space: nowrap;" title="เหมาะสำหรับการพิมพ์ข้อมูลทีละตัวเรียงแถวแนวราบ (ปุ่ม Enter จะเลื่อนขวาไปช่องถัดไป)">
-                                ➡️ กรอกทีละแถว
+                            <button type="button" id="edit-mode-horizontal-btn" style="border: none; background: transparent; color: #475569; padding: 4px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: bold; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 3px; outline: none; white-space: nowrap;" title="เหมาะสำหรับการพิมพ์ข้อมูลทีละตัวเรียงแถวแนวราบ (ปุ่ม Enter จะเลื่อนขวาไปช่องถัดไป)">
+                                ➡️ แถว
                             </button>
                         </div>
                     </div>
                 </div>
-                <div id="meter-status-bar" class="hidden" style="flex: 1; margin: 0 2rem; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.5rem 1rem; border-radius: 8px; display: flex; align-items: center; gap: 1rem; font-size: 0.9rem;">
-                    <div style="font-weight: bold; color: #166534;">📠 ยอดคงเหลือในเครื่อง:</div>
-                    <div id="meter-descending-val" style="font-size: 1.1rem; font-weight: 700; color: #059669;">0.00</div>
-                    <div id="meter-low-warn" style="display: none; background: #fee2e2; color: #be123c; padding: 2px 8px; border-radius: 4px; font-weight: bold; animation: pulse 2s infinite;">⚠️ เงินใกล้หมด!</div>
+                <div id="meter-status-bar" class="hidden" style="flex: 1; margin: 0 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; height: 32px; box-sizing: border-box;">
+                    <div style="font-weight: bold; color: #166534;">📠 เครื่องประทับ:</div>
+                    <div id="meter-descending-val" style="font-size: 0.95rem; font-weight: 700; color: #059669;">0.00</div>
+                    <div id="meter-low-warn" style="display: none; background: #fee2e2; color: #be123c; padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; animation: pulse 2s infinite;">⚠️ เงินใกล้หมด!</div>
                 </div>
-                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;">
-                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
-                        <button id="undo-btn" class="btn-icon" title="ย้อนกลับ (Undo)">↩️ ย้อนกลับ</button>
-                        <button id="redo-btn" class="btn-icon" title="ไปข้างหน้า (Redo)">↪️ ถัดไป</button>
-                        <button id="print-btn" style="background: #10b981; color: white; width: auto; padding: 0.4rem 1rem; font-size: 0.9rem;">พิมพ์หน้าปัจจุบัน</button>
-                        <button id="dispatch-btn" style="background: #10b981; color: white; width: auto; padding: 0.4rem 1rem; font-weight: bold; font-size: 0.9rem;">✅ ปิดยอดและพิมพ์ใบสรุป</button>
-                    </div>
-                    <div class="stats" style="gap: 0.5rem;">
-                        <div class="stat-card" style="padding: 0.4rem 1rem;"><div id="total-items" style="font-size: 1.1rem; font-weight: 700; color: var(--primary-color);">0</div><div style="font-size: 0.7rem; color: #888;">จำนวนชิ้น</div></div>
-                        <div class="stat-card" style="padding: 0.4rem 1rem;"><div id="total-fee" style="font-size: 1.1rem; font-weight: 700; color: var(--primary-color);">0</div><div style="font-size: 0.7rem; color: #888;">ค่าบริการรวม (บาท)</div></div>
-                    </div>
+                <div style="display: flex; align-items: center; gap: 0.4rem; justify-content: flex-end;">
+                    <button id="undo-btn" class="btn-icon" title="ย้อนกลับ (Undo)" style="padding: 6px 10px; font-size: 0.8rem; background: #f1f5f9;">↩️</button>
+                    <button id="redo-btn" class="btn-icon" title="ไปข้างหน้า (Redo)" style="padding: 6px 10px; font-size: 0.8rem; background: #f1f5f9;">↪️</button>
+                    <button id="print-btn" style="background: #10b981; color: white; width: auto; padding: 6px 12px; font-size: 0.8rem; height: 34px; box-sizing: border-box;">พิมพ์หน้าปัจจุบัน</button>
+                    <button id="dispatch-btn" style="background: #10b981; color: white; width: auto; padding: 6px 12px; font-weight: bold; font-size: 0.8rem; height: 34px; box-sizing: border-box;">✅ ปิดยอดและพิมพ์ใบสรุป</button>
                 </div>
             </header>
 
@@ -387,84 +395,80 @@
                 </div>
 
                 <!-- Excel/CSV Import Panel -->
-                <div id="excel-import-panel" style="display: none; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-bottom: 1px solid #bbf7d0; padding: 16px; transition: all 0.2s;">
-                    <div style="display: flex; flex-direction: column; gap: 12px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                            <div style="font-size: 0.85rem; font-weight: bold; color: #166534; display: flex; align-items: center; gap: 5px;">
-                                📊 ระบบนำเข้าข้อมูลพัสดุผ่านไฟล์ Excel / CSV
+                <div id="excel-import-panel" style="display: none; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-bottom: 1px solid #bbf7d0; padding: 8px 12px; transition: all 0.2s;">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+                            <div style="font-size: 0.8rem; font-weight: bold; color: #166534; display: flex; align-items: center; gap: 4px;">
+                                📊 นำเข้าข้อมูลพัสดุผ่าน Excel / CSV
                             </div>
-                            <button type="button" id="download-template-btn" style="background: white; color: #166534; border: 1px solid #bbf7d0; padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
-                                📥 ดาวน์โหลดฟอร์มต้นแบบ (.xlsx)
+                            <button type="button" id="download-template-btn" style="background: white; color: #166534; border: 1px solid #bbf7d0; padding: 2px 6px; border-radius: 6px; font-size: 0.68rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 3px; transition: all 0.2s; height: 26px; box-sizing: border-box;">
+                                📥 ดาวน์โหลดฟอร์ม (.xlsx)
                             </button>
                         </div>
-                        <div style="font-size: 0.72rem; color: #3f6212; line-height: 1.4;">
-                            ฟอร์มต้นแบบ Excel จะประกอบไปด้วย 4 คอลัมน์หลัก: 
-                            <b>1. เลขที่พัสดุ 13 หลัก</b>, 
-                            <b>2. ชื่อผู้รับ</b>, 
-                            <b>3. รหัสไปรษณีย์</b>, 
-                            <b>4. น้ำหนัก (กรัม - ไม่บังคับ)</b>
+                        <div style="font-size: 0.68rem; color: #3f6212; line-height: 1.3;">
+                            คอลัมน์: <b>1.เลขที่พัสดุ (13 หลัก)</b> | <b>2.ชื่อผู้รับ</b> | <b>3.รหัสไปรษณีย์</b> | <b>4.น้ำหนัก (กรัม)</b>
                         </div>
-                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                            <div style="flex: 1; min-width: 250px; position: relative;">
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 200px; position: relative;">
                                 <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" style="display: none;">
-                                <div id="excel-file-dropzone" style="border: 2px dashed #86efac; border-radius: 8px; background: white; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s; font-size: 0.8rem; color: #15803d; font-weight: 500;">
-                                    📁 คลิกที่นี่ หรือลากไฟล์ Excel / CSV มาวางเพื่อเลือกไฟล์
+                                <div id="excel-file-dropzone" style="border: 1.5px dashed #86efac; border-radius: 6px; background: white; padding: 6px 10px; text-align: center; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; color: #15803d; font-weight: 500;">
+                                    📁 คลิก หรือ ลากไฟล์ Excel / CSV มาวางที่นี่
                                 </div>
                             </div>
-                            <div style="display: flex; gap: 8px; shrink: 0;">
-                                <button type="button" id="excel-upload-btn" style="background: #166534; color: white; border: none; padding: 10px 16px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s; height: 42px;">
-                                    🚀 เริ่มนำเข้าข้อมูลพัสดุ
+                            <div style="display: flex; gap: 6px; shrink: 0;">
+                                <button type="button" id="excel-upload-btn" style="background: #166534; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: background 0.2s; height: 32px; box-sizing: border-box;">
+                                    🚀 เริ่มนำเข้าข้อมูล
                                 </button>
                             </div>
                         </div>
-                        <div id="excel-import-status" style="font-size: 0.75rem; font-weight: 600; color: #166534; display: none;"></div>
+                        <div id="excel-import-status" style="font-size: 0.7rem; font-weight: 600; color: #166534; display: none;"></div>
                     </div>
                 </div>
 
                 <!-- Batch Helper Panel -->
-                <div id="batch-helper-panel" style="display: none; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-bottom: 1px solid #bae6fd; padding: 12px 16px; transition: all 0.2s;">
+                <div id="batch-helper-panel" style="display: none; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-bottom: 1px solid #bae6fd; padding: 8px 12px; transition: all 0.2s;">
                     <!-- Sleek Segmented Tab Control -->
-                    <div style="display: flex; gap: 4px; margin-bottom: 12px; background: rgba(3, 105, 161, 0.08); padding: 4px; border-radius: 8px; width: fit-content; border: 1px solid rgba(3, 105, 161, 0.12); user-select: none;">
-                        <button type="button" id="batch-tab-edit-btn" style="background: white; color: #0369a1; border: none; padding: 6px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-                            ⚡ แก้ไขข้อมูลพัสดุแบบกลุ่ม (Batch Edit)
+                    <div style="display: flex; gap: 2px; margin-bottom: 8px; background: rgba(3, 105, 161, 0.08); padding: 3px; border-radius: 6px; width: fit-content; border: 1px solid rgba(3, 105, 161, 0.12); user-select: none;">
+                        <button type="button" id="batch-tab-edit-btn" style="background: white; color: #0369a1; border: none; padding: 4px 10px; border-radius: 5px; font-size: 0.75rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 3px; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); height: 26px; box-sizing: border-box;">
+                            ⚡ แก้ไขข้อมูลกลุ่ม (Batch Edit)
                         </button>
-                        <button type="button" id="batch-tab-import-btn" style="background: transparent; color: #0369a1; border: none; padding: 6px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
-                            📋 นำเข้าผู้รับแบบกลุ่ม (Bulk Import)
+                        <button type="button" id="batch-tab-import-btn" style="background: transparent; color: #0369a1; border: none; padding: 4px 10px; border-radius: 5px; font-size: 0.75rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 3px; transition: all 0.2s; height: 26px; box-sizing: border-box;">
+                            📋 นำเข้ากลุ่ม (Bulk Import)
                         </button>
                     </div>
 
                     <!-- Grid for Batch Edit -->
-                    <div id="batch-edit-section" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end;">
+                    <div id="batch-edit-section" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; align-items: end;">
                         <!-- Target Range -->
                         <div>
-                            <label style="display: block; font-size: 0.75rem; font-weight: bold; color: #0369a1; margin-bottom: 4px;">🎯 ขอบเขตรายการ (Target Items)</label>
-                            <div style="display: flex; flex-direction: column; gap: 6px;">
-                                <select id="batch-range-type" style="width: 100%; padding: 6px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; background: white;">
-                                    <option value="all">ทุกรายการในตาราง (All)</option>
-                                    <option value="range">ระบุช่วงลำดับพัสดุ (Range)</option>
+                            <label style="display: block; font-size: 0.7rem; font-weight: bold; color: #0369a1; margin-bottom: 2px;">🎯 ขอบเขตรายการ</label>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <select id="batch-range-type" style="width: 100%; padding: 4px; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; background: white; height: 28px;">
+                                    <option value="all">ทุกรายการในตาราง</option>
+                                    <option value="range">ระบุช่วงลำดับพัสดุ</option>
                                 </select>
-                                <div id="batch-range-inputs" style="display: none; gap: 6px; align-items: center; justify-content: space-between; width: 100%;">
-                                    <input type="number" id="batch-start-idx" min="1" placeholder="จาก" style="flex: 1; min-width: 45px; padding: 5px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center;">
-                                    <span style="font-size: 0.8rem; color: #0369a1; font-weight: bold; padding: 0 4px;">ถึง</span>
-                                    <input type="number" id="batch-end-idx" min="1" placeholder="ถึง" style="flex: 1; min-width: 45px; padding: 5px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center;">
+                                <div id="batch-range-inputs" style="display: none; gap: 4px; align-items: center; justify-content: space-between; width: 100%;">
+                                    <input type="number" id="batch-start-idx" min="1" placeholder="จาก" style="flex: 1; min-width: 40px; padding: 3px; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; height: 28px; box-sizing: border-box;">
+                                    <span style="font-size: 0.7rem; color: #0369a1; font-weight: bold; padding: 0 2px;">ถึง</span>
+                                    <input type="number" id="batch-end-idx" min="1" placeholder="ถึง" style="flex: 1; min-width: 40px; padding: 3px; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; height: 28px; box-sizing: border-box;">
                                 </div>
                             </div>
                         </div>
 
                         <!-- Weight -->
                         <div>
-                            <label style="display: block; font-size: 0.75rem; font-weight: bold; color: #0369a1; margin-bottom: 4px; cursor: pointer;">
-                                <input type="checkbox" id="batch-enable-weight" style="margin-right: 4px;"> ⚖️ ปรับน้ำหนัก (กรัม)
+                            <label style="display: block; font-size: 0.7rem; font-weight: bold; color: #0369a1; margin-bottom: 2px; cursor: pointer; user-select: none;">
+                                <input type="checkbox" id="batch-enable-weight" style="margin-right: 2px; width: 13px; height: 13px;"> ⚖️ ปรับน้ำหนัก (กรัม)
                             </label>
-                            <input type="number" id="batch-weight-input" placeholder="ตัวอย่าง: 500" disabled style="width: 100%; padding: 6px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #f1f5f9;">
+                            <input type="number" id="batch-weight-input" placeholder="ตัวอย่าง: 500" disabled style="width: 100%; padding: 4px; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #f1f5f9; height: 28px; box-sizing: border-box;">
                         </div>
 
                         <!-- AR -->
                         <div id="batch-ar-group">
-                            <label style="display: block; font-size: 0.75rem; font-weight: bold; color: #0369a1; margin-bottom: 4px; cursor: pointer;">
-                                <input type="checkbox" id="batch-enable-ar" style="margin-right: 4px;"> 📩 บริการตอบรับ (AR)
+                            <label style="display: block; font-size: 0.7rem; font-weight: bold; color: #0369a1; margin-bottom: 2px; cursor: pointer; user-select: none;">
+                                <input type="checkbox" id="batch-enable-ar" style="margin-right: 2px; width: 13px; height: 13px;"> 📩 บริการตอบรับ (AR)
                             </label>
-                            <select id="batch-ar-input" disabled style="width: 100%; padding: 6px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #f1f5f9;">
+                            <select id="batch-ar-input" disabled style="width: 100%; padding: 4px; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #f1f5f9; height: 28px;">
                                 <option value="ar">เปิดใช้งาน AR</option>
                                 <option value="false">ปิดการใช้งาน AR</option>
                             </select>
@@ -472,45 +476,44 @@
 
                         <!-- Insurance -->
                         <div id="batch-ins-group">
-                            <label style="display: block; font-size: 0.75rem; font-weight: bold; color: #0369a1; margin-bottom: 4px; cursor: pointer;">
-                                <input type="checkbox" id="batch-enable-ins" style="margin-right: 4px;"> 🛡️ ปรับการรับประกัน
+                            <label style="display: block; font-size: 0.7rem; font-weight: bold; color: #0369a1; margin-bottom: 2px; cursor: pointer; user-select: none;">
+                                <input type="checkbox" id="batch-enable-ins" style="margin-right: 2px; width: 13px; height: 13px;"> 🛡️ ปรับการรับประกัน
                             </label>
-                            <div style="display: flex; gap: 6px;">
-                                <select id="batch-ins-input" disabled style="flex: 1; padding: 6px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #f1f5f9;">
+                            <div style="display: flex; gap: 4px;">
+                                <select id="batch-ins-input" disabled style="flex: 1; padding: 4px; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #f1f5f9; height: 28px;">
                                     <option value="true">เปิดรับประกัน</option>
                                     <option value="false">ปิดรับประกัน</option>
                                 </select>
-                                <input type="number" id="batch-ins-val" placeholder="วงเงิน (บ.)" disabled style="flex: 1.2; padding: 6px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #f1f5f9;">
+                                <input type="number" id="batch-ins-val" placeholder="วงเงิน" disabled style="flex: 1.2; padding: 4px; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #f1f5f9; height: 28px; box-sizing: border-box;">
                             </div>
                         </div>
 
                         <!-- Submit Button -->
                         <div>
-                            <button type="button" id="batch-apply-btn" style="width: 100%; background: #0284c7; color: white; border: none; padding: 7px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.2s;">
-                                ⚡ ยืนยันปรับปรุง (Apply)
+                            <button type="button" id="batch-apply-btn" style="width: 100%; background: #0284c7; color: white; border: none; padding: 6px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 3px; transition: background 0.2s; height: 28px; box-sizing: border-box;">
+                                ⚡ ปรับปรุง
                             </button>
                         </div>
                     </div>
 
                     <!-- Bulk Import Section -->
-                    <div id="batch-import-section" style="display: none; flex-direction: column; gap: 8px;">
-                        <div style="font-size: 0.8rem; font-weight: bold; color: #0369a1; display: flex; align-items: center; gap: 5px;">
-                            📋 นำเข้าข้อมูลผู้รับและรหัสไปรษณีย์แบบกลุ่ม (Bulk Recipient & Zip Import)
+                    <div id="batch-import-section" style="display: none; flex-direction: column; gap: 4px;">
+                        <div style="font-size: 0.75rem; font-weight: bold; color: #0369a1; display: flex; align-items: center; gap: 4px;">
+                            📋 นำเข้าข้อมูลผู้รับและรหัสไปรษณีย์แบบกลุ่ม
                         </div>
-                        <div style="font-size: 0.72rem; color: #64748b; margin-bottom: 2px;">
-                            วางรายชื่อและรหัสไปรษณีย์ที่นี่ (บรรทัดละ 1 รายการ เช่น: <b>นายสมชาย 10500</b> หรือคัดลอกจาก Excel / ตารางได้เลย ระบบจะดึงข้อมูลให้อัตโนมัติ)
+                        <div style="font-size: 0.68rem; color: #64748b; margin-bottom: 1px;">
+                            วางรายชื่อคู่รหัสไปรษณีย์ เช่น: <b>นายสมชาย 10500</b> (คัดลอกจาก Excel มาวางได้เลย ระบบจะดึงให้อัตโนมัติ)
                         </div>
-                        <div style="display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap;">
-                            <textarea id="batch-import-textarea" rows="3" placeholder="ตัวอย่างการกรอก:
+                        <div style="display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap;">
+                            <textarea id="batch-import-textarea" rows="2" placeholder="ตัวอย่างการกรอก:
 นายสมชาย รักดี 10500
-นางสาวสมศรี สุขใจ 20000
-หรือคัดลอกเป็นคอลัมน์ชื่อคู่กับรหัสไปรษณีย์จาก Excel มาวางได้เลย" style="flex: 1; min-width: 250px; padding: 8px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; font-family: monospace; resize: vertical; min-height: 70px; box-sizing: border-box;"></textarea>
+นางสาวสมศรี สุขใจ 20000" style="flex: 1; min-width: 200px; padding: 6px; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-family: monospace; resize: vertical; min-height: 48px; box-sizing: border-box;"></textarea>
                             
-                            <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 8px; width: 190px; shrink: 0;">
-                                <label style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: bold; color: #0369a1; cursor: pointer; user-select: none;">
-                                    <input type="checkbox" id="batch-import-clear-existing" checked> ล้างข้อมูลผู้รับเก่าก่อนนำเข้า
+                            <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 4px; width: 170px; shrink: 0;">
+                                <label style="display: flex; align-items: center; gap: 3px; font-size: 0.7rem; font-weight: bold; color: #0369a1; cursor: pointer; user-select: none;">
+                                    <input type="checkbox" id="batch-import-clear-existing" checked style="width: 13px; height: 13px;"> ล้างผู้รับเก่าก่อนนำเข้า
                                 </label>
-                                <button type="button" id="batch-import-btn" style="background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: background 0.2s; height: 38px;">
+                                <button type="button" id="batch-import-btn" style="background: #0284c7; color: white; border: none; padding: 6px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.2s; height: 28px; box-sizing: border-box;">
                                     📥 นำเข้าข้อมูลแบบกลุ่ม
                                 </button>
                             </div>
