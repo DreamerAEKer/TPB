@@ -1857,20 +1857,23 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
             ranges.push(currentRange);
         }
 
-        ranges.forEach(r => {
-            const cntStr = r.start.isOrdinaryBulk ? `${r.start.quantity} ชิ้น` : `${r.count} ชิ้น`;
-            const startTrk = r.start.isOrdinaryBulk ? '-' : r.start.trackingFormatted;
-            const endTrk = r.end.isOrdinaryBulk ? '-' : r.end.trackingFormatted;
-            rangeRows += `
-                <tr>
-                    <td style="padding: 8px;">${svc}</td>
-                    <td style="padding: 8px;">${startTrk}</td>
-                    <td style="padding: 8px;">${endTrk}</td>
-                    <td style="padding: 8px; text-align: center;">${cntStr}</td>
-                    <td style="padding: 8px;"></td>
-                </tr>
-            `;
-        });
+        // Compact: 1 row per service — shows first→last tracking and total count
+        // If items span multiple non-consecutive ranges, note the number of 'ชุด'
+        const totalSvcItems = svcItems.reduce((sum, s) => sum + (s.isOrdinaryBulk ? (parseInt(s.quantity) || 1) : 1), 0);
+        const firstSortedItem = sorted[0];
+        const lastSortedItem = sorted[sorted.length - 1];
+        const compactStart = firstSortedItem.isOrdinaryBulk ? '-' : firstSortedItem.trackingFormatted;
+        const compactEnd = lastSortedItem.isOrdinaryBulk ? '-' : lastSortedItem.trackingFormatted;
+        const rangeNote = ranges.length > 1 ? ` <span style="font-size: 8pt; color: #555; font-weight: normal;">(${ranges.length} ชุด)</span>` : '';
+        rangeRows += `
+            <tr>
+                <td style="padding: 8px;">${svc}</td>
+                <td style="padding: 8px; font-size: 10.5pt;">${compactStart}</td>
+                <td style="padding: 8px; font-size: 10.5pt;">${compactEnd}</td>
+                <td style="padding: 8px; text-align: center; font-weight: bold;">${totalSvcItems} ชิ้น${rangeNote}</td>
+                <td style="padding: 8px;"></td>
+            </tr>
+        `;
 
         svcItems.forEach(s => {
             const f = parseFloat(s.fee) || 0;
@@ -2025,6 +2028,23 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
         printDate = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
     }
+
+    // Generate QR code containing shipment summary (uses QRious already loaded)
+    let qrDataUrl = '';
+    try {
+        if (typeof QRious !== 'undefined') {
+            const _qrc = document.createElement('canvas');
+            const _qrv = [
+                settings.company || 'Thai Post Bill',
+                `วันที่ ${printDate}`,
+                `รวม ${totalItemsAll} ชิ้น`,
+                totalFee > 0 ? totalFee.toLocaleString() + ' บาท' : ''
+            ].filter(Boolean).join('\n');
+            new QRious({ element: _qrc, size: 150, value: _qrv, background: '#ffffff', foreground: '#000000' });
+            qrDataUrl = _qrc.toDataURL('image/png');
+        }
+    } catch (_qrErr) { console.warn('QR gen failed:', _qrErr); }
+
     const singleSheetHtml = `
         <div class="print-page">
             ${generateLogoHtml()}
@@ -2064,7 +2084,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     </tr>
                 </tbody>
             </table>
-            <div style="display: flex; gap: 20px; font-size: 12pt; align-items: stretch;">
+            <div style="display: flex; gap: 16px; font-size: 12pt; align-items: stretch;">
                 ${priceBreakdownHtml !== '' ? `
                 <div style="flex: 1.5;">
                     <div style="background: #fafafa; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 11pt; height: 100%; box-sizing: border-box;">
@@ -2073,6 +2093,12 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     </div>
                 </div>
                 ` : `<div style="flex: 1.5;"></div>`}
+                ${qrDataUrl ? `
+                <div style="flex: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0 8px;">
+                    <img src="${qrDataUrl}" style="width: 82px; height: 82px; border: 1px solid #e5e7eb; border-radius: 4px; display: block;" />
+                    <div style="font-size: 6.5pt; color: #9ca3af; text-align: center; line-height: 1.3; white-space: nowrap;">สแกนตรวจสอบ<br>ข้อมูลฝากส่ง</div>
+                </div>
+                ` : ''}
                 <div style="flex: 1.5; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; box-sizing: border-box; text-align: right; height: 100%;">
                      <div style="font-size: 14pt; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 5px;">
                         ยอดรวมสุทธิ: ${totalFee > 0 ? totalFee.toLocaleString() : '0'} บาท
