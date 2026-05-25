@@ -1821,7 +1821,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     const volWeightItems = items.filter(s => s.options?.dimensions && (s.options.dimensions.w || s.options.dimensions.l || s.options.dimensions.h));
 
 
-    // v7.5.0: EMS items are split into domestic/international sub-groups in the summary table
+    // v7.5.1: EMS items are split into domestic/international sub-groups in the summary table
     function _isIntlForGrouping(item) {
         const type = item.serviceType;
         const name = (item.customServiceName || '').toUpperCase();
@@ -2135,7 +2135,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </div>
             </div>
             
-            <!-- Official Service Classification Table (v7.5.0 — unified, always shown) -->
+            <!-- Official Service Classification Table (v7.5.1 — unified, always shown) -->
             <div style="margin-top: 15px; margin-bottom: 15px; page-break-inside: avoid;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; text-align: center; font-family: 'Sarabun', sans-serif; border: 1.5px solid black;">
                     <thead>
@@ -3284,7 +3284,7 @@ dispatchBtn.onclick = async () => {
         });
     }
     
-    // v7.5.0: GENERATE CONSOLIDATED SUMMARY + 3-WAY SPLIT MANIFESTS
+    // v7.5.1: GENERATE CONSOLIDATED SUMMARY + 3-WAY SPLIT MANIFESTS
     // Helper to detect international (same logic as inside generateSummarySheet)
     function _isIntlDispatch(item) {
         const type = item.serviceType;
