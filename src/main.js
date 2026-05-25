@@ -1821,9 +1821,26 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     const volWeightItems = items.filter(s => s.options?.dimensions && (s.options.dimensions.w || s.options.dimensions.l || s.options.dimensions.h));
 
 
+    // v7.5.0: EMS items are split into domestic/international sub-groups in the summary table
+    function _isIntlForGrouping(item) {
+        const type = item.serviceType;
+        const name = (item.customServiceName || '').toUpperCase();
+        const trk = (item.trackingFormatted || '').replace(/\s+/g, '').toUpperCase();
+        const dest = (item.destination || '').trim();
+        if (type === 'EPACKET' || name.includes('EPACKET') || name.includes('EPK') || name.includes('WORLD') || name.includes('ระหว่างประเทศ') || name.includes('ต่างประเทศ') || name.includes('INT')) return true;
+        if (trk.startsWith('L')) return true;
+        const hasThaiPostcode = /\d{5}/.test(dest);
+        if (!hasThaiPostcode && dest.length > 0) return true;
+        return false;
+    }
+
     const groups = {};
     items.forEach(item => {
-        const svc = item.customServiceName || item.serviceType;
+        let svc = item.customServiceName || item.serviceType;
+        // Split EMS into domestic/international
+        if (item.serviceType === 'EMS' || (item.serviceType === 'CUSTOM' && (item.customServiceName || '').toUpperCase().includes('EMS'))) {
+            svc = _isIntlForGrouping(item) ? 'EMS ต่างประเทศ' : 'EMS ในประเทศ';
+        }
         if (!groups[svc]) groups[svc] = [];
         groups[svc].push(item);
     });
@@ -2111,45 +2128,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </div>
             </div>
             
-            <!-- Official Service Classification Table (v5.8.5) -->
-            ${titleSuffix === 'กลุ่ม EMS' ? `
-            <div style="margin-top: 15px; margin-bottom: 15px; page-break-inside: avoid;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; text-align: center; font-family: 'Sarabun', sans-serif; border: 1.5px solid black;">
-                    <thead>
-                        <tr style="background: #f8fafc; font-weight: bold;">
-                            <th rowspan="2" style="padding: 6px; width: 30%; text-align: left; border: 1.5px solid black; font-size: 10pt;">รายการ</th>
-                            <th colspan="2" style="padding: 6px; width: 28%; border: 1.5px solid black; font-size: 10pt;">ในประเทศ</th>
-                            <th colspan="2" style="padding: 6px; width: 28%; border: 1.5px solid black; font-size: 10pt;">ต่างประเทศ</th>
-                            <th rowspan="2" style="padding: 6px; width: 14%; border: 1.5px solid black; font-size: 10pt;">รวมเงินทั้งสิ้น<br>(1) + (2)</th>
-                        </tr>
-                        <tr style="background: #f8fafc; font-weight: bold;">
-                            <th style="padding: 6px; width: 10%; border: 1.5px solid black;">ชิ้น</th>
-                            <th style="padding: 6px; width: 18%; border: 1.5px solid black;">เงิน (1)</th>
-                            <th style="padding: 6px; width: 10%; border: 1.5px solid black;">ชิ้น</th>
-                            <th style="padding: 6px; width: 18%; border: 1.5px solid black;">เงิน (2)</th>
-                        </tr>
-                    </thead>
-                    <tbody style="text-align: center;">
-                        <tr>
-                            <td style="padding: 6px 10px; text-align: left; font-weight: bold; border: 1px solid black; font-size: 10pt;">EMS</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 10.5pt; text-align: center; padding: 4px;">${valStr(summaryStats.ems.domestic.count)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 10.5pt; text-align: center; padding: 4px;">${feeStr(summaryStats.ems.domestic.fee)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 10.5pt; text-align: center; padding: 4px;">${valStr(summaryStats.ems.international.count)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 10.5pt; text-align: center; padding: 4px;">${feeStr(summaryStats.ems.international.fee)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 10.5pt; text-align: center; padding: 4px;">${feeStr(summaryStats.ems.domestic.fee + summaryStats.ems.international.fee)}</td>
-                        </tr>
-                        <tr style="background: #fafafa; font-weight: bold; font-size: 10pt;">
-                            <td style="padding: 6px 10px; text-align: left; border: 1.5px solid black;">ยอดรวม</td>
-                            <td style="border: 1.5px solid black; text-align: center; padding: 4px;">${valStr(summaryStats.ems.domestic.count)}</td>
-                            <td style="border: 1.5px solid black; text-align: center; padding: 4px;">${feeStr(summaryStats.ems.domestic.fee)}</td>
-                            <td style="border: 1.5px solid black; text-align: center; padding: 4px;">${valStr(summaryStats.ems.international.count)}</td>
-                            <td style="border: 1.5px solid black; text-align: center; padding: 4px;">${feeStr(summaryStats.ems.international.fee)}</td>
-                            <td style="border: 1.5px solid black; text-align: center; padding: 4px;">${totalFee > 0 ? totalFee.toLocaleString() : '0'}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            ` : `
+            <!-- Official Service Classification Table (v7.5.0 — unified, always shown) -->
             <div style="margin-top: 15px; margin-bottom: 15px; page-break-inside: avoid;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; text-align: center; font-family: 'Sarabun', sans-serif; border: 1.5px solid black;">
                     <thead>
@@ -2234,7 +2213,6 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     </tbody>
                 </table>
             </div>
-            `}
             
             <div style="display: flex; justify-content: space-between; margin-top: auto; padding-top: 20px; font-size: 9pt; page-break-inside: avoid;">
                 <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
@@ -3270,7 +3248,7 @@ dispatchBtn.onclick = async () => {
         }
         
     } else {
-        if (!confirm('ยืนยันการปิดยอดและพิมพ์ใบสรุป?\nระบบจะจัดเรียงใบสรุปแยกหมวด EMS และ อื่นๆ พร้อมบันทึกเข้าระบบประวัติ')) return;
+        if (!confirm('ยืนยันการปิดยอดและพิมพ์ใบสรุป?\nระบบจะพิมพ์ใบสรุป 1 แผ่นรวมทุกบริการ และใบนำส่งแยกตามกลุ่ม EMS ในประเทศ / EMS ต่างประเทศ / อื่นๆ พร้อมบันทึกเข้าระบบประวัติ')) return;
         
         // Create new archive
         const archiveId = 'M-' + Date.now();
@@ -3301,9 +3279,23 @@ dispatchBtn.onclick = async () => {
         });
     }
     
-    // GENERATE SPLIT PRINT LAYOUT (EMS vs Others)
-    const emsGroup = shipments.filter(s => isEMSGroup(s));
-    const otherGroup = shipments.filter(s => !isEMSGroup(s));
+    // v7.5.0: GENERATE CONSOLIDATED SUMMARY + 3-WAY SPLIT MANIFESTS
+    // Helper to detect international (same logic as inside generateSummarySheet)
+    function _isIntlDispatch(item) {
+        const type = item.serviceType;
+        const name = (item.customServiceName || '').toUpperCase();
+        const trk = (item.trackingFormatted || '').replace(/\s+/g, '').toUpperCase();
+        const dest = (item.destination || '').trim();
+        if (type === 'EPACKET' || name.includes('EPACKET') || name.includes('EPK') || name.includes('WORLD') || name.includes('ระหว่างประเทศ') || name.includes('ต่างประเทศ') || name.includes('INT')) return true;
+        if (trk.startsWith('L')) return true;
+        const hasThaiPostcode = /\d{5}/.test(dest);
+        if (!hasThaiPostcode && dest.length > 0) return true;
+        return false;
+    }
+
+    const emsDomesticGroup = shipments.filter(s => isEMSGroup(s) && !_isIntlDispatch(s));
+    const emsIntlGroup    = shipments.filter(s => isEMSGroup(s) && _isIntlDispatch(s));
+    const otherGroup      = shipments.filter(s => !isEMSGroup(s));
     
     const printSection = document.getElementById('print-section');
     loadingOverlay.style.display = 'flex';
@@ -3312,43 +3304,44 @@ dispatchBtn.onclick = async () => {
         let finalHtml = '';
         const paymentType = settings.paymentType || 'เงินสด';
 
-        if (emsGroup.length > 0) {
-            let sumCopies = 1;
-            let manCopies = 1;
-            if (paymentType === 'เงินเชื่อ') { sumCopies = 2; manCopies = 3; }
-            else if (paymentType === 'เครื่องประทับไปรษณียากร') { sumCopies = 3; manCopies = 2; }
+        // --- 1 Consolidated Summary Sheet for ALL shipments ---
+        let sumCopies = 1;
+        if (paymentType === 'เงินเชื่อ') { sumCopies = 2; }
+        else if (paymentType === 'เครื่องประทับไปรษณียากร') { sumCopies = 3; }
+        finalHtml += generateSummarySheet(shipments, "รวมทุกบริการ", sumCopies);
 
-            finalHtml += generateSummarySheet(emsGroup, "กลุ่ม EMS", sumCopies);
-            finalHtml += generatePrintPages(emsGroup, "กลุ่ม EMS", manCopies);
+        // --- EMS Domestic Manifests ---
+        if (emsDomesticGroup.length > 0) {
+            let manCopies = 1;
+            if (paymentType === 'เงินเชื่อ') { manCopies = 3; }
+            else if (paymentType === 'เครื่องประทับไปรษณียากร') { manCopies = 2; }
+            finalHtml += generatePrintPages(emsDomesticGroup, "EMS ในประเทศ", manCopies);
         }
-        
-        if (otherGroup.length > 0) {
-            let sumCopies = 1;
-            let manCopies = 1;
-            if (paymentType === 'เงินเชื่อ') { sumCopies = 2; manCopies = 3; }
-            else if (paymentType === 'เครื่องประทับไปรษณียากร') { sumCopies = 3; manCopies = 1; }
 
-            // Group summary is single/consolidated for Registration, eco-Post, Parcel, Custom
-            finalHtml += generateSummarySheet(otherGroup, "กลุ่มอื่นๆ", sumCopies);
-            
-            // Separate manifests (ใบนำส่ง) by service type so they are never mixed on the same page
-            const regItems = otherGroup.filter(s => s.serviceType === 'REG');
-            const ecoItems = otherGroup.filter(s => s.serviceType === 'ECO');
+        // --- EMS International Manifests ---
+        if (emsIntlGroup.length > 0) {
+            let manCopies = 1;
+            if (paymentType === 'เงินเชื่อ') { manCopies = 3; }
+            else if (paymentType === 'เครื่องประทับไปรษณียากร') { manCopies = 2; }
+            finalHtml += generatePrintPages(emsIntlGroup, "EMS ต่างประเทศ", manCopies);
+        }
+
+        // --- Other Services Manifests (REG, ECO, PARCEL, CUSTOM) ---
+        if (otherGroup.length > 0) {
+            let manCopies = 1;
+            if (paymentType === 'เงินเชื่อ') { manCopies = 3; }
+            // Meter = 1 copy for non-EMS
+
+            // Separate manifests by service type (never mix on same page)
+            const regItems    = otherGroup.filter(s => s.serviceType === 'REG');
+            const ecoItems    = otherGroup.filter(s => s.serviceType === 'ECO');
             const parcelItems = otherGroup.filter(s => s.serviceType === 'PARCEL');
             const customItems = otherGroup.filter(s => s.serviceType === 'CUSTOM');
 
-            if (regItems.length > 0) {
-                finalHtml += generatePrintPages(regItems, "ลงทะเบียน", manCopies);
-            }
-            if (ecoItems.length > 0) {
-                finalHtml += generatePrintPages(ecoItems, "eco-Post", manCopies);
-            }
-            if (parcelItems.length > 0) {
-                finalHtml += generatePrintPages(parcelItems, "พัสดุ", manCopies);
-            }
-            if (customItems.length > 0) {
-                finalHtml += generatePrintPages(customItems, "อื่นๆ", manCopies);
-            }
+            if (regItems.length > 0)    finalHtml += generatePrintPages(regItems,    "ลงทะเบียน", manCopies);
+            if (ecoItems.length > 0)    finalHtml += generatePrintPages(ecoItems,    "eco-Post",  manCopies);
+            if (parcelItems.length > 0) finalHtml += generatePrintPages(parcelItems, "พัสดุ",     manCopies);
+            if (customItems.length > 0) finalHtml += generatePrintPages(customItems, "อื่นๆ",     manCopies);
         }
         
         printSection.innerHTML = finalHtml;
