@@ -2392,14 +2392,108 @@ const upcWInput = document.getElementById('ordinary-upc-weight');
 const upcQtyInput = document.getElementById('ordinary-upc-qty');
 const upcFeeInput = document.getElementById('ordinary-upc-fee');
 
+const submitBkkItem = async () => {
+    const selectedCustomSvc = customServiceNameInput.value;
+    const bkkW = parseFloat(bkkWInput.value) || 0;
+    const bkkQty = parseInt(bkkQtyInput.value) || 0;
+    const bkkFee = parseFloat(bkkFeeInput.value) || 0;
+
+    if (bkkQty > 0) {
+        shipments.push({
+            recipient: 'กรุงเทพฯ และปริมณฑล',
+            destination: 'กรุงเทพฯ และปริมณฑล',
+            serviceType: 'CUSTOM',
+            customServiceName: selectedCustomSvc,
+            weight: bkkW,
+            isOrdinaryBulk: true,
+            quantity: bkkQty,
+            unitFee: bkkFee,
+            trackingFormatted: '-',
+            fee: bkkQty * bkkFee,
+            options: {}
+        });
+
+        bkkWInput.value = '';
+        bkkQtyInput.value = '';
+        bkkFeeInput.value = '';
+
+        if (currentServiceTab !== 'CUSTOM') {
+            currentServiceTab = 'CUSTOM';
+            document.querySelectorAll('.service-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.service === 'CUSTOM');
+            });
+            serviceTitle.textContent = `จัดการรายการ: อื่นๆ`;
+        }
+
+        await updateHistory();
+        renderShipments();
+        updateSummary();
+        updatePreview();
+
+        const container = document.querySelector('.table-container');
+        if (container) container.scrollTop = container.scrollHeight;
+    }
+};
+
+const submitUpcItem = async () => {
+    const selectedCustomSvc = customServiceNameInput.value;
+    const upcW = parseFloat(upcWInput.value) || 0;
+    const upcQty = parseInt(upcQtyInput.value) || 0;
+    const upcFee = parseFloat(upcFeeInput.value) || 0;
+
+    if (upcQty > 0) {
+        shipments.push({
+            recipient: 'ต่างจังหวัด',
+            destination: 'ต่างจังหวัด',
+            serviceType: 'CUSTOM',
+            customServiceName: selectedCustomSvc,
+            weight: upcW,
+            isOrdinaryBulk: true,
+            quantity: upcQty,
+            unitFee: upcFee,
+            trackingFormatted: '-',
+            fee: upcQty * upcFee,
+            options: {}
+        });
+
+        upcWInput.value = '';
+        upcQtyInput.value = '';
+        upcFeeInput.value = '';
+
+        if (currentServiceTab !== 'CUSTOM') {
+            currentServiceTab = 'CUSTOM';
+            document.querySelectorAll('.service-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.service === 'CUSTOM');
+            });
+            serviceTitle.textContent = `จัดการรายการ: อื่นๆ`;
+        }
+
+        await updateHistory();
+        renderShipments();
+        updateSummary();
+        updatePreview();
+
+        const container = document.querySelector('.table-container');
+        if (container) container.scrollTop = container.scrollHeight;
+    }
+};
+
 if (bkkWInput) {
     bkkWInput.onkeydown = (e) => {
         validateStrictNumericKeyPress(e, false);
         if (e.key === 'Enter') {
             e.preventDefault();
-            if (bkkQtyInput) {
-                bkkQtyInput.focus();
-                bkkQtyInput.select();
+            const val = bkkWInput.value.trim();
+            if (val !== '' && parseFloat(val) > 0) {
+                if (bkkQtyInput) {
+                    bkkQtyInput.focus();
+                    bkkQtyInput.select();
+                }
+            } else {
+                if (upcWInput) {
+                    upcWInput.focus();
+                    upcWInput.select();
+                }
             }
         }
     };
@@ -2419,9 +2513,17 @@ if (upcWInput) {
         validateStrictNumericKeyPress(e, false);
         if (e.key === 'Enter') {
             e.preventDefault();
-            if (upcQtyInput) {
-                upcQtyInput.focus();
-                upcQtyInput.select();
+            const val = upcWInput.value.trim();
+            if (val !== '' && parseFloat(val) > 0) {
+                if (upcQtyInput) {
+                    upcQtyInput.focus();
+                    upcQtyInput.select();
+                }
+            } else {
+                if (bkkWInput) {
+                    bkkWInput.focus();
+                    bkkWInput.select();
+                }
             }
         }
     };
@@ -2437,23 +2539,36 @@ if (upcWInput) {
     };
 }
 if (bkkQtyInput) {
-    bkkQtyInput.onkeydown = (e) => {
+    bkkQtyInput.onkeydown = async (e) => {
         validateStrictNumericKeyPress(e, false);
         if (e.key === 'Enter') {
             e.preventDefault();
-            if (bkkFeeInput) {
-                bkkFeeInput.focus();
-                bkkFeeInput.select();
+            const val = bkkQtyInput.value.trim();
+            if (val !== '' && parseInt(val) > 0 && parseFloat(bkkWInput.value) > 0) {
+                await submitBkkItem();
+                if (upcWInput) {
+                    upcWInput.focus();
+                    upcWInput.select();
+                }
+            } else {
+                if (upcWInput) {
+                    upcWInput.focus();
+                    upcWInput.select();
+                }
             }
         }
     };
     bkkQtyInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
 }
 if (bkkFeeInput) {
-    bkkFeeInput.onkeydown = (e) => {
+    bkkFeeInput.onkeydown = async (e) => {
         validateStrictNumericKeyPress(e, false);
         if (e.key === 'Enter') {
             e.preventDefault();
+            const val = bkkQtyInput.value.trim();
+            if (val !== '' && parseInt(val) > 0 && parseFloat(bkkWInput.value) > 0) {
+                await submitBkkItem();
+            }
             if (upcWInput) {
                 upcWInput.focus();
                 upcWInput.select();
@@ -2463,25 +2578,39 @@ if (bkkFeeInput) {
     bkkFeeInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
 }
 if (upcQtyInput) {
-    upcQtyInput.onkeydown = (e) => {
+    upcQtyInput.onkeydown = async (e) => {
         validateStrictNumericKeyPress(e, false);
         if (e.key === 'Enter') {
             e.preventDefault();
-            if (upcFeeInput) {
-                upcFeeInput.focus();
-                upcFeeInput.select();
+            const val = upcQtyInput.value.trim();
+            if (val !== '' && parseInt(val) > 0 && parseFloat(upcWInput.value) > 0) {
+                await submitUpcItem();
+                if (bkkWInput) {
+                    bkkWInput.focus();
+                    bkkWInput.select();
+                }
+            } else {
+                if (bkkWInput) {
+                    bkkWInput.focus();
+                    bkkWInput.select();
+                }
             }
         }
     };
     upcQtyInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
 }
 if (upcFeeInput) {
-    upcFeeInput.onkeydown = (e) => {
+    upcFeeInput.onkeydown = async (e) => {
         validateStrictNumericKeyPress(e, false);
         if (e.key === 'Enter') {
             e.preventDefault();
-            if (addBtn) {
-                addBtn.click();
+            const val = upcQtyInput.value.trim();
+            if (val !== '' && parseInt(val) > 0 && parseFloat(upcWInput.value) > 0) {
+                await submitUpcItem();
+            }
+            if (bkkWInput) {
+                bkkWInput.focus();
+                bkkWInput.select();
             }
         }
     };
@@ -2654,9 +2783,23 @@ addBtn.onclick = async (e) => {
       document.getElementById('ordinary-upc-qty').value = '';
       document.getElementById('ordinary-upc-fee').value = '';
 
-      updateHistory();
-      renderTable();
+      // Switch tab to CUSTOM so the added items are visible in the table on the right!
+      if (currentServiceTab !== 'CUSTOM') {
+          currentServiceTab = 'CUSTOM';
+          document.querySelectorAll('.service-tab').forEach(t => {
+              t.classList.toggle('active', t.dataset.service === 'CUSTOM');
+          });
+          serviceTitle.textContent = `จัดการรายการ: อื่นๆ`;
+      }
+
+      await updateHistory();
+      renderShipments();
+      updateSummary();
       updatePreview();
+
+      // Scroll to bottom to show new items
+      const container = document.querySelector('.table-container');
+      if (container) container.scrollTop = container.scrollHeight;
 
       // Auto-focus back to ordinary-bkk-weight after adding so user can continue keying!
       setTimeout(() => {
