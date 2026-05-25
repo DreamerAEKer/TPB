@@ -1846,6 +1846,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     });
 
     let rangeRows = '';
+    let totalItemsTrackingOnly = 0;
     let totalItemsAll = items.reduce((sum, s) => sum + (s.isOrdinaryBulk ? (parseInt(s.quantity) || 1) : 1), 0);
     let totalFee = 0;
     const priceMap = {};
@@ -1882,15 +1883,21 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         const compactStart = firstSortedItem.isOrdinaryBulk ? '-' : firstSortedItem.trackingFormatted;
         const compactEnd = lastSortedItem.isOrdinaryBulk ? '-' : lastSortedItem.trackingFormatted;
         const rangeNote = ranges.length > 1 ? ` <span style="font-size: 8pt; color: #555; font-weight: normal;">(${ranges.length} ชุด)</span>` : '';
-        rangeRows += `
-            <tr>
-                <td style="padding: 8px;">${svc}</td>
-                <td style="padding: 8px; font-size: 10.5pt;">${compactStart}</td>
-                <td style="padding: 8px; font-size: 10.5pt;">${compactEnd}</td>
-                <td style="padding: 8px; text-align: left; font-weight: bold;">${totalSvcItems} ชิ้น${rangeNote}</td>
-                <td style="padding: 8px;"></td>
-            </tr>
-        `;
+        
+        // กรอบที่ 1 ข้างบน ไว้แสดง ชุดเลขที่ ที่ใช้ ดังนั้น บริการ ที่ไม่มีเลขที่ จะไม่มี ข้อมูลในนี้
+        const hasTracking = firstSortedItem && !firstSortedItem.isOrdinaryBulk && compactStart !== '-' && compactStart !== '';
+        if (hasTracking) {
+            rangeRows += `
+                <tr>
+                    <td style="padding: 8px;">${svc}</td>
+                    <td style="padding: 8px; font-size: 10.5pt;">${compactStart}</td>
+                    <td style="padding: 8px; font-size: 10.5pt;">${compactEnd}</td>
+                    <td style="padding: 8px; text-align: left;">${totalSvcItems} ชิ้น${rangeNote}</td>
+                    <td style="padding: 8px;"></td>
+                </tr>
+            `;
+            totalItemsTrackingOnly += totalSvcItems;
+        }
 
         svcItems.forEach(s => {
             const f = parseFloat(s.fee) || 0;
@@ -2101,7 +2108,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     ${rangeRows}
                     <tr style="font-weight: bold;">
                         <th colspan="3" style="text-align: right; padding: 8px 15px;">รวมทั้งหมด</th>
-                        <th style="padding: 8px; text-align: center;">${totalItemsAll} ชิ้น</th>
+                        <th style="padding: 8px; text-align: left;">${totalItemsTrackingOnly} ชิ้น</th>
                         <th style="padding: 8px;"></th>
                     </tr>
                 </tbody>
@@ -2147,7 +2154,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     </thead>
                     <tbody style="text-align: center;">
                         <tr>
-                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">จดหมายธรรมดา</td>
+                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">จดหมายธรรมดา</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.ordinary.domestic.count)}</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.ordinary.domestic.fee)}</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.ordinary.international.count)}</td>
@@ -2155,7 +2162,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                             <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.ordinary.domestic.fee + summaryStats.ordinary.international.fee)}</td>
                         </tr>
                         <tr>
-                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">สิ่งตีพิมพ์</td>
+                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">สิ่งตีพิมพ์</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.printed.domestic.count)}</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.printed.domestic.fee)}</td>
                             <td style="border: 1px solid black; text-align: center; padding: 3px 4px;"></td>
@@ -2163,7 +2170,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                             <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.printed.domestic.fee)}</td>
                         </tr>
                         <tr>
-                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">ลงทะเบียน</td>
+                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">ลงทะเบียน</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.registered.domestic.count)}</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.registered.domestic.fee)}</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.registered.international.count)}</td>
@@ -2171,21 +2178,21 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                             <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.registered.domestic.fee + summaryStats.registered.international.fee)}</td>
                         </tr>
                         <tr>
-                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">eCo-Post</td>
+                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">eCo-Post</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.eco.domestic.count)}</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.eco.domestic.fee)}</td>
                             <td colspan="2" style="border: 1px solid black; text-align: center; padding: 3px 4px; background: #f5f5f5; color: #aaa; font-size: 8pt;">-</td>
                             <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.eco.domestic.fee)}</td>
                         </tr>
                         <tr>
-                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">ePacket</td>
+                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">ePacket</td>
                             <td colspan="2" style="border: 1px solid black; text-align: center; padding: 3px 4px; background: #f5f5f5; color: #aaa; font-size: 8pt;">-</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.epacket.international.count)}</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.epacket.international.fee)}</td>
                             <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.epacket.international.fee)}</td>
                         </tr>
                         <tr>
-                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">พัสดุไปรษณีย์</td>
+                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">พัสดุไปรษณีย์</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.parcel.domestic.count)}</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.parcel.domestic.fee)}</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.parcel.international.count)}</td>
@@ -2193,7 +2200,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                             <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.parcel.domestic.fee + summaryStats.parcel.international.fee)}</td>
                         </tr>
                         <tr>
-                            <td style="padding: 2px 5px; text-align: left; font-weight: bold; border: 1px solid black;">อื่น ๆ</td>
+                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">อื่น ๆ</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.others.domestic.count)}</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.others.domestic.fee)}</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.others.international.count)}</td>
