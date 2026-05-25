@@ -2393,7 +2393,16 @@ const upcQtyInput = document.getElementById('ordinary-upc-qty');
 const upcFeeInput = document.getElementById('ordinary-upc-fee');
 
 if (bkkWInput) {
-    bkkWInput.onkeydown = (e) => validateStrictNumericKeyPress(e, false);
+    bkkWInput.onkeydown = (e) => {
+        validateStrictNumericKeyPress(e, false);
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (bkkQtyInput) {
+                bkkQtyInput.focus();
+                bkkQtyInput.select();
+            }
+        }
+    };
     bkkWInput.oninput = (e) => {
         e.target.value = sanitizeNumeric(e.target.value);
         const w = parseFloat(e.target.value) || 0;
@@ -2406,7 +2415,16 @@ if (bkkWInput) {
     };
 }
 if (upcWInput) {
-    upcWInput.onkeydown = (e) => validateStrictNumericKeyPress(e, false);
+    upcWInput.onkeydown = (e) => {
+        validateStrictNumericKeyPress(e, false);
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (upcQtyInput) {
+                upcQtyInput.focus();
+                upcQtyInput.select();
+            }
+        }
+    };
     upcWInput.oninput = (e) => {
         e.target.value = sanitizeNumeric(e.target.value);
         const w = parseFloat(e.target.value) || 0;
@@ -2419,19 +2437,54 @@ if (upcWInput) {
     };
 }
 if (bkkQtyInput) {
-    bkkQtyInput.onkeydown = (e) => validateStrictNumericKeyPress(e, false);
+    bkkQtyInput.onkeydown = (e) => {
+        validateStrictNumericKeyPress(e, false);
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (bkkFeeInput) {
+                bkkFeeInput.focus();
+                bkkFeeInput.select();
+            }
+        }
+    };
     bkkQtyInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
 }
 if (bkkFeeInput) {
-    bkkFeeInput.onkeydown = (e) => validateStrictNumericKeyPress(e, false);
+    bkkFeeInput.onkeydown = (e) => {
+        validateStrictNumericKeyPress(e, false);
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (upcWInput) {
+                upcWInput.focus();
+                upcWInput.select();
+            }
+        }
+    };
     bkkFeeInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
 }
 if (upcQtyInput) {
-    upcQtyInput.onkeydown = (e) => validateStrictNumericKeyPress(e, false);
+    upcQtyInput.onkeydown = (e) => {
+        validateStrictNumericKeyPress(e, false);
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (upcFeeInput) {
+                upcFeeInput.focus();
+                upcFeeInput.select();
+            }
+        }
+    };
     upcQtyInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
 }
 if (upcFeeInput) {
-    upcFeeInput.onkeydown = (e) => validateStrictNumericKeyPress(e, false);
+    upcFeeInput.onkeydown = (e) => {
+        validateStrictNumericKeyPress(e, false);
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (addBtn) {
+                addBtn.click();
+            }
+        }
+    };
     upcFeeInput.oninput = (e) => { e.target.value = sanitizeNumeric(e.target.value); };
 }
 
@@ -2604,6 +2657,16 @@ addBtn.onclick = async (e) => {
       updateHistory();
       renderTable();
       updatePreview();
+
+      // Auto-focus back to ordinary-bkk-weight after adding so user can continue keying!
+      setTimeout(() => {
+          const firstInput = document.getElementById('ordinary-bkk-weight');
+          if (firstInput) {
+              firstInput.focus();
+              firstInput.select();
+          }
+      }, 50);
+
       return;
   }
 
