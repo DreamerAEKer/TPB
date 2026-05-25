@@ -2029,16 +2029,21 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         printDate = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
     }
 
-    // Generate QR code containing shipment summary (uses QRious already loaded)
+    // Generate QR code — QRious encodes as ISO-8859-1, so use ASCII-only content
     let qrDataUrl = '';
     try {
         if (typeof QRious !== 'undefined') {
             const _qrc = document.createElement('canvas');
+            // Strip non-ASCII chars from company name (Thai company names won't encode properly)
+            const _qrComp = (settings.company || 'Thai Post Bill').replace(/[^\x20-\x7E]/g, '').trim() || 'Thai Post Bill';
+            // Format date as DD/MM/YYYY (Buddhist year) using only digits and slashes
+            const _qrDateParts = printDate.match(/\d+/g) || [];
+            const _qrDate = _qrDateParts.length >= 3 ? `${_qrDateParts[0]}/${_qrDateParts[1]}/${_qrDateParts[2]}` : printDate.replace(/[^\x20-\x7E]/g, '').trim();
             const _qrv = [
-                settings.company || 'Thai Post Bill',
-                `วันที่ ${printDate}`,
-                `รวม ${totalItemsAll} ชิ้น`,
-                totalFee > 0 ? totalFee.toLocaleString() + ' บาท' : ''
+                _qrComp,
+                `Date: ${_qrDate}`,
+                `Items: ${totalItemsAll}`,
+                totalFee > 0 ? `Fee: ${totalFee.toLocaleString()} THB` : ''
             ].filter(Boolean).join('\n');
             new QRious({ element: _qrc, size: 150, value: _qrv, background: '#ffffff', foreground: '#000000' });
             qrDataUrl = _qrc.toDataURL('image/png');
