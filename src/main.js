@@ -2636,6 +2636,18 @@ addBtn.onclick = async (e) => {
       
       if (count > 100 && !confirm(`คุณกำลังจะเพิ่ม ${count} รายการ ต้องการดำเนินการต่อหรือไม่?`)) return;
 
+      // Show Loading Overlay
+      if (loadingOverlay) {
+          const titleEl = loadingOverlay.querySelector('div:nth-of-type(2)');
+          const detailEl = loadingOverlay.querySelector('div:nth-of-type(3)');
+          if (titleEl) titleEl.textContent = 'กำลังประมวลผลเพิ่มรายการแบบชุด...';
+          if (detailEl) detailEl.textContent = `กรุณารอสักครู่ กำลังตรวจสอบและจัดสร้างข้อมูล ${count} รายการ`;
+          loadingOverlay.style.display = 'flex';
+      }
+
+      // Let DOM render loader
+      await new Promise(resolve => setTimeout(resolve, 50));
+
       const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
       let currentNum = parseInt(startD);
       let lastGeneratedD = startD;
@@ -2946,6 +2958,7 @@ addBtn.onclick = async (e) => {
       // Always re-enable button after processing completes or errors
       isAddingItem = false;
       addBtn.disabled = false;
+      if (loadingOverlay) loadingOverlay.style.display = 'none';
   }
 };
 
@@ -5473,6 +5486,18 @@ async function parseAndImportExcelFile() {
     statusEl.style.display = 'block';
     statusEl.textContent = '⏳ กำลังประมวลผลไฟล์...';
 
+    // Show Loading Overlay
+    if (loadingOverlay) {
+        const titleEl = loadingOverlay.querySelector('div:nth-of-type(2)');
+        const detailEl = loadingOverlay.querySelector('div:nth-of-type(3)');
+        if (titleEl) titleEl.textContent = 'กำลังประมวลผลไฟล์และนำเข้าข้อมูล...';
+        if (detailEl) detailEl.textContent = 'ระบบกำลังวิเคราะห์ข้อมูลพัสดุและรันลำดับเลขแทรคกิ้งให้อัตโนมัติ';
+        loadingOverlay.style.display = 'flex';
+    }
+
+    // Let DOM render loader
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     const isCSV = file.name.endsWith('.csv');
     
     // Tracking formatting helper
@@ -5672,6 +5697,8 @@ async function parseAndImportExcelFile() {
         console.error(err);
         statusEl.textContent = '❌ เกิดข้อผิดพลาดในการอ่านไฟล์';
         alert('❌ เกิดข้อผิดพลาดในการอ่านไฟล์ กรุณาตรวจสอบความถูกต้องของไฟล์ Excel หรือใช้ไฟล์ CSV แทนครับ');
+    } finally {
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
     }
 }
 
@@ -5846,7 +5873,20 @@ async function applyBatchChanges() {
         return;
     }
 
-    let updatedCount = 0;
+    try {
+        // Show Loading Overlay
+        if (loadingOverlay) {
+            const titleEl = loadingOverlay.querySelector('div:nth-of-type(2)');
+            const detailEl = loadingOverlay.querySelector('div:nth-of-type(3)');
+            if (titleEl) titleEl.textContent = 'กำลังปรับปรุงข้อมูลพัสดุแบบกลุ่ม...';
+            if (detailEl) detailEl.textContent = 'ระบบกำลังคำนวณอัตราค่าบริการและปรับเปลี่ยนคุณสมบัติแบบ Real-time';
+            loadingOverlay.style.display = 'flex';
+        }
+
+        // Let DOM render loader
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        let updatedCount = 0;
 
     // Standard arrays are 0-based, range indices are 1-based
     for (let i = startIdx - 1; i <= endIdx - 1; i++) {
@@ -5958,6 +5998,10 @@ async function applyBatchChanges() {
     updateMeterStatus();
     renderStats();
 
+    } finally {
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
+    }
+
     alert(`🎉 ปรับปรุงข้อมูลแบบกลุ่มสำเร็จเรียบร้อยแล้ว จำนวน ${updatedCount} รายการ!`);
 }
 
@@ -6038,7 +6082,20 @@ async function applyBulkImport() {
         }
     }
 
-    let updatedCount = 0;
+    try {
+        // Show Loading Overlay
+        if (loadingOverlay) {
+            const titleEl = loadingOverlay.querySelector('div:nth-of-type(2)');
+            const detailEl = loadingOverlay.querySelector('div:nth-of-type(3)');
+            if (titleEl) titleEl.textContent = 'กำลังนำเข้าข้อมูลผู้รับแบบกลุ่ม...';
+            if (detailEl) detailEl.textContent = 'ระบบกำลังประมวลรายชื่อ ปลายทาง และตรวจสอบรหัสไปรษณีย์';
+            loadingOverlay.style.display = 'flex';
+        }
+
+        // Let DOM render loader
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        let updatedCount = 0;
     let dataIdx = 0;
 
     // Loop through the selected range of visible items
@@ -6094,6 +6151,10 @@ async function applyBulkImport() {
     updateSummary();
     updateMeterStatus();
     renderStats();
+
+    } finally {
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
+    }
 
     alert(`🎉 นำเข้าข้อมูลผู้รับและรหัสไปรษณีย์แบบกลุ่มสำเร็จเรียบร้อยแล้ว จำนวน ${updatedCount} รายการ!`);
     textarea.value = '';
