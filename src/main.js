@@ -1821,7 +1821,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     const volWeightItems = items.filter(s => s.options?.dimensions && (s.options.dimensions.w || s.options.dimensions.l || s.options.dimensions.h));
 
 
-    // v7.5.2: EMS items are split into domestic/international sub-groups in the summary table
+    // v7.5.3: EMS items are split into domestic/international sub-groups in the summary table
     function _isIntlForGrouping(item) {
         const type = item.serviceType;
         const name = (item.customServiceName || '').toUpperCase();
@@ -2025,6 +2025,22 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     const valStr = (v) => v > 0 ? v.toLocaleString() : '';
     const feeStr = (f) => f > 0 ? f.toLocaleString() : '';
 
+    // เสริมตรรกะ การรวมยอด ว่า ถ้า มีข้อมูล ค่าบริการไม่ครบที่รายการ ทุกบริการ
+    let hasIncompleteFees = false;
+    for (const cat of Object.values(summaryStats)) {
+        if ((cat.domestic.count > 0 && cat.domestic.fee === 0) ||
+            (cat.international.count > 0 && cat.international.fee === 0)) {
+            hasIncompleteFees = true;
+            break;
+        }
+    }
+
+    const totalDomFeeStr = hasIncompleteFees ? '' : feeStr(summaryStats.ordinary.domestic.fee + summaryStats.printed.domestic.fee + summaryStats.registered.domestic.fee + summaryStats.eco.domestic.fee + summaryStats.parcel.domestic.fee + summaryStats.others.domestic.fee);
+    
+    const totalIntlFeeStr = hasIncompleteFees ? '' : feeStr(summaryStats.ordinary.international.fee + summaryStats.registered.international.fee + summaryStats.epacket.international.fee + summaryStats.parcel.international.fee + summaryStats.others.international.fee);
+    
+    const totalAllFeeStr = hasIncompleteFees ? '' : (totalFee > 0 ? totalFee.toLocaleString() : '0');
+
     const company = settings.company || '......................................';
     const address = settings.address || '............................................................................';
     const phone = getFormattedPhoneForPrint(settings);
@@ -2080,7 +2096,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 _qrComp,
                 `Date: ${_qrDate}`,
                 `Items: ${totalItemsAll}`,
-                totalFee > 0 ? `Fee: ${totalFee.toLocaleString()} THB` : ''
+                (totalFee > 0 && !hasIncompleteFees) ? `Fee: ${totalFee.toLocaleString()} THB` : ''
             ].filter(Boolean).join('\n');
             new QRious({ element: _qrc, size: 150, value: _qrv, background: '#ffffff', foreground: '#000000' });
             qrDataUrl = _qrc.toDataURL('image/png');
@@ -2143,12 +2159,12 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 ` : ''}
                 <div style="flex: 1.5; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; box-sizing: border-box; text-align: right; height: 100%;">
                      <div style="font-size: 14pt; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 5px;">
-                        ยอดรวมสุทธิ: ${totalFee > 0 ? totalFee.toLocaleString() : '0'} บาท
+                        ยอดรวมสุทธิ: ${hasIncompleteFees ? '......................................' : (totalFee > 0 ? totalFee.toLocaleString() : '0')} บาท
                      </div>
                 </div>
             </div>
             
-            <!-- Official Service Classification Table (v7.5.2 — unified, always shown) -->
+            <!-- Official Service Classification Table (v7.5.3 — unified, always shown) -->
             <div style="margin-top: 15px; margin-bottom: 15px; page-break-inside: avoid;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; text-align: center; font-family: 'Sarabun', sans-serif; border: 1.5px solid black;">
                     <thead>
@@ -2223,10 +2239,10 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                         <tr style="background: #fafafa; font-weight: bold; font-size: 9.5pt;">
                             <td style="padding: 3px 5px; text-align: left; border: 1.5px solid black;">ยอดรวม</td>
                             <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${valStr(summaryStats.ordinary.domestic.count + summaryStats.printed.domestic.count + summaryStats.registered.domestic.count + summaryStats.eco.domestic.count + summaryStats.parcel.domestic.count + summaryStats.others.domestic.count)}</td>
-                            <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.ordinary.domestic.fee + summaryStats.printed.domestic.fee + summaryStats.registered.domestic.fee + summaryStats.eco.domestic.fee + summaryStats.parcel.domestic.fee + summaryStats.others.domestic.fee)}</td>
+                            <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${totalDomFeeStr}</td>
                             <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${valStr(summaryStats.ordinary.international.count + summaryStats.registered.international.count + summaryStats.epacket.international.count + summaryStats.parcel.international.count + summaryStats.others.international.count)}</td>
-                            <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.ordinary.international.fee + summaryStats.registered.international.fee + summaryStats.epacket.international.fee + summaryStats.parcel.international.fee + summaryStats.others.international.fee)}</td>
-                            <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${totalFee > 0 ? totalFee.toLocaleString() : '0'}</td>
+                            <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${totalIntlFeeStr}</td>
+                            <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${totalAllFeeStr}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -3297,7 +3313,7 @@ dispatchBtn.onclick = async () => {
         });
     }
     
-    // v7.5.2: GENERATE CONSOLIDATED SUMMARY + 3-WAY SPLIT MANIFESTS
+    // v7.5.3: GENERATE CONSOLIDATED SUMMARY + 3-WAY SPLIT MANIFESTS
     // Helper to detect international (same logic as inside generateSummarySheet)
     function _isIntlDispatch(item) {
         const type = item.serviceType;
