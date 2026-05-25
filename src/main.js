@@ -1710,7 +1710,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 const displayDestination = highlightPostcode(s.destination, s.options?.isRemote);
                 const isWeightEmpty = !s.weight || s.weight == 0;
                 
-                // Hide weight based on settings (v7.5.5)
+                // Hide weight based on settings (v7.5.6)
                 const hideWeightList = settings.hideWeightServices || ['ORD', 'PRINTED'];
                 const shouldHideWeight = hideWeightList.includes(s.serviceType);
                 const displayWeight = (isWeightEmpty || shouldHideWeight) ? '' : parseFloat(s.weight).toLocaleString();
@@ -1824,7 +1824,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     const volWeightItems = items.filter(s => s.options?.dimensions && (s.options.dimensions.w || s.options.dimensions.l || s.options.dimensions.h));
 
 
-    // v7.5.5: EMS items are split into domestic/international sub-groups in the summary table
+    // v7.5.6: EMS items are split into domestic/international sub-groups in the summary table
     function _isIntlForGrouping(item) {
         const type = item.serviceType;
         const name = (item.customServiceName || '').toUpperCase();
@@ -2182,7 +2182,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </div>
             </div>
             
-            <!-- Official Service Classification Table (v7.5.5 — always shown) -->
+            <!-- Official Service Classification Table (v7.5.6 — always shown) -->
             <div style="margin-top: 15px; margin-bottom: 15px; page-break-inside: avoid;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; text-align: center; font-family: 'Sarabun', sans-serif; border: 1.5px solid black;">
                     <thead>
@@ -3339,7 +3339,7 @@ dispatchBtn.onclick = async () => {
         });
     }
     
-    // v7.5.5: GENERATE SPLIT SUMMARY SHEETS + 3-WAY SPLIT MANIFESTS
+    // v7.5.6: GENERATE SPLIT SUMMARY SHEETS + 3-WAY SPLIT MANIFESTS
     // Helper to detect international (same logic as inside generateSummarySheet)
     function _isIntlDispatch(item) {
         const type = item.serviceType;
@@ -3369,18 +3369,33 @@ dispatchBtn.onclick = async () => {
         let finalHtml = '';
         const paymentType = settings.paymentType || 'เงินสด';
 
-        // --- Split Summary Sheets (EMS vs other services — v7.5.5) ---
+        // --- Split Summary Sheets (EMS vs other services — v7.5.6) ---
         let sumCopies = 1;
         if (paymentType === 'เงินเชื่อ') { sumCopies = 2; }
         else if (paymentType === 'เครื่องประทับไปรษณียากร') { sumCopies = 3; }
 
         const emsGroup = [...emsDomesticGroup, ...emsIntlGroup];
         if (emsGroup.length > 0) {
-            let emsCopies = Math.max(2, sumCopies); // Always at least 2 copies for EMS summary sheet!
-            finalHtml += generateSummarySheet(emsGroup, "EMS", emsCopies);
+            finalHtml += generateSummarySheet(emsGroup, "EMS", sumCopies);
         }
         if (otherGroup.length > 0) {
             finalHtml += generateSummarySheet(otherGroup, "ลงทะเบียน และอื่นๆ", sumCopies);
+        }
+
+        // --- EMS Domestic Manifests ---
+        if (emsDomesticGroup.length > 0) {
+            let manCopies = 1;
+            if (paymentType === 'เงินเชื่อ') { manCopies = 3; }
+            else if (paymentType === 'เครื่องประทับไปรษณียากร') { manCopies = 2; }
+            finalHtml += generatePrintPages(emsDomesticGroup, "EMS ในประเทศ", manCopies);
+        }
+
+        // --- EMS International Manifests ---
+        if (emsIntlGroup.length > 0) {
+            let manCopies = 1;
+            if (paymentType === 'เงินเชื่อ') { manCopies = 3; }
+            else if (paymentType === 'เครื่องประทับไปรษณียากร') { manCopies = 2; }
+            finalHtml += generatePrintPages(emsIntlGroup, "EMS ต่างประเทศ", manCopies);
         }
 
         // --- Other Services Manifests (REG, ECO, PARCEL, CUSTOM) ---
@@ -3981,7 +3996,7 @@ saveSettingsBtn.onclick = async () => {
     settings.meterDescending = parseFloat(document.getElementById('set-meter-desc').value) || 0;
     settings.meterAscending = parseFloat(document.getElementById('set-meter-asc').value) || 0;
 
-    // Save weight hiding settings (v7.5.5)
+    // Save weight hiding settings (v7.5.6)
     const hideWeightList = [];
     document.querySelectorAll('.hide-weight-chk').forEach(chk => {
         if (chk.checked) {
@@ -4895,7 +4910,7 @@ async function initApp() {
     updateTopupHistoryUI();
     document.getElementById('meter-settings-fields').style.display = (settings.paymentType === 'เครื่องประทับไปรษณียากร') ? 'block' : 'none';
 
-    // Load weight hiding checkboxes (v7.5.5)
+    // Load weight hiding checkboxes (v7.5.6)
     const hideWeightList = settings.hideWeightServices || ['ORD', 'PRINTED'];
     document.querySelectorAll('.hide-weight-chk').forEach(chk => {
         const type = chk.dataset.type;
