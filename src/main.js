@@ -738,7 +738,7 @@ function renderShipments() {
       <td class="editable-cell tracking-cell" contenteditable="true" data-field="trackingFormatted" data-index="${i}" style="font-weight: 600; white-space: pre; outline: none;">${displayTracking}</td>
       <td class="services-cell">
         <div style="display: flex; gap: 8px; flex-wrap: nowrap; justify-content: center;">
-            <label class="svc-mini" title="ตอบรับ (AR)"><input type="checkbox" ${s.options?.ar ? 'checked' : ''} onchange="toggleRowService(${i}, 'ar', this.checked)"> AR</label>
+            ${s.trackingFormatted !== '-' ? `<label class="svc-mini" title="ตอบรับ (AR)"><input type="checkbox" ${s.options?.ar ? 'checked' : ''} onchange="toggleRowService(${i}, 'ar', this.checked)"> AR</label>` : ''}
             ${s.serviceType === 'REG' ? `<label class="svc-mini" title="ตอบรับ Tracking (8 บาท)"><input type="checkbox" ${s.options?.arTracking ? 'checked' : ''} onchange="toggleRowService(${i}, 'arTracking', this.checked)"> AR Track</label>` : ''}
             ${s.serviceType === 'EMS' ? `
                 <div style="display: flex; align-items: center; gap: 4px;">
