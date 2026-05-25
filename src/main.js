@@ -1821,7 +1821,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     const volWeightItems = items.filter(s => s.options?.dimensions && (s.options.dimensions.w || s.options.dimensions.l || s.options.dimensions.h));
 
 
-    // v7.5.3: EMS items are split into domestic/international sub-groups in the summary table
+    // v7.5.4: EMS items are split into domestic/international sub-groups in the summary table
     function _isIntlForGrouping(item) {
         const type = item.serviceType;
         const name = (item.customServiceName || '').toUpperCase();
@@ -2035,9 +2035,24 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         }
     }
 
-    const totalDomFeeStr = hasIncompleteFees ? '' : feeStr(summaryStats.ordinary.domestic.fee + summaryStats.printed.domestic.fee + summaryStats.registered.domestic.fee + summaryStats.eco.domestic.fee + summaryStats.parcel.domestic.fee + summaryStats.others.domestic.fee);
+    const totalDomFeeStr = hasIncompleteFees ? '' : feeStr(
+        summaryStats.ordinary.domestic.fee + 
+        summaryStats.printed.domestic.fee + 
+        summaryStats.registered.domestic.fee + 
+        summaryStats.eco.domestic.fee + 
+        summaryStats.parcel.domestic.fee + 
+        summaryStats.ems.domestic.fee + 
+        summaryStats.others.domestic.fee
+    );
     
-    const totalIntlFeeStr = hasIncompleteFees ? '' : feeStr(summaryStats.ordinary.international.fee + summaryStats.registered.international.fee + summaryStats.epacket.international.fee + summaryStats.parcel.international.fee + summaryStats.others.international.fee);
+    const totalIntlFeeStr = hasIncompleteFees ? '' : feeStr(
+        summaryStats.ordinary.international.fee + 
+        summaryStats.registered.international.fee + 
+        summaryStats.epacket.international.fee + 
+        summaryStats.parcel.international.fee + 
+        summaryStats.ems.international.fee + 
+        summaryStats.others.international.fee
+    );
     
     const totalAllFeeStr = hasIncompleteFees ? '' : (totalFee > 0 ? totalFee.toLocaleString() : '0');
 
@@ -2164,7 +2179,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </div>
             </div>
             
-            <!-- Official Service Classification Table (v7.5.3 — unified, always shown) -->
+            <!-- Official Service Classification Table (v7.5.4 — always shown) -->
             <div style="margin-top: 15px; margin-bottom: 15px; page-break-inside: avoid;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; text-align: center; font-family: 'Sarabun', sans-serif; border: 1.5px solid black;">
                     <thead>
@@ -2229,6 +2244,14 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                             <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.parcel.domestic.fee + summaryStats.parcel.international.fee)}</td>
                         </tr>
                         <tr>
+                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">ไปรษณีย์ด่วนพิเศษ (EMS)</td>
+                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.ems.domestic.count)}</td>
+                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.ems.domestic.fee)}</td>
+                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.ems.international.count)}</td>
+                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.ems.international.fee)}</td>
+                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.ems.domestic.fee + summaryStats.ems.international.fee)}</td>
+                        </tr>
+                        <tr>
                             <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">อื่น ๆ</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.others.domestic.count)}</td>
                             <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.others.domestic.fee)}</td>
@@ -2238,9 +2261,9 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                         </tr>
                         <tr style="background: #fafafa; font-weight: bold; font-size: 9.5pt;">
                             <td style="padding: 3px 5px; text-align: left; border: 1.5px solid black;">ยอดรวม</td>
-                            <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${valStr(summaryStats.ordinary.domestic.count + summaryStats.printed.domestic.count + summaryStats.registered.domestic.count + summaryStats.eco.domestic.count + summaryStats.parcel.domestic.count + summaryStats.others.domestic.count)}</td>
+                            <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${valStr(summaryStats.ordinary.domestic.count + summaryStats.printed.domestic.count + summaryStats.registered.domestic.count + summaryStats.eco.domestic.count + summaryStats.parcel.domestic.count + summaryStats.ems.domestic.count + summaryStats.others.domestic.count)}</td>
                             <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${totalDomFeeStr}</td>
-                            <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${valStr(summaryStats.ordinary.international.count + summaryStats.registered.international.count + summaryStats.epacket.international.count + summaryStats.parcel.international.count + summaryStats.others.international.count)}</td>
+                            <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${valStr(summaryStats.ordinary.international.count + summaryStats.registered.international.count + summaryStats.epacket.international.count + summaryStats.parcel.international.count + summaryStats.ems.international.count + summaryStats.others.international.count)}</td>
                             <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${totalIntlFeeStr}</td>
                             <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${totalAllFeeStr}</td>
                         </tr>
@@ -3313,7 +3336,7 @@ dispatchBtn.onclick = async () => {
         });
     }
     
-    // v7.5.3: GENERATE CONSOLIDATED SUMMARY + 3-WAY SPLIT MANIFESTS
+    // v7.5.4: GENERATE SPLIT SUMMARY SHEETS + 3-WAY SPLIT MANIFESTS
     // Helper to detect international (same logic as inside generateSummarySheet)
     function _isIntlDispatch(item) {
         const type = item.serviceType;
@@ -3343,11 +3366,18 @@ dispatchBtn.onclick = async () => {
         let finalHtml = '';
         const paymentType = settings.paymentType || 'เงินสด';
 
-        // --- 1 Consolidated Summary Sheet for ALL shipments ---
+        // --- Split Summary Sheets (EMS vs other services — v7.5.4) ---
         let sumCopies = 1;
         if (paymentType === 'เงินเชื่อ') { sumCopies = 2; }
         else if (paymentType === 'เครื่องประทับไปรษณียากร') { sumCopies = 3; }
-        finalHtml += generateSummarySheet(shipments, "รวมทุกบริการ", sumCopies);
+
+        const emsGroup = [...emsDomesticGroup, ...emsIntlGroup];
+        if (emsGroup.length > 0) {
+            finalHtml += generateSummarySheet(emsGroup, "EMS", sumCopies);
+        }
+        if (otherGroup.length > 0) {
+            finalHtml += generateSummarySheet(otherGroup, "ลงทะเบียน และอื่นๆ", sumCopies);
+        }
 
         // --- EMS Domestic Manifests ---
         if (emsDomesticGroup.length > 0) {
