@@ -1843,7 +1843,8 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 const prev = parseTracking(sorted[i-1].trackingFormatted);
                 const curr = parseTracking(sorted[i].trackingFormatted);
                 
-                const isSequential = prev && curr && prev.prefix === curr.prefix && curr.num === prev.num + 1;
+                // Support both +1 (normal) and +2 (AR tracking, which leaves every other number for the return card)
+                const isSequential = prev && curr && prev.prefix === curr.prefix && (curr.num === prev.num + 1 || curr.num === prev.num + 2);
                 
                 if (isSequential) {
                     currentRange.end = sorted[i];
