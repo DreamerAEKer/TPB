@@ -1710,9 +1710,9 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 const displayDestination = highlightPostcode(s.destination, s.options?.isRemote);
                 const isWeightEmpty = !s.weight || s.weight == 0;
                 
-                const displayWeight = s.isOrdinaryBulk ? `*${s.unitFee}` : (isWeightEmpty ? '' : s.weight);
-                const displayFee = s.isOrdinaryBulk ? (parseFloat(s.fee) || 0).toLocaleString() : (isWeightEmpty ? '' : parseFloat(s.fee).toLocaleString());
-                const trackingCellContent = s.isOrdinaryBulk ? '' : s.displayTracking;
+                const displayWeight = isWeightEmpty ? '' : parseFloat(s.weight).toLocaleString();
+                const displayFee = (isWeightEmpty && !s.isOrdinaryBulk) ? '' : (parseFloat(s.fee) || 0).toLocaleString();
+                const trackingCellContent = s.isOrdinaryBulk ? `*${s.quantity}` : s.displayTracking;
                 
                 const isVolWeight = s.options?.useVolWeight && s.options?.dimensions;
                 const weightStyle = isVolWeight ? 'font-weight: bold;' : '';
@@ -1723,7 +1723,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                         <td style="text-align: left; padding: 1px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayRecipient}</td>
                         <td style="text-align: left; padding: 1px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayDestination}</td>
                         <td style="padding: 1px 4px; text-align: left; font-weight: bold; white-space: nowrap;">${trackingCellContent}</td>
-                        <td style="padding: 1px 4px; text-align: center; white-space: nowrap; ${weightStyle}">${s.isOrdinaryBulk ? displayWeight : (displayWeight ? parseFloat(displayWeight).toLocaleString() : '')}</td>
+                        <td style="padding: 1px 4px; text-align: center; white-space: nowrap; ${weightStyle}">${displayWeight}</td>
                         <td style="padding: 1px 4px; text-align: center; white-space: nowrap;">${displayFee}</td>
                         <td style="padding: 1px 4px; font-size: 8pt; text-align: center; white-space: nowrap;">${generateShipmentNote(s)}</td>
                     </tr>
@@ -1821,7 +1821,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     const volWeightItems = items.filter(s => s.options?.dimensions && (s.options.dimensions.w || s.options.dimensions.l || s.options.dimensions.h));
 
 
-    // v7.5.1: EMS items are split into domestic/international sub-groups in the summary table
+    // v7.5.2: EMS items are split into domestic/international sub-groups in the summary table
     function _isIntlForGrouping(item) {
         const type = item.serviceType;
         const name = (item.customServiceName || '').toUpperCase();
@@ -1829,6 +1829,11 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         const dest = (item.destination || '').trim();
         if (type === 'EPACKET' || name.includes('EPACKET') || name.includes('EPK') || name.includes('WORLD') || name.includes('ระหว่างประเทศ') || name.includes('ต่างประเทศ') || name.includes('INT')) return true;
         if (trk.startsWith('L')) return true;
+        
+        // Explicit domestic bypasses for bulk/common terms
+        if (name.includes('ในประเทศ') || name.includes('DOMESTIC') || name.includes('LOCAL')) return false;
+        if (dest.includes('กรุงเทพ') || dest.includes('ปริมณฑล') || dest.includes('ต่างจังหวัด') || dest.includes('ประเทศไทย') || dest.includes('BKK') || dest.includes('UPC')) return false;
+
         const hasThaiPostcode = /\d{5}/.test(dest);
         if (!hasThaiPostcode && dest.length > 0) return true;
         return false;
@@ -1956,7 +1961,15 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
             return true;
         }
         
-        // 3. If destination postcode does NOT have a 5-digit Thai postcode
+        // 3. Explicit domestic bypasses for bulk/common terms
+        if (name.includes('ในประเทศ') || name.includes('DOMESTIC') || name.includes('LOCAL')) {
+            return false;
+        }
+        if (dest.includes('กรุงเทพ') || dest.includes('ปริมณฑล') || dest.includes('ต่างจังหวัด') || dest.includes('ประเทศไทย') || dest.includes('BKK') || dest.includes('UPC')) {
+            return false;
+        }
+        
+        // 4. If destination postcode does NOT have a 5-digit Thai postcode
         const hasThaiPostcode = /\d{5}/.test(dest);
         if (!hasThaiPostcode && dest.length > 0) {
             return true;
@@ -2135,7 +2148,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </div>
             </div>
             
-            <!-- Official Service Classification Table (v7.5.1 — unified, always shown) -->
+            <!-- Official Service Classification Table (v7.5.2 — unified, always shown) -->
             <div style="margin-top: 15px; margin-bottom: 15px; page-break-inside: avoid;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; text-align: center; font-family: 'Sarabun', sans-serif; border: 1.5px solid black;">
                     <thead>
@@ -3284,7 +3297,7 @@ dispatchBtn.onclick = async () => {
         });
     }
     
-    // v7.5.1: GENERATE CONSOLIDATED SUMMARY + 3-WAY SPLIT MANIFESTS
+    // v7.5.2: GENERATE CONSOLIDATED SUMMARY + 3-WAY SPLIT MANIFESTS
     // Helper to detect international (same logic as inside generateSummarySheet)
     function _isIntlDispatch(item) {
         const type = item.serviceType;
@@ -3293,6 +3306,11 @@ dispatchBtn.onclick = async () => {
         const dest = (item.destination || '').trim();
         if (type === 'EPACKET' || name.includes('EPACKET') || name.includes('EPK') || name.includes('WORLD') || name.includes('ระหว่างประเทศ') || name.includes('ต่างประเทศ') || name.includes('INT')) return true;
         if (trk.startsWith('L')) return true;
+        
+        // Explicit domestic bypasses for bulk/common terms
+        if (name.includes('ในประเทศ') || name.includes('DOMESTIC') || name.includes('LOCAL')) return false;
+        if (dest.includes('กรุงเทพ') || dest.includes('ปริมณฑล') || dest.includes('ต่างจังหวัด') || dest.includes('ประเทศไทย') || dest.includes('BKK') || dest.includes('UPC')) return false;
+
         const hasThaiPostcode = /\d{5}/.test(dest);
         if (!hasThaiPostcode && dest.length > 0) return true;
         return false;
