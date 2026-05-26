@@ -1710,7 +1710,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 const displayDestination = highlightPostcode(s.destination, s.options?.isRemote);
                 const isWeightEmpty = !s.weight || s.weight == 0;
                 
-                // Hide weight based on settings (v7.5.6)
+                // Hide weight based on settings (v7.5.7)
                 const hideWeightList = settings.hideWeightServices || ['ORD', 'PRINTED'];
                 const shouldHideWeight = hideWeightList.includes(s.serviceType);
                 const displayWeight = (isWeightEmpty || shouldHideWeight) ? '' : parseFloat(s.weight).toLocaleString();
@@ -1824,7 +1824,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     const volWeightItems = items.filter(s => s.options?.dimensions && (s.options.dimensions.w || s.options.dimensions.l || s.options.dimensions.h));
 
 
-    // v7.5.6: EMS items are split into domestic/international sub-groups in the summary table
+    // v7.5.7: EMS items are split into domestic/international sub-groups in the summary table
     function _isIntlForGrouping(item) {
         const type = item.serviceType;
         const name = (item.customServiceName || '').toUpperCase();
@@ -2176,13 +2176,15 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </div>
                 ` : ''}
                 <div style="flex: 1.5; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; box-sizing: border-box; text-align: right; height: 100%;">
+                     ${hasIncompleteFees ? '' : `
                      <div style="font-size: 14pt; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 5px;">
-                        ยอดรวมสุทธิ: ${hasIncompleteFees ? '......................................' : (totalFee > 0 ? totalFee.toLocaleString() : '0')} บาท
+                        ยอดรวมสุทธิ: ${totalFee > 0 ? totalFee.toLocaleString() : '0'} บาท
                      </div>
+                     `}
                 </div>
             </div>
             
-            <!-- Official Service Classification Table (v7.5.6 — always shown) -->
+            <!-- Official Service Classification Table (v7.5.7 — always shown) -->
             <div style="margin-top: 15px; margin-bottom: 15px; page-break-inside: avoid;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; text-align: center; font-family: 'Sarabun', sans-serif; border: 1.5px solid black;">
                     <thead>
@@ -3339,7 +3341,7 @@ dispatchBtn.onclick = async () => {
         });
     }
     
-    // v7.5.6: GENERATE SPLIT SUMMARY SHEETS + 3-WAY SPLIT MANIFESTS
+    // v7.5.7: GENERATE SPLIT SUMMARY SHEETS + 3-WAY SPLIT MANIFESTS
     // Helper to detect international (same logic as inside generateSummarySheet)
     function _isIntlDispatch(item) {
         const type = item.serviceType;
@@ -3369,7 +3371,7 @@ dispatchBtn.onclick = async () => {
         let finalHtml = '';
         const paymentType = settings.paymentType || 'เงินสด';
 
-        // --- Split Summary Sheets (EMS vs other services — v7.5.6) ---
+        // --- Split Summary Sheets (EMS vs other services — v7.5.7) ---
         let sumCopies = 1;
         if (paymentType === 'เงินเชื่อ') { sumCopies = 2; }
         else if (paymentType === 'เครื่องประทับไปรษณียากร') { sumCopies = 3; }
@@ -3996,7 +3998,7 @@ saveSettingsBtn.onclick = async () => {
     settings.meterDescending = parseFloat(document.getElementById('set-meter-desc').value) || 0;
     settings.meterAscending = parseFloat(document.getElementById('set-meter-asc').value) || 0;
 
-    // Save weight hiding settings (v7.5.6)
+    // Save weight hiding settings (v7.5.7)
     const hideWeightList = [];
     document.querySelectorAll('.hide-weight-chk').forEach(chk => {
         if (chk.checked) {
@@ -4910,7 +4912,7 @@ async function initApp() {
     updateTopupHistoryUI();
     document.getElementById('meter-settings-fields').style.display = (settings.paymentType === 'เครื่องประทับไปรษณียากร') ? 'block' : 'none';
 
-    // Load weight hiding checkboxes (v7.5.6)
+    // Load weight hiding checkboxes (v7.5.7)
     const hideWeightList = settings.hideWeightServices || ['ORD', 'PRINTED'];
     document.querySelectorAll('.hide-weight-chk').forEach(chk => {
         const type = chk.dataset.type;
