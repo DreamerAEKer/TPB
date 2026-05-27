@@ -4535,7 +4535,134 @@ async function renderStats() {
     `;
 }
 
+async function updateArchiveBillDetail(batchId, batches) {
+    const panel = document.getElementById('archive-bill-detail-panel');
+    if (!panel) return;
+    
+    if (!batchId) {
+        panel.style.display = 'none';
+        return;
+    }
+    
+    const batch = batches.find(b => b.id === batchId);
+    if (!batch) {
+        panel.style.display = 'none';
+        return;
+    }
+    
+    // Group and calculate detailed fee per service type
+    const serviceGroups = {};
+    let totalItems = 0;
+    let totalFee = 0;
+    
+    batch.items.forEach(item => {
+        const svc = item.serviceType === 'CUSTOM' ? (item.customServiceName || 'อื่นๆ') : item.serviceType;
+        const fee = parseFloat(item.fee) || 0;
+        const qty = item.isOrdinaryBulk ? (parseInt(item.quantity) || 1) : 1;
+        
+        if (!serviceGroups[svc]) {
+            serviceGroups[svc] = { count: 0, totalFee: 0 };
+        }
+        serviceGroups[svc].count += qty;
+        serviceGroups[svc].totalFee += fee;
+        
+        totalItems += qty;
+        totalFee += fee;
+    });
+    
+    const timeStr = batch.date ? new Date(batch.date).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.' : '-';
+    const dateStr = batch.date ? new Date(batch.date).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
+    
+    let meterInfo = '';
+    if (batch.meterBefore && batch.meterAfter) {
+        meterInfo = `
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px; font-size: 0.85rem; color: #166534; display: flex; gap: 15px; margin-top: 10px;">
+                <span>📠 <b>เครื่องประทับ:</b></span>
+                <span><b>ก่อนปิดยอด:</b> ${batch.meterBefore.desc.toLocaleString()} บ.</span>
+                <span><b>หลังปิดยอด:</b> ${batch.meterAfter.desc.toLocaleString()} บ.</span>
+                <span><b>ใช้ไปในบิลนี้:</b> ${totalFee.toLocaleString()} บ.</span>
+            </div>
+        `;
+    }
+    
+    let html = `
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <h3 style="margin: 0; color: #1e293b; font-size: 1.15rem; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                    📄 รายละเอียดบิลนำส่ง <span style="background: #e0f2fe; color: #0369a1; font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; font-weight: bold;">${batch.isBackup ? '🔄 สำรองอัตโนมัติ' : 'รายการปกติ'}</span>
+                </h3>
+                <p style="margin: 4px 0 0 0; color: #64748b; font-size: 0.8rem;">
+                    📅 วันที่: <b>${dateStr}</b> เวลา <b>${timeStr}</b> | 💳 การชำระเงิน: <b>${batch.paymentType || 'เงินสด'}</b>
+                </p>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <div style="background: #fdf2f8; border: 1.5px solid #fbcfe8; border-radius: 8px; padding: 6px 12px; text-align: right;">
+                    <span style="font-size: 0.7rem; color: #db2777; display: block; font-weight: bold;">จำนวนทั้งหมด</span>
+                    <strong style="font-size: 1.1rem; color: #be123c;">${totalItems.toLocaleString()} <span style="font-size: 0.75rem; font-weight: normal; color: #64748b;">ชิ้น</span></strong>
+                </div>
+                <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 8px; padding: 6px 12px; text-align: right;">
+                    <span style="font-size: 0.7rem; color: #16a34a; display: block; font-weight: bold;">ยอดเงินรวมบิลนี้</span>
+                    <strong style="font-size: 1.1rem; color: #15803d;">${totalFee.toLocaleString()} <span style="font-size: 0.75rem; font-weight: normal; color: #64748b;">บาท</span></strong>
+                </div>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
+            <!-- Service Breakdown Table -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+                <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 0.85rem; font-weight: bold; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">📊 แจกแจงยอดบริการ</h4>
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                    <thead>
+                        <tr style="color: #64748b; font-weight: bold; text-align: left;">
+                            <th style="padding: 4px 0;">ประเภทบริการ</th>
+                            <th style="text-align: right; padding: 4px 0;">จำนวน (ชิ้น)</th>
+                            <th style="text-align: right; padding: 4px 0;">ค่าบริการ (บาท)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(serviceGroups).sort().map(svc => {
+                            const g = serviceGroups[svc];
+                            return `
+                                <tr style="border-bottom: 1px dashed #e2e8f0;">
+                                    <td style="padding: 6px 0; font-weight: 600; color: #1e293b;">${svc}</td>
+                                    <td style="text-align: right; padding: 6px 0; color: #475569;">${g.count.toLocaleString()}</td>
+                                    <td style="text-align: right; padding: 6px 0; font-weight: bold; color: #0f766e;">${g.totalFee.toLocaleString()}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Quick item search within this bill -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                <h4 style="margin: 0; color: #475569; font-size: 0.85rem; font-weight: bold; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">🔍 ตรวจสอบรายการในบิล</h4>
+                <div style="max-height: 180px; overflow-y: auto; font-size: 0.78rem; display: flex; flex-direction: column; gap: 4px; padding-right: 4px;">
+                    ${batch.items.map((item, i) => {
+                        const insBadge = item.options?.insurance ? ' 🛡️' : '';
+                        const arBadge = item.options?.ar || item.options?.arTracking ? ' ✉️ AR' : '';
+                        const details = [item.weight ? item.weight + ' กรัม' : '', item.fee ? item.fee + ' บ.' : ''].filter(Boolean).join(' | ');
+                        return `
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 5px 8px; border-radius: 4px; border: 1px solid #e2e8f0; gap: 8px;">
+                                <div style="font-family: monospace; font-weight: bold; color: #0f172a;">${i+1}. ${item.trackingFormatted || '-'}</div>
+                                <div style="color: #475569; text-align: right;">${item.recipient || 'ไม่ระบุผู้รับ'}${insBadge}${arBadge} (${details})</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        </div>
+        ${meterInfo}
+    `;
+    
+    panel.innerHTML = html;
+    panel.style.display = 'block';
+}
+
 async function renderArchiveView() {
+    const detailPanel = document.getElementById('archive-bill-detail-panel');
+    if (detailPanel) detailPanel.style.display = 'none';
+
     const monthStr = reportMonthInput.value; // "YYYY-MM"
     if (!monthStr) return;
     
@@ -4638,6 +4765,7 @@ async function renderArchiveView() {
             const hasVal = !!select.value;
             editBtn.style.display = hasVal ? 'inline-block' : 'none';
             deleteBtn.style.display = hasVal ? 'inline-block' : 'none';
+            updateArchiveBillDetail(select.value, batches);
         };
         
         editBtn.onclick = async () => {
