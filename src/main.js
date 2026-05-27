@@ -4508,7 +4508,7 @@ async function renderStats() {
     
     // Monthly Stats
     const filterType = archiveFilterType.value;
-    const monthlyArchives = archives.filter(a => a.date && a.date.startsWith(monthStr));
+    const monthlyArchives = archives.filter(a => a.date && a.date.startsWith(monthStr) && !a.isBackup);
     const payGroup = { 'เงินสด': 0, 'เงินเชื่อ': 0, 'เครื่องประทับไปรษณียากร': 0 };
     
     monthlyArchives.forEach(a => {
@@ -4531,12 +4531,12 @@ async function renderStats() {
 
     // Yearly Stats
     const currentYear = monthStr.substring(0, 4);
-    const yearlyArchives = archives.filter(a => a.date && a.date.startsWith(currentYear));
+    const yearlyArchives = archives.filter(a => a.date && a.date.startsWith(currentYear) && !a.isBackup);
     const yearTotal = yearlyArchives.reduce((s, a) => {
         if (!a.items) return s;
         return s + a.items.reduce((sum, item) => sum + (parseFloat(item.fee) || 0), 0);
     }, 0);
-    const yearItems = yearlyArchives.reduce((s, a) => s + (a.items ? a.items.length : 0), 0);
+    const yearItems = yearlyArchives.reduce((s, a) => s + (a.items ? a.items.reduce((sum, item) => sum + (item.isOrdinaryBulk ? (parseInt(item.quantity) || 1) : 1), 0) : 0), 0);
 
     statsYearly.innerHTML = `
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px;">
@@ -4615,25 +4615,31 @@ async function renderArchiveView() {
             <td style="text-align: right; padding: 12px; color: #0369a1; border-right: 1px solid #e2e8f0;">${dayOtherFee.toLocaleString()}</td>
             <td style="text-align: right; padding: 12px; font-weight: bold; color: #0f766e;">${dayTotalFee.toLocaleString()}</td>
             <td style="text-align: center; padding: 12px;">
-                <select class="view-batch-select" style="padding: 4px; border-radius: 4px; border: 1px solid #ccc;">
+                <select class="view-batch-select" style="padding: 4px; border-radius: 4px; border: 1px solid #ccc; max-width: 250px;">
                     <option value="">-- เลือกรายการบิล --</option>
                     ${batches.map((b, idx) => {
+                        let typeStr = b.isBackup ? '🔄 สำรองอัตโนมัติ' : `บิลที่ ${idx + 1}`;
                         let meterStr = '';
                         if (b.meterAfter) {
                             meterStr = ` [คงเหลือ: ${(b.meterAfter.desc || 0).toLocaleString()} บ. / ล่าง: ${(b.meterAfter.asc || 0).toLocaleString()}]`;
                         }
-                        return `<option value="${b.id}">บิลที่ ${idx + 1} (${b.items.length} รายการ)${meterStr}</option>`;
+                        let remarkStr = b.remarks ? ` - ${b.remarks}` : '';
+                        return `<option value="${b.id}">${typeStr} (${b.items.length} รายการ)${meterStr}${remarkStr}</option>`;
                     }).join('')}
                 </select>
                 <button class="btn-icon edit-batch-btn" style="display: none; background: #e0f2fe; color: #0284c7; font-weight: bold; padding: 4px 10px; margin-left: 5px;">แก้ไข / พิมพ์</button>
+                <button class="btn-icon delete-batch-btn" style="display: none; background: #fee2e2; color: #ef4444; font-weight: bold; padding: 4px 10px; margin-left: 5px;">🗑️ ลบประวัติ</button>
             </td>
         `;
         
         const select = tr.querySelector('.view-batch-select');
         const editBtn = tr.querySelector('.edit-batch-btn');
+        const deleteBtn = tr.querySelector('.delete-batch-btn');
         
         select.onchange = () => {
-            editBtn.style.display = select.value ? 'inline-block' : 'none';
+            const hasVal = !!select.value;
+            editBtn.style.display = hasVal ? 'inline-block' : 'none';
+            deleteBtn.style.display = hasVal ? 'inline-block' : 'none';
         };
         
         editBtn.onclick = async () => {
@@ -4642,7 +4648,26 @@ async function renderArchiveView() {
             const batch = batches.find(b => b.id === batchId);
             if (!batch) return;
             
-            if (!confirm('ต้องการโหลดรายการนี้เข้าไปในแผงควบคุมหลัก เพื่อแก้ไขและพิมพ์ใช่หรือไม่?\n(ข้อมูลบิลปัจจุบันที่ยังไม่ปิดยอด จะถูกแทนที่)')) return;
+            // Check if we need to auto-backup active shipments on dashboard
+            if (shipments.length > 0) {
+                const activeBatchIdx = batches.findIndex(b => b.id === batchId);
+                const batchLabel = batches[activeBatchIdx] && !batches[activeBatchIdx].isBackup ? `บิลที่ ${activeBatchIdx + 1}` : 'บิล';
+                if (!confirm(`ต้องการโหลดรายการนี้เข้าไปในแผงควบคุมหลักใช่หรือไม่?\n\n(ระบบตรวจพบพัสดุเดิมค้างอยู่บนจอหลักจำนวน ${shipments.length} รายการ ระบบจะทำการ [สำรองข้อมูลเดิมให้อัตโนมัติ] ไปยังประวัติรายงานก่อนเพื่อความปลอดภัย)`)) return;
+                
+                // Perform Auto-Backup of dashboard state
+                const backupId = 'M-BACKUP-' + Date.now();
+                const dateStr = new Date().toISOString();
+                await saveArchive({
+                    id: backupId,
+                    date: dateStr,
+                    items: [...shipments],
+                    paymentType: settings.paymentType,
+                    isBackup: true,
+                    remarks: `ระบบสำรองอัตโนมัติก่อนแก้ไข ${batchLabel}`
+                });
+            } else {
+                if (!confirm('ต้องการโหลดรายการนี้เข้าไปในแผงควบคุมหลัก เพื่อแก้ไขและพิมพ์ใช่หรือไม่?')) return;
+            }
             
             shipments = [...batch.items];
             history = [JSON.parse(JSON.stringify(shipments))];
@@ -4667,6 +4692,37 @@ async function renderArchiveView() {
                 updateHistoryButtons();
                 updatePreview();
             }, 50);
+        };
+
+        deleteBtn.onclick = async () => {
+            const batchId = select.value;
+            if (!batchId) return;
+            const batch = batches.find(b => b.id === batchId);
+            if (!batch) return;
+            
+            const passcode = prompt('🔑 กรุณากรอกรหัสผ่านเพื่อยืนยันการลบประวัติบิลนี้ (รหัสผ่านเริ่มต้น: 9999):');
+            if (passcode === null) return; // cancelled
+            if (passcode !== '9999') {
+                alert('❌ รหัสผ่านไม่ถูกต้อง ไม่สามารถลบข้อมูลบิลประวัติได้ครับ');
+                return;
+            }
+            
+            if (!confirm(`⚠️ ยืนยันการลบประวัติบิลนี้ออกจากระบบ?\n\n(หากระบบชำระเงินเป็นเครื่องประทับไปรษณียากร ยอดเงินที่หักไปจะถูกคืนกลับเข้ามิเตอร์อัตโนมัติ)`)) return;
+            
+            // Refund meter balance if applicable
+            if (batch.paymentType === 'เครื่องประทับไปรษณียากร') {
+                const refundFee = batch.items.reduce((sum, item) => sum + (parseFloat(item.fee) || 0), 0);
+                settings.meterDescending += refundFee;
+                settings.meterAscending -= refundFee;
+                await saveToDB('settings', settings);
+                updateMeterStatus();
+            }
+            
+            await deleteArchive(batchId);
+            alert('🗑️ ลบข้อมูลบิลประวัติและคืนยอดมิเตอร์เรียบร้อยแล้วครับ!');
+            
+            await renderStats();
+            await renderArchiveView();
         };
         
         archiveList.appendChild(tr);
