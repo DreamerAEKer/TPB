@@ -3453,51 +3453,48 @@ dispatchBtn.onclick = async () => {
         let finalHtml = '';
         const paymentType = settings.paymentType || 'เงินสด';
 
-        // --- Split Summary Sheets (EMS vs other services — v7.5.7) ---
+        // --- Split Summary Sheets & Manifests (Reordered to group EMS and Others — v7.6.1) ---
         let sumCopies = 1;
         if (paymentType === 'เงินเชื่อ') { sumCopies = 2; }
         else if (paymentType === 'เครื่องประทับไปรษณียากร') { sumCopies = 3; }
 
+        let emsManCopies = 1;
+        if (paymentType === 'เงินเชื่อ') { emsManCopies = 3; }
+        else if (paymentType === 'เครื่องประทับไปรษณียากร') { emsManCopies = 2; }
+
+        let otherManCopies = 1;
+        if (paymentType === 'เงินเชื่อ') { otherManCopies = 3; }
+
+        // 1. ใบสรุป EMS
         const emsGroup = [...emsDomesticGroup, ...emsIntlGroup];
         if (emsGroup.length > 0) {
             finalHtml += generateSummarySheet(emsGroup, "EMS", sumCopies);
         }
+
+        // 2. ใบนำส่ง EMS (ในประเทศ & ต่างประเทศ)
+        if (emsDomesticGroup.length > 0) {
+            finalHtml += generatePrintPages(emsDomesticGroup, "EMS ในประเทศ", emsManCopies);
+        }
+        if (emsIntlGroup.length > 0) {
+            finalHtml += generatePrintPages(emsIntlGroup, "EMS ต่างประเทศ", emsManCopies);
+        }
+
+        // 3. ใบสรุป ลงทะเบียน และอื่นๆ
         if (otherGroup.length > 0) {
             finalHtml += generateSummarySheet(otherGroup, "ลงทะเบียน และอื่นๆ", sumCopies);
         }
 
-        // --- EMS Domestic Manifests ---
-        if (emsDomesticGroup.length > 0) {
-            let manCopies = 1;
-            if (paymentType === 'เงินเชื่อ') { manCopies = 3; }
-            else if (paymentType === 'เครื่องประทับไปรษณียากร') { manCopies = 2; }
-            finalHtml += generatePrintPages(emsDomesticGroup, "EMS ในประเทศ", manCopies);
-        }
-
-        // --- EMS International Manifests ---
-        if (emsIntlGroup.length > 0) {
-            let manCopies = 1;
-            if (paymentType === 'เงินเชื่อ') { manCopies = 3; }
-            else if (paymentType === 'เครื่องประทับไปรษณียากร') { manCopies = 2; }
-            finalHtml += generatePrintPages(emsIntlGroup, "EMS ต่างประเทศ", manCopies);
-        }
-
-        // --- Other Services Manifests (REG, ECO, PARCEL, CUSTOM) ---
+        // 4. ใบนำส่ง กลุ่มบริการอื่น ๆ (REG, ECO, PARCEL, CUSTOM)
         if (otherGroup.length > 0) {
-            let manCopies = 1;
-            if (paymentType === 'เงินเชื่อ') { manCopies = 3; }
-            // Meter = 1 copy for non-EMS
-
-            // Separate manifests by service type (never mix on same page)
             const regItems    = otherGroup.filter(s => s.serviceType === 'REG');
             const ecoItems    = otherGroup.filter(s => s.serviceType === 'ECO');
             const parcelItems = otherGroup.filter(s => s.serviceType === 'PARCEL');
             const customItems = otherGroup.filter(s => s.serviceType === 'CUSTOM');
 
-            if (regItems.length > 0)    finalHtml += generatePrintPages(regItems,    "ลงทะเบียน", manCopies);
-            if (ecoItems.length > 0)    finalHtml += generatePrintPages(ecoItems,    "eco-Post",  manCopies);
-            if (parcelItems.length > 0) finalHtml += generatePrintPages(parcelItems, "พัสดุ",     manCopies);
-            if (customItems.length > 0) finalHtml += generatePrintPages(customItems, "อื่นๆ",     manCopies);
+            if (regItems.length > 0)    finalHtml += generatePrintPages(regItems,    "ลงทะเบียน", otherManCopies);
+            if (ecoItems.length > 0)    finalHtml += generatePrintPages(ecoItems,    "eco-Post",  otherManCopies);
+            if (parcelItems.length > 0) finalHtml += generatePrintPages(parcelItems, "พัสดุ",     otherManCopies);
+            if (customItems.length > 0) finalHtml += generatePrintPages(customItems, "อื่นๆ",     otherManCopies);
         }
         
         printSection.innerHTML = finalHtml;
