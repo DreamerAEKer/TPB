@@ -3361,48 +3361,12 @@ dispatchBtn.onclick = async () => {
         return;
     }
     
-    if (editingArchiveId) {
-        if (!confirm('ยืนยันการบันทึกการแก้ไขของบิลเก่านี้? ข้อมูลในประวัติและรายงานจะถูกอัปเดต')) return;
+    const confirmMsg = editingArchiveId 
+        ? 'ยืนยันการเปิดหน้าต่างพิมพ์เพื่อบันทึกการแก้ไขบิลเก่านี้?'
+        : 'ยืนยันการปิดยอดและเปิดหน้าต่างพิมพ์ใบสรุป/ใบนำส่ง?';
         
-        // Update existing archive
-        const oldArchive = await loadArchive(editingArchiveId);
-        if (oldArchive) {
-            oldArchive.items = [...shipments];
-            await saveArchive(oldArchive);
-        }
-        
-    } else {
-        if (!confirm('ยืนยันการปิดยอดและพิมพ์ใบสรุป?\nระบบจะพิมพ์ใบสรุป 1 แผ่นรวมทุกบริการ และใบนำส่งแยกตามกลุ่ม EMS ในประเทศ / EMS ต่างประเทศ / อื่นๆ พร้อมบันทึกเข้าระบบประวัติ')) return;
-        
-        // Create new archive
-        const archiveId = 'M-' + Date.now();
-        const dateStr = new Date().toISOString();
-        
-        // Handle Meter Update
-        let meterBefore = null;
-        let meterAfter = null;
-        if (settings.paymentType === 'เครื่องประทับไปรษณียากร') {
-            const totalFee = shipments.reduce((sum, item) => sum + (parseFloat(item.fee) || 0), 0);
-            meterBefore = { desc: settings.meterDescending, asc: settings.meterAscending };
-            
-            settings.meterDescending -= totalFee;
-            settings.meterAscending += totalFee;
-            meterAfter = { desc: settings.meterDescending, asc: settings.meterAscending };
-            
-            await saveToDB('settings', settings);
-            updateMeterStatus();
-        }
+    if (!confirm(confirmMsg)) return;
 
-        await saveArchive({
-            id: archiveId,
-            date: dateStr,
-            items: [...shipments],
-            paymentType: settings.paymentType,
-            meterBefore,
-            meterAfter
-        });
-    }
-    
     // v7.5.7: GENERATE SPLIT SUMMARY SHEETS + 3-WAY SPLIT MANIFESTS
     // Helper to detect international (same logic as inside generateSummarySheet)
     function _isIntlDispatch(item) {
@@ -3481,21 +3445,72 @@ dispatchBtn.onclick = async () => {
         loadingOverlay.style.display = 'none';
         window.print();
         
-        // Clear / Reset automatically to prevent duplicate submissions
+        // DEFERRED SAVE TRANSACTION
         setTimeout(async () => {
-            shipments = [];
-            history = [[]];
-            historyIndex = 0;
-            editingArchiveId = null;
-            await saveToDB('shipments', shipments);
-            await saveToDB('history', history);
-            await saveToDB('historyIndex', historyIndex);
-            await saveToDB('editingArchiveId', editingArchiveId);
-            renderShipments();
-            updateSummary();
-            updateHistoryButtons();
+            const confirmSave = confirm(
+                'พิมพ์เอกสารเสร็จสิ้นแล้วใช่หรือไม่?\n\n' +
+                '• กด [ตกลง] (OK) => เพื่อบันทึกประวัติการส่งลงระบบหลัก ปรับปรุงยอดเงินมิเตอร์ และล้างตารางหน้าจอเพื่อเริ่มล็อตใหม่\n' +
+                '• กด [ยกเลิก] (Cancel) => เพื่อไม่บันทึกประวัติและยอดเงินมิเตอร์ ค้างรายการพัสดุไว้บนจอหลักให้คุณแก้ไขหรือพิมพ์ซ้ำได้ตามต้องการ'
+            );
             
-            alert('🎉 ปิดยอดและบันทึกข้อมูลเรียบร้อยแล้ว!\n\n(ระบบได้บันทึกประวัติและเคลียร์หน้าจอหลักให้ว่างโดยอัตโนมัติเพื่อป้องกันยอดซ้ำ หากต้องการพิมพ์ซ้ำหรือแก้ไขรายการนี้ สามารถเข้าไปจัดการได้ที่แท็บ "ประวัติและรายงาน" ครับ)');
+            if (confirmSave) {
+                // User confirmed: Commit the transaction!
+                if (editingArchiveId) {
+                    // Update existing archive
+                    const oldArchive = await loadArchive(editingArchiveId);
+                    if (oldArchive) {
+                        oldArchive.items = [...shipments];
+                        await saveArchive(oldArchive);
+                    }
+                } else {
+                    // Create new archive
+                    const archiveId = 'M-' + Date.now();
+                    const dateStr = new Date().toISOString();
+                    
+                    // Handle Meter Update
+                    let meterBefore = null;
+                    let meterAfter = null;
+                    if (settings.paymentType === 'เครื่องประทับไปรษณียากร') {
+                        const totalFee = shipments.reduce((sum, item) => sum + (parseFloat(item.fee) || 0), 0);
+                        meterBefore = { desc: settings.meterDescending, asc: settings.meterAscending };
+                        
+                        settings.meterDescending -= totalFee;
+                        settings.meterAscending += totalFee;
+                        meterAfter = { desc: settings.meterDescending, asc: settings.meterAscending };
+                        
+                        await saveToDB('settings', settings);
+                        updateMeterStatus();
+                    }
+
+                    await saveArchive({
+                        id: archiveId,
+                        date: dateStr,
+                        items: [...shipments],
+                        paymentType: settings.paymentType,
+                        meterBefore,
+                        meterAfter
+                    });
+                }
+                
+                // Clear the main table screen
+                shipments = [];
+                history = [[]];
+                historyIndex = 0;
+                editingArchiveId = null;
+                await saveToDB('shipments', shipments);
+                await saveToDB('history', history);
+                await saveToDB('historyIndex', historyIndex);
+                await saveToDB('editingArchiveId', editingArchiveId);
+                
+                renderShipments();
+                updateSummary();
+                updateHistoryButtons();
+                
+                alert('🎉 ปิดยอดและบันทึกประวัติการส่งเรียบร้อยสมบูรณ์แล้วครับ!');
+            } else {
+                // User cancelled: Rollback database write/meter changes. The data stays active on the dashboard.
+                alert('ℹ️ ยกเลิกการปิดยอดชั่วคราว ข้อมูลพัสดุและยอดเงินมิเตอร์จะยังคงเดิมบนแผงควบคุมหลัก เพื่อให้คุณตรวจสอบหรือแก้ไขได้ต่อครับ');
+            }
         }, 1000);
     }, 100);
 };
