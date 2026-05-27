@@ -1858,6 +1858,8 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
     let totalItemsAll = items.reduce((sum, s) => sum + (s.isOrdinaryBulk ? (parseInt(s.quantity) || 1) : 1), 0);
     let totalFee = 0;
     const priceMap = {};
+    let qrRanges = [];
+    let rangeRowsCount = 0;
 
     for (const [svc, svcItems] of Object.entries(groups)) {
         // Group consecutive items within this service
@@ -1895,6 +1897,21 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         // กรอบที่ 1 ข้างบน ไว้แสดง ชุดเลขที่ ที่ใช้ ดังนั้น บริการ ที่ไม่มีเลขที่ จะไม่มี ข้อมูลในนี้
         const hasTracking = firstSortedItem && !firstSortedItem.isOrdinaryBulk && compactStart !== '-' && compactStart !== '';
         if (hasTracking) {
+            rangeRowsCount++;
+            
+            // Format service name to ASCII/English for QR code compatibility
+            let qrSvcName = svc;
+            if (svc.includes('ในประเทศ')) qrSvcName = svc.replace('ในประเทศ', '(DOM)');
+            if (svc.includes('ต่างประเทศ')) qrSvcName = svc.replace('ต่างประเทศ', '(INTL)');
+            qrSvcName = qrSvcName.replace('จดหมายธรรมดา', 'ORD')
+                                 .replace('สิ่งตีพิมพ์', 'PRINTED')
+                                 .replace('ลงทะเบียน', 'REG')
+                                 .replace('พัสดุไปรษณีย์', 'PARCEL')
+                                 .replace('อื่น ๆ', 'OTHERS');
+            qrSvcName = qrSvcName.replace(/[^\x20-\x7E]/g, '').trim() || svc;
+
+            qrRanges.push(`- ${qrSvcName}: ${compactStart}-${compactEnd} (${totalSvcItems})`);
+
             rangeRows += `
                 <tr>
                     <td style="padding: 8px;">${svc}</td>
@@ -2100,10 +2117,10 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         printDate = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
     }
 
-    // Generate QR code — QRious encodes as ISO-8859-1, so use ASCII-only content
+    // Generate QR code — only if there's potential overflow (rangeRowsCount > 2)
     let qrDataUrl = '';
     try {
-        if (typeof QRious !== 'undefined') {
+        if (typeof QRious !== 'undefined' && rangeRowsCount > 2) {
             const _qrc = document.createElement('canvas');
             // Strip non-ASCII chars from company name (Thai company names won't encode properly)
             const _qrComp = (settings.company || 'Thai Post Bill').replace(/[^\x20-\x7E]/g, '').trim() || 'Thai Post Bill';
@@ -2114,7 +2131,9 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 _qrComp,
                 `Date: ${_qrDate}`,
                 `Items: ${totalItemsAll}`,
-                (totalFee > 0 && !hasIncompleteFees) ? `Fee: ${totalFee.toLocaleString()} THB` : ''
+                (totalFee > 0 && !hasIncompleteFees) ? `Fee: ${totalFee.toLocaleString()} THB` : '',
+                'Ranges:',
+                ...qrRanges
             ].filter(Boolean).join('\n');
             new QRious({ element: _qrc, size: 150, value: _qrv, background: '#ffffff', foreground: '#000000' });
             qrDataUrl = _qrc.toDataURL('image/png');
