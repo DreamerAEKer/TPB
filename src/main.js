@@ -1932,13 +1932,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
             const f = parseFloat(s.fee) || 0;
             totalFee += f;
             const hasAR = s.options?.ar || s.options?.arTracking;
-            if (s.isOrdinaryBulk) {
-                const unitF = parseFloat(s.unitFee) || 0;
-                if (unitF > 0) {
-                    const key = `@ ${unitF.toLocaleString()}`;
-                    priceMap[key] = (priceMap[key] || 0) + (parseInt(s.quantity) || 1);
-                }
-            } else {
+            if (!s.isOrdinaryBulk) {
                 if (f > 0) {
                     const key = `@ ${f.toLocaleString()}${hasAR ? ' (AR)' : ''}`;
                     priceMap[key] = (priceMap[key] || 0) + 1;
