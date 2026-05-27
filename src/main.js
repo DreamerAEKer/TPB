@@ -710,7 +710,9 @@ function renderShipments() {
         else if (s.serviceType === 'REG' && s.options?.arTracking) prevStep = 2;
     }
 
-    const displayTracking = (!isNewGroup) ? s.trackingFormatted : `<u>${s.trackingFormatted.substring(0, 2)}</u>${s.trackingFormatted.substring(2)}`;
+    const displayTracking = s.isOrdinaryBulk 
+        ? `${s.customServiceName || 'จดหมาย'} (${(parseInt(s.quantity) || 1).toLocaleString()} ชิ้น)`
+        : ((!isNewGroup) ? s.trackingFormatted : `<u>${s.trackingFormatted.substring(0, 2)}</u>${s.trackingFormatted.substring(2)}`);
 
     const destinationVal = s.destination || '';
     const zipMatch = destinationVal.match(/\d{5}/);
@@ -1715,7 +1717,9 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 const shouldHideWeight = hideWeightList.includes(s.serviceType);
                 const displayWeight = (isWeightEmpty || shouldHideWeight) ? '' : parseFloat(s.weight).toLocaleString();
                 const displayFee = (isWeightEmpty && !s.isOrdinaryBulk) ? '' : (parseFloat(s.fee) || 0).toLocaleString();
-                const trackingCellContent = s.isOrdinaryBulk ? `*${s.quantity}` : s.displayTracking;
+                const trackingCellContent = s.isOrdinaryBulk 
+                    ? `${s.customServiceName || 'จดหมาย'} (${(parseInt(s.quantity) || 1).toLocaleString()} ชิ้น)` 
+                    : s.displayTracking;
                 
                 const isVolWeight = s.options?.useVolWeight && s.options?.dimensions;
                 const weightStyle = isVolWeight ? 'font-weight: bold;' : '';
