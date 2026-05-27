@@ -711,7 +711,7 @@ function renderShipments() {
     }
 
     const displayTracking = s.isOrdinaryBulk 
-        ? `(${(parseInt(s.quantity) || 1).toLocaleString()} ${(s.customServiceName || '').includes('จดหมาย') ? 'ฉบับ' : 'ชิ้น'})`
+        ? `(${(parseInt(s.quantity) || 1).toLocaleString()} ฉบับ)`
         : ((!isNewGroup) ? s.trackingFormatted : `<u>${s.trackingFormatted.substring(0, 2)}</u>${s.trackingFormatted.substring(2)}`);
 
     const destinationVal = s.destination || '';
@@ -1718,7 +1718,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
                 const displayWeight = (isWeightEmpty || shouldHideWeight) ? '' : parseFloat(s.weight).toLocaleString();
                 const displayFee = (isWeightEmpty && !s.isOrdinaryBulk) ? '' : (parseFloat(s.fee) || 0).toLocaleString();
                 const trackingCellContent = s.isOrdinaryBulk 
-                    ? `(${(parseInt(s.quantity) || 1).toLocaleString()} ${(s.customServiceName || '').includes('จดหมาย') ? 'ฉบับ' : 'ชิ้น'})` 
+                    ? `(${(parseInt(s.quantity) || 1).toLocaleString()} ฉบับ)` 
                     : s.displayTracking;
                 
                 const isVolWeight = s.options?.useVolWeight && s.options?.dimensions;
