@@ -2121,6 +2121,124 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         }
     } catch (_qrErr) { console.warn('QR gen failed:', _qrErr); }
 
+    const tableRowsConfig = [
+        {
+            label: 'จดหมายธรรมดา',
+            domCount: summaryStats.ordinary.domestic.count,
+            domFee: summaryStats.ordinary.domestic.fee,
+            intlCount: summaryStats.ordinary.international.count,
+            intlFee: summaryStats.ordinary.international.fee,
+            totalFee: summaryStats.ordinary.domestic.fee + summaryStats.ordinary.international.fee,
+            hasIntl: true
+        },
+        {
+            label: 'สิ่งตีพิมพ์',
+            domCount: summaryStats.printed.domestic.count,
+            domFee: summaryStats.printed.domestic.fee,
+            intlCount: 0,
+            intlFee: 0,
+            totalFee: summaryStats.printed.domestic.fee,
+            hasIntl: false
+        },
+        {
+            label: 'ลงทะเบียน',
+            domCount: summaryStats.registered.domestic.count,
+            domFee: summaryStats.registered.domestic.fee,
+            intlCount: summaryStats.registered.international.count,
+            intlFee: summaryStats.registered.international.fee,
+            totalFee: summaryStats.registered.domestic.fee + summaryStats.registered.international.fee,
+            hasIntl: true
+        },
+        {
+            label: 'eCo-Post',
+            domCount: summaryStats.eco.domestic.count,
+            domFee: summaryStats.eco.domestic.fee,
+            intlCount: 0,
+            intlFee: 0,
+            totalFee: summaryStats.eco.domestic.fee,
+            hasIntl: false,
+            isEco: true
+        },
+        {
+            label: 'ePacket',
+            domCount: 0,
+            domFee: 0,
+            intlCount: summaryStats.epacket.international.count,
+            intlFee: summaryStats.epacket.international.fee,
+            totalFee: summaryStats.epacket.international.fee,
+            hasIntl: true,
+            isEPacket: true
+        },
+        {
+            label: 'พัสดุไปรษณีย์',
+            domCount: summaryStats.parcel.domestic.count,
+            domFee: summaryStats.parcel.domestic.fee,
+            intlCount: summaryStats.parcel.international.count,
+            intlFee: summaryStats.parcel.international.fee,
+            totalFee: summaryStats.parcel.domestic.fee + summaryStats.parcel.international.fee,
+            hasIntl: true
+        },
+        {
+            label: 'ไปรษณีย์ด่วนพิเศษ (EMS)',
+            domCount: summaryStats.ems.domestic.count,
+            domFee: summaryStats.ems.domestic.fee,
+            intlCount: summaryStats.ems.international.count,
+            intlFee: summaryStats.ems.international.fee,
+            totalFee: summaryStats.ems.domestic.fee + summaryStats.ems.international.fee,
+            hasIntl: true
+        },
+        {
+            label: 'อื่น ๆ',
+            domCount: summaryStats.others.domestic.count,
+            domFee: summaryStats.others.domestic.fee,
+            intlCount: summaryStats.others.international.count,
+            intlFee: summaryStats.others.international.fee,
+            totalFee: summaryStats.others.domestic.fee + summaryStats.others.international.fee,
+            hasIntl: true
+        }
+    ];
+
+    let classificationRowsHtml = '';
+    tableRowsConfig.forEach(row => {
+        if (row.domCount > 0 || row.intlCount > 0) {
+            let cellsHtml = '';
+            if (row.isEco) {
+                cellsHtml = `
+                    <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(row.domCount)}</td>
+                    <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(row.domFee)}</td>
+                    <td colspan="2" style="border: 1px solid black; text-align: center; padding: 3px 4px; background: #f5f5f5; color: #aaa; font-size: 8pt;">-</td>
+                `;
+            } else if (row.isEPacket) {
+                cellsHtml = `
+                    <td colspan="2" style="border: 1px solid black; text-align: center; padding: 3px 4px; background: #f5f5f5; color: #aaa; font-size: 8pt;">-</td>
+                    <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(row.intlCount)}</td>
+                    <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(row.intlFee)}</td>
+                `;
+            } else if (!row.hasIntl) {
+                cellsHtml = `
+                    <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(row.domCount)}</td>
+                    <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(row.domFee)}</td>
+                    <td style="border: 1px solid black; text-align: center; padding: 3px 4px;"></td>
+                    <td style="border: 1px solid black; text-align: center; padding: 3px 4px;"></td>
+                `;
+            } else {
+                cellsHtml = `
+                    <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(row.domCount)}</td>
+                    <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(row.domFee)}</td>
+                    <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(row.intlCount)}</td>
+                    <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(row.intlFee)}</td>
+                `;
+            }
+            classificationRowsHtml += `
+                <tr>
+                    <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">${row.label}</td>
+                    ${cellsHtml}
+                    <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(row.totalFee)}</td>
+                </tr>
+            `;
+        }
+    });
+
     const singleSheetHtml = `
         <div class="print-page">
             ${generateLogoHtml()}
@@ -2202,68 +2320,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                         </tr>
                     </thead>
                     <tbody style="text-align: center;">
-                        <tr>
-                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">จดหมายธรรมดา</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.ordinary.domestic.count)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.ordinary.domestic.fee)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.ordinary.international.count)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.ordinary.international.fee)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.ordinary.domestic.fee + summaryStats.ordinary.international.fee)}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">สิ่งตีพิมพ์</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.printed.domestic.count)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.printed.domestic.fee)}</td>
-                            <td style="border: 1px solid black; text-align: center; padding: 3px 4px;"></td>
-                            <td style="border: 1px solid black; text-align: center; padding: 3px 4px;"></td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.printed.domestic.fee)}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">ลงทะเบียน</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.registered.domestic.count)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.registered.domestic.fee)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.registered.international.count)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.registered.international.fee)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.registered.domestic.fee + summaryStats.registered.international.fee)}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">eCo-Post</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.eco.domestic.count)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.eco.domestic.fee)}</td>
-                            <td colspan="2" style="border: 1px solid black; text-align: center; padding: 3px 4px; background: #f5f5f5; color: #aaa; font-size: 8pt;">-</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.eco.domestic.fee)}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">ePacket</td>
-                            <td colspan="2" style="border: 1px solid black; text-align: center; padding: 3px 4px; background: #f5f5f5; color: #aaa; font-size: 8pt;">-</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.epacket.international.count)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.epacket.international.fee)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.epacket.international.fee)}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">พัสดุไปรษณีย์</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.parcel.domestic.count)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.parcel.domestic.fee)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.parcel.international.count)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.parcel.international.fee)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.parcel.domestic.fee + summaryStats.parcel.international.fee)}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">ไปรษณีย์ด่วนพิเศษ (EMS)</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.ems.domestic.count)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.ems.domestic.fee)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.ems.international.count)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.ems.international.fee)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.ems.domestic.fee + summaryStats.ems.international.fee)}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 2px 5px; text-align: left; border: 1px solid black;">อื่น ๆ</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.others.domestic.count)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.others.domestic.fee)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${valStr(summaryStats.others.international.count)}</td>
-                            <td style="border: 1px solid black; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.others.international.fee)}</td>
-                            <td style="border: 1px solid black; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 3px 4px;">${feeStr(summaryStats.others.domestic.fee + summaryStats.others.international.fee)}</td>
-                        </tr>
+                        ${classificationRowsHtml}
                         <tr style="background: #fafafa; font-weight: bold; font-size: 9.5pt;">
                             <td style="padding: 3px 5px; text-align: left; border: 1.5px solid black;">ยอดรวม</td>
                             <td style="border: 1.5px solid black; text-align: center; padding: 3px 4px;">${valStr(summaryStats.ordinary.domestic.count + summaryStats.printed.domestic.count + summaryStats.registered.domestic.count + summaryStats.eco.domestic.count + summaryStats.parcel.domestic.count + summaryStats.ems.domestic.count + summaryStats.others.domestic.count)}</td>
