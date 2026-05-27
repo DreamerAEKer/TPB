@@ -2352,6 +2352,13 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                 </table>
             </div>
             
+            ${paymentType === 'เครื่องประทับไปรษณียากร' ? `
+            <div style="margin-top: 18px; margin-bottom: 18px; font-size: 11.5pt; border: 1.5px dashed #bbb; padding: 12px 20px; border-radius: 8px; background: #fafafa; display: flex; justify-content: center; gap: 40px; align-items: center; width: fit-content; margin-left: auto; margin-right: auto; page-break-inside: avoid;">
+                <div>คงเหลือ (แถวบน): <b>${(settings.meterDescending || 0).toLocaleString()}</b> บาท</div>
+                <div>ที่ใช้ไปทั้งหมด (แถวล่าง): <b>${(settings.meterAscending || 0).toLocaleString()}</b> บาท</div>
+            </div>
+            ` : ''}
+            
             <div style="display: flex; justify-content: space-between; margin-top: auto; padding-top: 20px; font-size: 9pt; page-break-inside: avoid;">
                 <div style="width: 32%; text-align: center; border: 1px solid #eee; padding: 4px; border-radius: 4px;">
                     <div style="font-weight: bold; margin-bottom: 28px;">รับผิดชอบฝากส่ง</div>
@@ -2369,7 +2376,6 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     <div style="font-weight: bold; font-size: 10pt;">${(settings.postOffice && settings.postOffice.trim()) ? settings.postOffice : 'ไปรษณีย์กลาง 10501'}</div>
                 </div>
             </div>
-            ${generateMeterLineHtml()}
         </div>
     `;
 
