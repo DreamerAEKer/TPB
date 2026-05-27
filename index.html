@@ -83,7 +83,7 @@
             </button>
             <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
                 <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-                <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v7.6.8</div>
+                <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v7.6.9</div>
             </div>
         </div>
     </div>
@@ -353,9 +353,11 @@
                         </div>
                     </div>
                 </div>
-                <div id="meter-status-bar" class="hidden" style="flex: 1; margin: 0 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; height: 32px; box-sizing: border-box;">
+                <div id="meter-status-bar" class="hidden" style="margin: 0 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 4px 12px; border-radius: 8px; display: flex; align-items: center; gap: 12px; font-size: 0.8rem; height: 32px; box-sizing: border-box;">
                     <div style="font-weight: bold; color: #166534;">📠 เครื่องประทับ:</div>
-                    <div id="meter-descending-val" style="font-size: 0.95rem; font-weight: 700; color: #059669;">0.00</div>
+                    <div style="color: #047857; font-weight: bold;">บน (คงเหลือ): <span id="meter-descending-val" style="font-size: 0.9rem;">0.00</span></div>
+                    <div style="height: 12px; width: 1px; background: #bbf7d0;"></div>
+                    <div style="color: #0369a1; font-weight: bold;">ล่าง (ใช้ไป): <span id="meter-ascending-val" style="font-size: 0.9rem;">0.00</span></div>
                     <div id="meter-low-warn" style="display: none; background: #fee2e2; color: #be123c; padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; animation: pulse 2s infinite;">⚠️ เงินใกล้หมด!</div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.4rem; justify-content: flex-end;">

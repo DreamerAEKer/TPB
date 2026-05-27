@@ -573,12 +573,20 @@ function updateMeterStatus() {
     const isMeter = settings.paymentType === 'เครื่องประทับไปรษณียากร';
     const statusBar = document.getElementById('meter-status-bar');
     const descVal = document.getElementById('meter-descending-val');
+    const ascVal = document.getElementById('meter-ascending-val');
     const lowWarn = document.getElementById('meter-low-warn');
     
     if (isMeter) {
         statusBar.classList.remove('hidden');
-        descVal.textContent = (settings.meterDescending || 0).toLocaleString();
-        lowWarn.style.display = (settings.meterDescending < 1000) ? 'block' : 'none';
+        
+        // Sum total fees of current unsaved shipments in the main dashboard
+        const currentSessionFee = shipments.reduce((sum, item) => sum + (parseFloat(item.fee) || 0), 0);
+        const predictedDesc = (settings.meterDescending || 0) - currentSessionFee;
+        const predictedAsc = (settings.meterAscending || 0) + currentSessionFee;
+        
+        if (descVal) descVal.textContent = predictedDesc.toLocaleString();
+        if (ascVal) ascVal.textContent = predictedAsc.toLocaleString();
+        if (lowWarn) lowWarn.style.display = (predictedDesc < 1000) ? 'block' : 'none';
     } else {
         statusBar.classList.add('hidden');
     }
@@ -4598,7 +4606,13 @@ async function renderArchiveView() {
             <td style="text-align: center; padding: 12px;">
                 <select class="view-batch-select" style="padding: 4px; border-radius: 4px; border: 1px solid #ccc;">
                     <option value="">-- เลือกรายการบิล --</option>
-                    ${batches.map((b, idx) => `<option value="${b.id}">บิลที่ ${idx + 1} (${b.items.length} รายการ)</option>`).join('')}
+                    ${batches.map((b, idx) => {
+                        let meterStr = '';
+                        if (b.meterAfter) {
+                            meterStr = ` [คงเหลือ: ${(b.meterAfter.desc || 0).toLocaleString()} บ. / ล่าง: ${(b.meterAfter.asc || 0).toLocaleString()}]`;
+                        }
+                        return `<option value="${b.id}">บิลที่ ${idx + 1} (${b.items.length} รายการ)${meterStr}</option>`;
+                    }).join('')}
                 </select>
                 <button class="btn-icon edit-batch-btn" style="display: none; background: #e0f2fe; color: #0284c7; font-weight: bold; padding: 4px 10px; margin-left: 5px;">แก้ไข / พิมพ์</button>
             </td>
