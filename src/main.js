@@ -3507,9 +3507,6 @@ dispatchBtn.onclick = async () => {
                 updateHistoryButtons();
                 
                 alert('🎉 ปิดยอดและบันทึกประวัติการส่งเรียบร้อยสมบูรณ์แล้วครับ!');
-            } else {
-                // User cancelled: Rollback database write/meter changes. The data stays active on the dashboard.
-                alert('ℹ️ ยกเลิกการปิดยอดชั่วคราว ข้อมูลพัสดุและยอดเงินเครื่องประทับฯ จะยังคงเดิมบนแผงควบคุมหลัก เพื่อให้คุณตรวจสอบหรือแก้ไขได้ต่อครับ');
             }
         }, 1000);
     }, 100);
