@@ -543,20 +543,20 @@ function updateSummary() {
   const filtered = shipments.filter(s => s.serviceType === currentServiceTab || 
       (currentServiceTab === 'EMS_SPECIAL' && s.serviceType === 'EMS' && s.options?.isSpecialEms));
   
-  const totalItems = filtered.length;
+  const totalItems = filtered.reduce((sum, s) => sum + (s.isOrdinaryBulk ? (parseInt(s.quantity) || 1) : 1), 0);
   const totalFee = filtered.reduce((s, x) => s + (parseFloat(x.fee) || 0), 0);
   
   document.getElementById('total-items').textContent = totalItems.toLocaleString();
   document.getElementById('total-fee').textContent = totalFee.toLocaleString() + ' บาท';
 
   ['EMS', 'REG', 'ECO', 'PARCEL', 'CUSTOM'].forEach(svc => {
-      const count = shipments.filter(s => s.serviceType === svc).length;
+      const count = shipments.filter(s => s.serviceType === svc).reduce((sum, s) => sum + (s.isOrdinaryBulk ? (parseInt(s.quantity) || 1) : 1), 0);
       const counterEl = document.getElementById(`count-${svc.toLowerCase()}`);
       if(counterEl) counterEl.textContent = count;
   });
 
   // EMS Special tab count
-  const specialEmsCount = shipments.filter(s => s.serviceType === 'EMS' && s.options?.isSpecialEms).length;
+  const specialEmsCount = shipments.filter(s => s.serviceType === 'EMS' && s.options?.isSpecialEms).reduce((sum, s) => sum + (s.isOrdinaryBulk ? (parseInt(s.quantity) || 1) : 1), 0);
   const specialTabEl = document.getElementById('count-ems-special');
   if (specialTabEl) specialTabEl.textContent = specialEmsCount;
 
