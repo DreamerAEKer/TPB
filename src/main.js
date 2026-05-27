@@ -4608,12 +4608,21 @@ async function renderArchiveView() {
                     <option value="">-- เลือกรายการบิล --</option>
                     ${batches.map((b, idx) => {
                         let typeStr = b.isBackup ? '🔄 สำรองอัตโนมัติ' : `บิลที่ ${idx + 1}`;
+                        let timeStr = '';
+                        if (b.date) {
+                            try {
+                                const d = new Date(b.date);
+                                const h = String(d.getHours()).padStart(2, '0');
+                                const m = String(d.getMinutes()).padStart(2, '0');
+                                timeStr = ` [เวลา ${h}:${m}]`;
+                            } catch(e) {}
+                        }
                         let meterStr = '';
                         if (b.meterAfter) {
                             meterStr = ` [คงเหลือ: ${(b.meterAfter.desc || 0).toLocaleString()} บ. / ล่าง: ${(b.meterAfter.asc || 0).toLocaleString()}]`;
                         }
                         let remarkStr = b.remarks ? ` - ${b.remarks}` : '';
-                        return `<option value="${b.id}">${typeStr} (${b.items.length} รายการ)${meterStr}${remarkStr}</option>`;
+                        return `<option value="${b.id}">${typeStr}${timeStr} (${b.items.length} รายการ)${meterStr}${remarkStr}</option>`;
                     }).join('')}
                 </select>
                 <button class="btn-icon edit-batch-btn" style="display: none; background: #e0f2fe; color: #0284c7; font-weight: bold; padding: 4px 10px; margin-left: 5px;">แก้ไข / พิมพ์</button>
