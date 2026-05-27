@@ -2121,28 +2121,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         printDate = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
     }
 
-    // Generate QR code — only if there's potential overflow (rangeRowsCount > 2)
-    let qrDataUrl = '';
-    try {
-        if (typeof QRious !== 'undefined' && rangeRowsCount > 2) {
-            const _qrc = document.createElement('canvas');
-            // Strip non-ASCII chars from company name (Thai company names won't encode properly)
-            const _qrComp = (settings.company || 'Thai Post Bill').replace(/[^\x20-\x7E]/g, '').trim() || 'Thai Post Bill';
-            // Format date as DD/MM/YYYY (Buddhist year) using only digits and slashes
-            const _qrDateParts = printDate.match(/\d+/g) || [];
-            const _qrDate = _qrDateParts.length >= 3 ? `${_qrDateParts[0]}/${_qrDateParts[1]}/${_qrDateParts[2]}` : printDate.replace(/[^\x20-\x7E]/g, '').trim();
-            const _qrv = [
-                _qrComp,
-                `Date: ${_qrDate}`,
-                `Items: ${totalItemsAll}`,
-                (totalFee > 0 && !hasIncompleteFees) ? `Fee: ${totalFee.toLocaleString()} THB` : '',
-                'Ranges:',
-                ...qrRanges
-            ].filter(Boolean).join('\n');
-            new QRious({ element: _qrc, size: 150, value: _qrv, background: '#ffffff', foreground: '#000000' });
-            qrDataUrl = _qrc.toDataURL('image/png');
-        }
-    } catch (_qrErr) { console.warn('QR gen failed:', _qrErr); }
+    // QR Code generation removed as requested
 
     const tableRowsConfig = [
         {
@@ -2310,12 +2289,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
                     </div>
                 </div>
                 ` : `<div style="flex: 1.5;"></div>`}
-                ${qrDataUrl ? `
-                <div style="flex: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0 8px;">
-                    <img src="${qrDataUrl}" style="width: 82px; height: 82px; border: 1px solid #e5e7eb; border-radius: 4px; display: block;" />
-                    <div style="font-size: 6.5pt; color: #9ca3af; text-align: center; line-height: 1.3; white-space: nowrap;">สแกนตรวจสอบ<br>ข้อมูลฝากส่ง</div>
-                </div>
-                ` : ''}
+
                 <div style="flex: 1.5; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; box-sizing: border-box; text-align: right; height: 100%;">
                      ${hasIncompleteFees ? '' : `
                      <div style="font-size: 14pt; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 5px;">
