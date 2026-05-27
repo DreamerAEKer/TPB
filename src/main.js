@@ -3481,25 +3481,21 @@ dispatchBtn.onclick = async () => {
         loadingOverlay.style.display = 'none';
         window.print();
         
-        // Clear / Reset
+        // Clear / Reset automatically to prevent duplicate submissions
         setTimeout(async () => {
-            const msg = editingArchiveId 
-                ? 'บันทึกแก้ไขและพิมพ์เสร็จสิ้น ต้องการเคลียร์หน้าจอเพื่อเริ่มบิลใหม่เลยหรือไม่?' 
-                : 'พิมพ์เสร็จสิ้นแล้ว ล้างรายการในระบบเพื่อเริ่มล็อตใหม่เลยหรือไม่?';
-                
-            if(confirm(msg)) {
-                shipments = [];
-                history = [[]];
-                historyIndex = 0;
-                editingArchiveId = null;
-                await saveToDB('shipments', shipments);
-                await saveToDB('history', history);
-                await saveToDB('historyIndex', historyIndex);
-                await saveToDB('editingArchiveId', editingArchiveId);
-                renderShipments();
-                updateSummary();
-                updateHistoryButtons();
-            }
+            shipments = [];
+            history = [[]];
+            historyIndex = 0;
+            editingArchiveId = null;
+            await saveToDB('shipments', shipments);
+            await saveToDB('history', history);
+            await saveToDB('historyIndex', historyIndex);
+            await saveToDB('editingArchiveId', editingArchiveId);
+            renderShipments();
+            updateSummary();
+            updateHistoryButtons();
+            
+            alert('🎉 ปิดยอดและบันทึกข้อมูลเรียบร้อยแล้ว!\n\n(ระบบได้บันทึกประวัติและเคลียร์หน้าจอหลักให้ว่างโดยอัตโนมัติเพื่อป้องกันยอดซ้ำ หากต้องการพิมพ์ซ้ำหรือแก้ไขรายการนี้ สามารถเข้าไปจัดการได้ที่แท็บ "ประวัติและรายงาน" ครับ)');
         }, 1000);
     }, 100);
 };
