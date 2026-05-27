@@ -1687,7 +1687,7 @@ function generatePrintPages(itemsToPrint, titleSuffix = "", copies = 1) {
     } else if (paymentType === 'เครื่องประทับไปรษณียากร') {
         const lic = settings.meterLicense ? settings.meterLicense.trim() : 'พ. ...... / 2569';
         const num = settings.meterNumber ? settings.meterNumber.trim().toUpperCase() : '............';
-        licenseHeaderHtml = `<span style="font-weight: bold; font-size: 11.5pt;">${postOffice}</span> &nbsp;|&nbsp; ใบอนุญาตพิเศษที่ <b>${lic}</b> &nbsp;|&nbsp; เลขหมายอนุญาต: <b>${num}</b>`;
+        licenseHeaderHtml = `<span style="font-weight: bold; font-size: 11.5pt;">${postOffice}</span> &nbsp;|&nbsp; ใบอนุญาตที่ <b>${lic}</b> &nbsp;|&nbsp; เลขหมายอนุญาต: <b>${num}</b>`;
     }
     
     let printDate = settings.date ? settings.date.trim() : '';
@@ -2105,7 +2105,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
         const num = settings.meterNumber ? settings.meterNumber.trim().toUpperCase() : '............';
         licenseSummaryHtml = `
             <span style="font-weight: bold; font-size: 12pt;">${postOffice}</span>
-            <span>ใบอนุญาตพิเศษที่ <b>${lic}</b></span>
+            <span>ใบอนุญาตที่ <b>${lic}</b></span>
             <span>เลขหมายอนุญาต: <b>${num}</b></span>
         `;
     }
@@ -3993,7 +3993,7 @@ saveSettingsBtn.onclick = async () => {
         const meterNumber = document.getElementById('set-meter-number').value.trim();
         const meterLicense = document.getElementById('set-meter-license').value.trim();
         if (!meterNumber || !meterLicense) {
-            alert('⚠️ สำหรับเครื่องประทับไปรษณียากร กรุณาระบุทั้ง "เลขหมายอนุญาต" และ "ใบอนุญาตพิเศษที่" ให้ครบถ้วน');
+            alert('⚠️ สำหรับเครื่องประทับไปรษณียากร กรุณาระบุทั้ง "เลขหมายอนุญาต" และ "ใบอนุญาตที่" ให้ครบถ้วน');
             return;
         }
     }
