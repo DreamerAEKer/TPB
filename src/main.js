@@ -4700,9 +4700,9 @@ async function renderArchiveView() {
             const batch = batches.find(b => b.id === batchId);
             if (!batch) return;
             
-            const passcode = prompt('🔑 กรุณากรอกรหัสผ่านเพื่อยืนยันการลบประวัติบิลนี้ (รหัสผ่านเริ่มต้น: 9999):');
+            const passcode = prompt('🔑 กรุณากรอกรหัสผ่านเพื่อยืนยันการลบประวัติบิลนี้ (รหัสผ่านเริ่มต้น: 10501):');
             if (passcode === null) return; // cancelled
-            if (passcode !== '9999') {
+            if (passcode !== '10501') {
                 alert('❌ รหัสผ่านไม่ถูกต้อง ไม่สามารถลบข้อมูลบิลประวัติได้ครับ');
                 return;
             }
