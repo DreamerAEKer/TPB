@@ -527,7 +527,7 @@ async function updateHistory() {
       dispatchBtn.innerHTML = '💾 บันทึกการแก้ไข (Update)';
       dispatchBtn.style.background = '#10b981';
   } else {
-      dispatchBtn.innerHTML = '✅ ปิดยอดและพิมพ์ใบสรุป';
+      dispatchBtn.innerHTML = '✅ พิมพ์ชุดใบนำส่ง และ บันทึกรายการนำส่ง';
       dispatchBtn.style.background = '#10b981';
   }
 }
@@ -3361,12 +3361,6 @@ dispatchBtn.onclick = async () => {
         return;
     }
     
-    const confirmMsg = editingArchiveId 
-        ? 'ยืนยันการเปิดหน้าต่างพิมพ์เพื่อบันทึกการแก้ไขบิลเก่านี้?'
-        : 'ยืนยันการปิดยอดและเปิดหน้าต่างพิมพ์ใบสรุป/ใบนำส่ง?';
-        
-    if (!confirm(confirmMsg)) return;
-
     // v7.5.7: GENERATE SPLIT SUMMARY SHEETS + 3-WAY SPLIT MANIFESTS
     // Helper to detect international (same logic as inside generateSummarySheet)
     function _isIntlDispatch(item) {
@@ -3448,9 +3442,7 @@ dispatchBtn.onclick = async () => {
         // DEFERRED SAVE TRANSACTION
         setTimeout(async () => {
             const confirmSave = confirm(
-                'พิมพ์เอกสารเสร็จสิ้นแล้วใช่หรือไม่?\n\n' +
-                '• กด [ตกลง] (OK) => ยืนยันการทำใบนำส่งนี้\n' +
-                '• กด [ยกเลิก] (Cancel) => เพื่อกลับไปแผงควบคุมใบนำส่ง'
+                'ต้องการบันทึกข้อมูล? กดตกลง หรือ กดยกเลิก เพื่อกลับไปแผงควบคุมใบนำส่ง'
             );
             
             if (confirmSave) {
