@@ -2355,7 +2355,7 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
             ${paymentType === 'เครื่องประทับไปรษณียากร' ? `
             <div style="margin-top: 18px; margin-bottom: 18px; font-size: 11.5pt; border: 1.5px dashed #bbb; padding: 12px 20px; border-radius: 8px; background: #fafafa; display: flex; justify-content: center; gap: 40px; align-items: center; width: fit-content; margin-left: auto; margin-right: auto; page-break-inside: avoid;">
                 <div>คงเหลือ (แถวบน): <b>${(settings.meterDescending || 0).toLocaleString()}</b> บาท</div>
-                <div>ที่ใช้ไปทั้งหมด (แถวล่าง): <b>${(settings.meterAscending || 0).toLocaleString()}</b> บาท</div>
+                <div>ใช้ไปทั้งหมด (แถวล่าง): <b>${(settings.meterAscending || 0).toLocaleString()}</b> บาท</div>
             </div>
             ` : ''}
             
