@@ -4535,6 +4535,18 @@ async function renderStats() {
     `;
 }
 
+window.closeArchiveBillDetail = () => {
+    const selects = document.querySelectorAll('.view-batch-select');
+    selects.forEach(sel => {
+        sel.value = "";
+        sel.dispatchEvent(new Event('change'));
+    });
+    const panel = document.getElementById('archive-bill-detail-panel');
+    if (panel) {
+        panel.style.display = 'none';
+    }
+};
+
 async function updateArchiveBillDetail(batchId, batches) {
     const panel = document.getElementById('archive-bill-detail-panel');
     if (!panel) return;
@@ -4587,13 +4599,18 @@ async function updateArchiveBillDetail(batchId, batches) {
     
     let html = `
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-            <div>
-                <h3 style="margin: 0; color: #1e293b; font-size: 1.15rem; font-weight: bold; display: flex; align-items: center; gap: 6px;">
-                    📄 รายละเอียดบิลนำส่ง <span style="background: #e0f2fe; color: #0369a1; font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; font-weight: bold;">${batch.isBackup ? '🔄 สำรองอัตโนมัติ' : 'รายการปกติ'}</span>
-                </h3>
-                <p style="margin: 4px 0 0 0; color: #64748b; font-size: 0.8rem;">
-                    📅 วันที่: <b>${dateStr}</b> เวลา <b>${timeStr}</b> | 💳 การชำระเงิน: <b>${batch.paymentType || 'เงินสด'}</b>
-                </p>
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+                <button onclick="closeArchiveBillDetail()" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px; height: 36px; margin-top: 4px;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                    ✕ ปิดหน้านี้
+                </button>
+                <div>
+                    <h3 style="margin: 0; color: #1e293b; font-size: 1.15rem; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                        📄 รายละเอียดบิลนำส่ง <span style="background: #e0f2fe; color: #0369a1; font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; font-weight: bold;">${batch.isBackup ? '🔄 สำรองอัตโนมัติ' : 'รายการปกติ'}</span>
+                    </h3>
+                    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 0.8rem;">
+                        📅 วันที่: <b>${dateStr}</b> เวลา <b>${timeStr}</b> | 💳 การชำระเงิน: <b>${batch.paymentType || 'เงินสด'}</b>
+                    </p>
+                </div>
             </div>
             <div style="display: flex; gap: 12px; align-items: center;">
                 <div style="background: #fdf2f8; border: 1.5px solid #fbcfe8; border-radius: 8px; padding: 6px 12px; text-align: right;">
