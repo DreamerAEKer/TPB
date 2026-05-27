@@ -4628,7 +4628,7 @@ async function renderArchiveView() {
                     }).join('')}
                 </select>
                 <button class="btn-icon edit-batch-btn" style="display: none; background: #e0f2fe; color: #0284c7; font-weight: bold; padding: 4px 10px; margin-left: 5px;">แก้ไข / พิมพ์</button>
-                <button class="btn-icon delete-batch-btn" style="display: none; background: #fee2e2; color: #ef4444; font-weight: bold; padding: 4px 10px; margin-left: 5px;">🗑️ ลบประวัติ</button>
+                <button class="btn-icon delete-batch-btn" style="display: none; background: #fee2e2; color: #ef4444; font-weight: bold; padding: 4px 10px; margin-left: 5px;">🗑️ ลบข้อมูลการนำส่ง</button>
             </td>
         `;
         
