@@ -3966,7 +3966,7 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// 📠 Postage Meter Transaction & Adjustment Manager logic (v7.9.0-custom)
+// 📠 Postage Meter Transaction & Adjustment Manager logic (v7.9.1-custom)
 const meterTxModal = document.getElementById('meter-transaction-modal');
 const btnMeterAdjustment = document.getElementById('btn-meter-adjustment');
 const closeMeterTxModal = document.getElementById('close-meter-tx-modal');
@@ -6363,20 +6363,59 @@ if (batchTabImportBtn) {
     batchTabImportBtn.onclick = () => switchBatchTab('import');
 }
 
+function updateToggleButtonsState() {
+    const batchPanel = document.getElementById('batch-helper-panel');
+    const excelPanel = document.getElementById('excel-import-panel');
+    const toggleBatch = document.getElementById('toggle-batch-btn');
+    const toggleExcel = document.getElementById('toggle-excel-import-btn');
+    
+    const isBatchOpen = batchPanel && batchPanel.style.display === 'block';
+    const isExcelOpen = excelPanel && excelPanel.style.display === 'block';
+    
+    // Batch helper button styling
+    if (toggleBatch) {
+        if (isBatchOpen) {
+            toggleBatch.style.background = '#2563eb'; // Royal Blue (solid active)
+            toggleBatch.style.color = '#ffffff';
+            toggleBatch.style.borderColor = '#2563eb';
+            toggleBatch.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.25)';
+        } else {
+            toggleBatch.style.background = '#eff6ff'; // Default light blue state
+            toggleBatch.style.color = '#1d4ed8';
+            toggleBatch.style.borderColor = '#bfdbfe';
+            toggleBatch.style.boxShadow = 'none';
+        }
+    }
+    
+    // Excel import button styling
+    if (toggleExcel) {
+        if (isExcelOpen) {
+            toggleExcel.style.background = '#16a34a'; // Vibrant Green (solid active)
+            toggleExcel.style.color = '#ffffff';
+            toggleExcel.style.borderColor = '#16a34a';
+            toggleExcel.style.boxShadow = '0 0 0 3px rgba(22, 163, 74, 0.25)';
+        } else {
+            toggleExcel.style.background = '#f0fdf4'; // Default light green state
+            toggleExcel.style.color = '#15803d';
+            toggleExcel.style.borderColor = '#bbf7d0';
+            toggleExcel.style.boxShadow = 'none';
+        }
+    }
+}
+
 if (toggleBatchBtn && batchHelperPanel) {
     toggleBatchBtn.onclick = () => {
-        const isHidden = batchHelperPanel.style.display === 'none';
-        batchHelperPanel.style.display = isHidden ? 'block' : 'none';
-        toggleBatchBtn.style.background = isHidden ? '#eff6ff' : '#f8fafc';
-        toggleBatchBtn.style.color = isHidden ? '#1d4ed8' : '#64748b';
-        toggleBatchBtn.style.borderColor = isHidden ? '#bfdbfe' : '#cbd5e1';
-        
-        if (isHidden) {
+        const isOpen = batchHelperPanel.style.display === 'block';
+        if (isOpen) {
+            batchHelperPanel.style.display = 'none';
+        } else {
+            batchHelperPanel.style.display = 'block';
             const excelImportPanel = document.getElementById('excel-import-panel');
             if (excelImportPanel) excelImportPanel.style.display = 'none';
             // Default to the first tab (Edit) when opened
             switchBatchTab('edit');
         }
+        updateToggleButtonsState();
     };
 }
 
@@ -6955,14 +6994,15 @@ const excelImportPanel = document.getElementById('excel-import-panel');
 
 if (toggleExcelImportBtn && excelImportPanel) {
     toggleExcelImportBtn.onclick = () => {
-        const isHidden = excelImportPanel.style.display === 'none';
-        excelImportPanel.style.display = isHidden ? 'block' : 'none';
-        
-        // Hide batch helper if open
-        const batchHelperPanel = document.getElementById('batch-helper-panel');
-        if (batchHelperPanel && isHidden) {
-            batchHelperPanel.style.display = 'none';
+        const isOpen = excelImportPanel.style.display === 'block';
+        if (isOpen) {
+            excelImportPanel.style.display = 'none';
+        } else {
+            excelImportPanel.style.display = 'block';
+            const batchHelperPanel = document.getElementById('batch-helper-panel');
+            if (batchHelperPanel) batchHelperPanel.style.display = 'none';
         }
+        updateToggleButtonsState();
     };
 }
 
@@ -7421,3 +7461,6 @@ const batchImportBtn = document.getElementById('batch-import-btn');
 if (batchImportBtn) {
     batchImportBtn.onclick = applyBulkImport;
 }
+
+// Call once on page load to initialize the toggle button styling
+updateToggleButtonsState();
