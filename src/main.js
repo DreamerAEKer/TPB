@@ -3966,7 +3966,7 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// 📠 Postage Meter Transaction & Adjustment Manager logic (v7.9.1-custom)
+// 📠 Postage Meter Transaction & Adjustment Manager logic (v7.9.2-custom)
 const meterTxModal = document.getElementById('meter-transaction-modal');
 const btnMeterAdjustment = document.getElementById('btn-meter-adjustment');
 const closeMeterTxModal = document.getElementById('close-meter-tx-modal');
