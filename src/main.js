@@ -3806,13 +3806,174 @@ savePrefixBtn.onclick = async () => {
     }, 500);
 };
 
-// Settings Modal
-settingsBtn.onclick = () => settingsModal.style.display = 'flex';
-closeSettingsBtn.onclick = () => settingsModal.style.display = 'none';
+// Settings Modal Backup & Rollback logic (v7.7.7-custom)
+let settingsBackup = null;
+
+function populateSettingsUI() {
+    document.getElementById('set-date').value = settings.date || '';
+    document.getElementById('set-session').value = settings.session || '';
+    document.getElementById('set-company').value = settings.company || '';
+    document.getElementById('set-address').value = settings.address || '';
+    
+    // Set mobile phone (with backward compatibility migration)
+    settings.mobilePhone = settings.mobilePhone || (settings.phone && !settings.phone.includes('ต่อ') ? settings.phone : '') || '';
+    document.getElementById('set-phone').value = settings.mobilePhone;
+    
+    // Set values in dedicated inputs
+    document.getElementById('set-cash-thp').value = settings.cashThp || '';
+    document.getElementById('set-cash-member-name').value = settings.cashMemberName || '';
+    document.getElementById('set-credit-license').value = settings.creditLicense || '';
+    document.getElementById('set-credit-thp').value = settings.creditThp || '';
+    document.getElementById('set-credit-member-name').value = settings.creditMemberName || '';
+    document.getElementById('set-meter-number').value = settings.meterNumber || '';
+    document.getElementById('set-meter-license').value = settings.meterLicense || '';
+    
+    // Load Office Phone settings for Credit
+    document.getElementById('set-credit-use-office').checked = settings.creditUseOffice || false;
+    document.getElementById('set-credit-office-phone').value = settings.creditOfficePhone || '';
+    document.getElementById('set-credit-office-ext').value = settings.creditOfficeExt || '';
+    document.getElementById('credit-office-wrapper').style.display = settings.creditUseOffice ? 'flex' : 'none';
+    
+    // Load Office Phone settings for Meter
+    document.getElementById('set-meter-use-office').checked = settings.meterUseOffice || false;
+    document.getElementById('set-meter-office-phone').value = settings.meterOfficePhone || '';
+    document.getElementById('set-meter-office-ext').value = settings.meterOfficeExt || '';
+    document.getElementById('meter-office-wrapper').style.display = settings.meterUseOffice ? 'flex' : 'none';
+    
+    // Bind checkbox event listeners to toggle wrappers in settings UI
+    document.getElementById('set-credit-use-office').onchange = (e) => {
+        document.getElementById('credit-office-wrapper').style.display = e.target.checked ? 'flex' : 'none';
+    };
+    document.getElementById('set-meter-use-office').onchange = (e) => {
+        document.getElementById('meter-office-wrapper').style.display = e.target.checked ? 'flex' : 'none';
+    };
+
+    // Bind real-time input listeners
+    document.getElementById('set-cash-thp').oninput = validatePaymentLicenseRealtime;
+    document.getElementById('set-credit-thp').oninput = validatePaymentLicenseRealtime;
+
+    document.getElementById('set-payment-type').value = settings.paymentType || 'เงินสด';
+    togglePaymentFields(settings.paymentType || 'เงินสด');
+    setFuelSurcharge.checked = settings.fuelSurcharge;
+    document.getElementById('set-post-office').value = settings.postOffice || 'ไปรษณีย์กลาง 10501';
+    document.getElementById('settings-home-zip').value = settings.homeZip || '';
+    
+    document.getElementById('set-show-sig-names').checked = settings.showSignatureNames || false;
+    document.getElementById('set-res-name').value = settings.responsibleName || '';
+    document.getElementById('set-sender-name').value = settings.senderName || '';
+    document.getElementById('settings-home-zip').value = settings.homeZip || '';
+    document.getElementById('sig-names-fields').style.display = settings.showSignatureNames ? 'block' : 'none';
+    document.getElementById('set-exclude-island-ems').checked = settings.excludeIslandEMS || false;
+    document.getElementById('set-exclude-island-eco').checked = settings.excludeIslandEco || false;
+    
+    document.getElementById('set-special-ems-enabled').checked = settings.specialEmsEnabled || false;
+    document.getElementById('set-special-ems-package').value = settings.specialEmsPackage || 'A12';
+    document.getElementById('admin-special-ems-fields').style.display = settings.specialEmsEnabled ? 'flex' : 'none';
+
+    // License Key UI
+    const licKeyEl = document.getElementById('set-license-key');
+    if (licKeyEl) {
+        licKeyEl.value = settings.specialEmsLicenseKey || '';
+        updateLicenseKeyStatus();
+    }
+
+    // Logo setup
+    document.getElementById('set-logo-width').value = settings.logoWidth || 150;
+    document.getElementById('logo-width-val').textContent = (settings.logoWidth || 150) + 'px';
+    document.getElementById('set-logo-align').value = settings.logoAlign || 'left';
+    updateLogoPreview();
+
+    // Meter setup
+    document.getElementById('set-meter-desc').value = settings.meterDescending || 0;
+    document.getElementById('set-meter-asc').value = settings.meterAscending || 0;
+    updateTopupHistoryUI();
+    document.getElementById('meter-settings-fields').style.display = (settings.paymentType === 'เครื่องประทับไปรษณียากร') ? 'block' : 'none';
+
+    // Load weight hiding checkboxes (v7.5.7)
+    const hideWeightList = settings.hideWeightServices || ['ORD', 'PRINTED'];
+    document.querySelectorAll('.hide-weight-chk').forEach(chk => {
+        const type = chk.dataset.type;
+        chk.checked = hideWeightList.includes(type);
+    });
+
+    if (!reportMonthInput.value) {
+        const now = new Date();
+        reportMonthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    // Lock/Unlock Meter Inputs if there are active unsaved shipments in the table
+    const hasUnsavedShipments = shipments.length > 0;
+    const descInput = document.getElementById('set-meter-desc');
+    const ascInput = document.getElementById('set-meter-asc');
+    const topupBtn = document.getElementById('btn-topup');
+    const topupDateInput = document.getElementById('topup-date');
+    const topupAmountInput = document.getElementById('topup-amount');
+    
+    let warningEl = document.getElementById('meter-unsaved-warning');
+    if (!warningEl) {
+        warningEl = document.createElement('div');
+        warningEl.id = 'meter-unsaved-warning';
+        warningEl.style.fontSize = '0.75rem';
+        warningEl.style.color = '#ef4444';
+        warningEl.style.marginTop = '0.5rem';
+        warningEl.style.fontWeight = 'bold';
+        warningEl.style.lineHeight = '1.3';
+        const meterSettingsContainer = document.getElementById('meter-settings-fields');
+        if (meterSettingsContainer) {
+            meterSettingsContainer.insertBefore(warningEl, meterSettingsContainer.firstChild.nextSibling);
+        }
+    }
+
+    if (hasUnsavedShipments) {
+        descInput.disabled = true;
+        ascInput.disabled = true;
+        topupBtn.disabled = true;
+        topupDateInput.disabled = true;
+        topupAmountInput.disabled = true;
+        warningEl.innerHTML = '⚠️ ไม่สามารถแก้ไขยอดเงินหรือเติมเงินชั่วคราวได้ เนื่องจากมีพัสดุรอส่งอยู่ในตารางนำส่งขณะนี้ กรุณาบันทึกหรือเคลียร์รายการพัสดุในตารางก่อนปรับปรุงยอดเงินครับ';
+        warningEl.style.display = 'block';
+    } else {
+        descInput.disabled = false;
+        ascInput.disabled = false;
+        topupBtn.disabled = false;
+        topupDateInput.disabled = false;
+        topupAmountInput.disabled = false;
+        warningEl.style.display = 'none';
+    }
+}
+
+function rollbackSettings() {
+    if (settingsBackup) {
+        settings = settingsBackup;
+        settingsBackup = null;
+        updateLogoPreview();
+        updateMeterStatus();
+    }
+    settingsModal.style.display = 'none';
+}
+
+settingsBtn.onclick = () => {
+    settingsBackup = JSON.parse(JSON.stringify(settings));
+    populateSettingsUI();
+    settingsModal.style.display = 'flex';
+};
+
+closeSettingsBtn.onclick = rollbackSettings;
 
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && settingsModal.style.display === 'flex') {
-        settingsModal.style.display = 'none';
+        rollbackSettings();
+    }
+});
+
+// Warn user of unsaved changes on tab close/refresh (v7.7.7-custom)
+window.addEventListener('beforeunload', (e) => {
+    const hasUnsavedSettings = settingsBackup !== null;
+    const hasUnsavedShipments = shipments.length > 0;
+    
+    if (hasUnsavedSettings || hasUnsavedShipments) {
+        e.preventDefault();
+        e.returnValue = '⚠️ คุณยังไม่ได้บันทึกข้อมูลนำส่งหรือตั้งค่าการใช้งาน หากปิดหรือรีเฟรชหน้าจอนี้ ข้อมูลจะสูญหายทันที';
     }
 });
 
@@ -4113,6 +4274,7 @@ saveSettingsBtn.onclick = async () => {
 
     await saveToDB('settings', settings);
     await saveToDB('shipments', shipments);
+    settingsBackup = null; // Clear backup on successful save
     settingsModal.style.display = 'none';
     if (archiveFilterType) {
         archiveFilterType.value = settings.paymentType || 'เงินสด';
@@ -5108,96 +5270,7 @@ async function initApp() {
     }
     updatePrefixListUI();
     
-    document.getElementById('set-date').value = settings.date || '';
-    document.getElementById('set-session').value = settings.session || '';
-    document.getElementById('set-company').value = settings.company || '';
-    document.getElementById('set-address').value = settings.address || '';
-    
-    // Set mobile phone (with backward compatibility migration)
-    settings.mobilePhone = settings.mobilePhone || (settings.phone && !settings.phone.includes('ต่อ') ? settings.phone : '') || '';
-    document.getElementById('set-phone').value = settings.mobilePhone;
-    
-    // Set values in dedicated inputs
-    document.getElementById('set-cash-thp').value = settings.cashThp || '';
-    document.getElementById('set-cash-member-name').value = settings.cashMemberName || '';
-    document.getElementById('set-credit-license').value = settings.creditLicense || '';
-    document.getElementById('set-credit-thp').value = settings.creditThp || '';
-    document.getElementById('set-credit-member-name').value = settings.creditMemberName || '';
-    document.getElementById('set-meter-number').value = settings.meterNumber || '';
-    document.getElementById('set-meter-license').value = settings.meterLicense || '';
-    
-    // Load Office Phone settings for Credit
-    document.getElementById('set-credit-use-office').checked = settings.creditUseOffice || false;
-    document.getElementById('set-credit-office-phone').value = settings.creditOfficePhone || '';
-    document.getElementById('set-credit-office-ext').value = settings.creditOfficeExt || '';
-    document.getElementById('credit-office-wrapper').style.display = settings.creditUseOffice ? 'flex' : 'none';
-    
-    // Load Office Phone settings for Meter
-    document.getElementById('set-meter-use-office').checked = settings.meterUseOffice || false;
-    document.getElementById('set-meter-office-phone').value = settings.meterOfficePhone || '';
-    document.getElementById('set-meter-office-ext').value = settings.meterOfficeExt || '';
-    document.getElementById('meter-office-wrapper').style.display = settings.meterUseOffice ? 'flex' : 'none';
-    
-    // Bind checkbox event listeners to toggle wrappers in settings UI
-    document.getElementById('set-credit-use-office').onchange = (e) => {
-        document.getElementById('credit-office-wrapper').style.display = e.target.checked ? 'flex' : 'none';
-    };
-    document.getElementById('set-meter-use-office').onchange = (e) => {
-        document.getElementById('meter-office-wrapper').style.display = e.target.checked ? 'flex' : 'none';
-    };
-
-    // Bind real-time input listeners
-    document.getElementById('set-cash-thp').oninput = validatePaymentLicenseRealtime;
-    document.getElementById('set-credit-thp').oninput = validatePaymentLicenseRealtime;
-
-    document.getElementById('set-payment-type').value = settings.paymentType || 'เงินสด';
-    togglePaymentFields(settings.paymentType || 'เงินสด');
-    setFuelSurcharge.checked = settings.fuelSurcharge;
-    document.getElementById('set-post-office').value = settings.postOffice || 'ไปรษณีย์กลาง 10501';
-    document.getElementById('settings-home-zip').value = settings.homeZip || '';
-    
-    document.getElementById('set-show-sig-names').checked = settings.showSignatureNames || false;
-    document.getElementById('set-res-name').value = settings.responsibleName || '';
-    document.getElementById('set-sender-name').value = settings.senderName || '';
-    document.getElementById('settings-home-zip').value = settings.homeZip || '';
-    document.getElementById('sig-names-fields').style.display = settings.showSignatureNames ? 'block' : 'none';
-    document.getElementById('set-exclude-island-ems').checked = settings.excludeIslandEMS || false;
-    document.getElementById('set-exclude-island-eco').checked = settings.excludeIslandEco || false;
-    
-    document.getElementById('set-special-ems-enabled').checked = settings.specialEmsEnabled || false;
-    document.getElementById('set-special-ems-package').value = settings.specialEmsPackage || 'A12';
-    document.getElementById('admin-special-ems-fields').style.display = settings.specialEmsEnabled ? 'flex' : 'none';
-
-    // License Key UI
-    const licKeyEl = document.getElementById('set-license-key');
-    if (licKeyEl) {
-        licKeyEl.value = settings.specialEmsLicenseKey || '';
-        updateLicenseKeyStatus();
-    }
-
-    // Logo setup
-    document.getElementById('set-logo-width').value = settings.logoWidth || 150;
-    document.getElementById('logo-width-val').textContent = (settings.logoWidth || 150) + 'px';
-    document.getElementById('set-logo-align').value = settings.logoAlign || 'left';
-    updateLogoPreview();
-
-    // Meter setup
-    document.getElementById('set-meter-desc').value = settings.meterDescending || 0;
-    document.getElementById('set-meter-asc').value = settings.meterAscending || 0;
-    updateTopupHistoryUI();
-    document.getElementById('meter-settings-fields').style.display = (settings.paymentType === 'เครื่องประทับไปรษณียากร') ? 'block' : 'none';
-
-    // Load weight hiding checkboxes (v7.5.7)
-    const hideWeightList = settings.hideWeightServices || ['ORD', 'PRINTED'];
-    document.querySelectorAll('.hide-weight-chk').forEach(chk => {
-        const type = chk.dataset.type;
-        chk.checked = hideWeightList.includes(type);
-    });
-
-    if (!reportMonthInput.value) {
-        const now = new Date();
-        reportMonthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    }
+    populateSettingsUI();
     
     // Auto-set archive filter to current global payment type
     if (archiveFilterType) {
