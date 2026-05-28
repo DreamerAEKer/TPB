@@ -4030,6 +4030,70 @@ if (txServiceSelect) {
     };
 }
 
+// Automatically calculate package quantity based on tracking numbers entered
+if (txTracking) {
+    txTracking.oninput = () => {
+        const text = txTracking.value.trim().toUpperCase();
+        if (!text) {
+            txQuantity.value = '1';
+            return;
+        }
+        
+        // 1. Check for standard 13-character tracking codes (e.g. EJ123456789TH)
+        const trackingRegex = /[A-Z]{2}\d{9}[A-Z]{2}/g;
+        const matches = text.match(trackingRegex);
+        
+        if (matches) {
+            if (matches.length >= 2 && (text.includes('-') || text.includes('ถึง') || text.includes('TO'))) {
+                const first = matches[0];
+                const last = matches[matches.length - 1];
+                
+                // Sequence is the first 8 digits (excluding check digit at index 8 of the 9-digit block)
+                const seq1 = parseInt(first.substring(2, 10), 10);
+                const seq2 = parseInt(last.substring(2, 10), 10);
+                
+                if (!isNaN(seq1) && !isNaN(seq2)) {
+                    const count = Math.abs(seq2 - seq1) + 1;
+                    if (count > 0 && count <= 2000) {
+                        txQuantity.value = count.toString();
+                        return;
+                    }
+                }
+            } else {
+                txQuantity.value = matches.length.toString();
+                return;
+            }
+        }
+        
+        // 2. Fallback to raw 8-9 digit number ranges (e.g. 123456789 - 123456800 or 12345678 - 12345680)
+        const numberRegex = /\b\d{8,9}\b/g;
+        const numMatches = text.match(numberRegex);
+        if (numMatches) {
+            if (numMatches.length >= 2 && (text.includes('-') || text.includes('ถึง') || text.includes('TO'))) {
+                const firstNumStr = numMatches[0];
+                const lastNumStr = numMatches[numMatches.length - 1];
+                
+                // If it's a 9-digit number range, we extract the first 8 digits as sequence (in case of check digit)
+                const s1 = parseInt(firstNumStr.length === 9 ? firstNumStr.substring(0, 8) : firstNumStr, 10);
+                const s2 = parseInt(lastNumStr.length === 9 ? lastNumStr.substring(0, 8) : lastNumStr, 10);
+                
+                if (!isNaN(s1) && !isNaN(s2)) {
+                    const count = Math.abs(s2 - s1) + 1;
+                    if (count > 0 && count <= 2000) {
+                        txQuantity.value = count.toString();
+                        return;
+                    }
+                }
+            } else {
+                txQuantity.value = numMatches.length.toString();
+                return;
+            }
+        }
+        
+        txQuantity.value = '1';
+    };
+}
+
 // Save transaction
 if (btnSaveMeterTx) {
     btnSaveMeterTx.onclick = async () => {
