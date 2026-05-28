@@ -3966,7 +3966,7 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// 📠 Postage Meter Transaction & Adjustment Manager logic (v7.8.1-custom)
+// 📠 Postage Meter Transaction & Adjustment Manager logic (v7.9.0-custom)
 const meterTxModal = document.getElementById('meter-transaction-modal');
 const btnMeterAdjustment = document.getElementById('btn-meter-adjustment');
 const closeMeterTxModal = document.getElementById('close-meter-tx-modal');
@@ -6395,28 +6395,330 @@ function loadSheetJS() {
     });
 }
 
+function loadExcelJS() {
+    return new Promise((resolve, reject) => {
+        if (window.ExcelJS) {
+            resolve(window.ExcelJS);
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+        script.onload = () => resolve(window.ExcelJS);
+        script.onerror = () => reject(new Error('Failed to load ExcelJS'));
+        document.head.appendChild(script);
+    });
+}
+
 async function generateExcelTemplate() {
     try {
-        const XLSX = await loadSheetJS();
+        if (loadingOverlay) {
+            loadingOverlay.querySelector('div:nth-of-type(2)').textContent = 'กำลังโหลดเครื่องมือจัดเตรียมเทมเพลต...';
+            loadingOverlay.querySelector('div:nth-of-type(3)').textContent = 'โปรดรอสักครู่ ระบบกำลังจัดเตรียมเทมเพลตพร้อมตัวเลือกบริการ';
+            loadingOverlay.style.display = 'flex';
+        }
         
-        // Define sample rows according to new specifications
-        const data = [
-            ["บริการ (EMS / ลงทะเบียน / eco-Post / พัสดุ)", "ชื่อผู้รับ", "รหัสไปรษณีย์", "น้ำหนัก (กรัม)", "กว้าง (ซม.)", "ยาว (ซม.)", "สูง (ซม.)", "เลขที่พัสดุ (ไม่บังคับ - ว่างไว้เพื่อรันเลขต่ออัตโนมัติ)"],
-            ["EMS", "นายสมชาย รักดี", "10500", 550, 15, 20, 10, ""],
-            ["ลงทะเบียน", "นางสาวสมศรี สุขใจ", "20000", 250, "", "", "", ""],
-            ["eco-Post", "นายประหยัด จันทร์", "10110", "", 30, 40, 20, ""]
+        const ExcelJS = await loadExcelJS();
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Template');
+        
+        // Define columns
+        worksheet.columns = [
+            { header: 'บริการ (EMS / ลงทะเบียน / eco-Post / พัสดุ)', key: 'service', width: 45 },
+            { header: 'ชื่อผู้รับ', key: 'recipient', width: 25 },
+            { header: 'รหัสไปรษณีย์', key: 'zipcode', width: 15 },
+            { header: 'น้ำหนัก (กรัม)', key: 'weight', width: 15 },
+            { header: 'กว้าง (ซม.)', key: 'width', width: 12 },
+            { header: 'ยาว (ซม.)', key: 'length', width: 12 },
+            { header: 'สูง (ซม.)', key: 'height', width: 12 },
+            { header: 'เลขที่พัสดุ (ไม่บังคับ - ว่างไว้เพื่อรันเลขต่ออัตโนมัติ)', key: 'tracking', width: 45 }
         ];
 
-        // Create sheet and workbook
-        const ws = XLSX.utils.aoa_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Template");
+        // Define options for service dropdown
+        const serviceOptions = [
+            'ลงทะเบียน',
+            'eCo-Post',
+            'EMS',
+            'พัสดุ',
+            'จดหมายระหว่างประเทศ',
+            'ลงทะเบียนระหว่างประเทศทางอากาศ',
+            'EMS World',
+            'อื่นๆ (ระบุเอง)'
+        ];
+        
+        // Add sample rows according to specifications
+        worksheet.addRow({ service: 'EMS', recipient: 'นายสมชาย รักดี', zipcode: '10500', weight: 550, width: 15, length: 20, height: 10, tracking: '' });
+        worksheet.addRow({ service: 'ลงทะเบียน', recipient: 'นางสาวสมศรี สุขใจ', zipcode: '20000', weight: 250, width: '', length: '', height: '', tracking: '' });
+        worksheet.addRow({ service: 'eCo-Post', recipient: 'นายประหยัด จันทร์', zipcode: '10110', weight: '', width: 30, length: 40, height: 20, tracking: '' });
 
-        // Save file
-        XLSX.writeFile(wb, "tpb_import_template.xlsx");
+        // Format Header row styling (beautiful premium header)
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF166534' } // green-800
+        };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+        headerRow.height = 26;
+
+        // Apply dropdown data validation to Service Column (Column A, rows 2 to 500)
+        for (let i = 2; i <= 500; i++) {
+            worksheet.getCell(`A${i}`).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: [`"${serviceOptions.join(',')}"`],
+                showErrorMessage: true,
+                errorTitle: 'ชื่อบริการไม่ถูกต้อง',
+                error: 'กรุณาเลือกชื่อบริการจากในรายการที่กำหนดให้เท่านั้น'
+            };
+            
+            // Format cell text alignments for better visuals
+            worksheet.getCell(`C${i}`).alignment = { horizontal: 'center' }; // zip
+            worksheet.getCell(`D${i}`).alignment = { horizontal: 'right' };  // weight
+            worksheet.getCell(`E${i}`).alignment = { horizontal: 'right' };  // width
+            worksheet.getCell(`F${i}`).alignment = { horizontal: 'right' };  // length
+            worksheet.getCell(`G${i}`).alignment = { horizontal: 'right' };  // height
+        }
+
+        // Save workbook and trigger browser download
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'tpb_import_template.xlsx';
+        link.click();
+        URL.revokeObjectURL(link.href);
+        
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
     } catch (err) {
+        console.error(err);
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
         alert('❌ ไม่สามารถดาวน์โหลดไฟล์ต้นแบบได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตครับ');
     }
+}
+
+async function parseAndImportPastedExcel() {
+    const pasteInput = document.getElementById('excel-paste-input');
+    const text = pasteInput.value.trim();
+    if (!text) {
+        alert('⚠️ กรุณาวางข้อมูลที่คัดลอกมาจาก Excel ก่อนครับ');
+        return;
+    }
+    
+    // Parse rows and columns from pasted spreadsheet cells
+    const lines = text.split(/\r?\n/);
+    const rows = lines.map(line => line.split('\t').map(c => c.trim()));
+    
+    if (rows.length === 0 || (rows.length === 1 && rows[0].length === 1 && !rows[0][0])) {
+        alert('❌ ไม่พบข้อมูลที่คัดลอกจาก Excel');
+        return;
+    }
+    
+    // Show loading overlay
+    if (loadingOverlay) {
+        const titleEl = loadingOverlay.querySelector('div:nth-of-type(2)');
+        const detailEl = loadingOverlay.querySelector('div:nth-of-type(3)');
+        if (titleEl) titleEl.textContent = 'กำลังประมวลผลข้อมูลที่วาง...';
+        if (detailEl) detailEl.textContent = 'ระบบกำลังวิเคราะห์ข้อมูลพัสดุและจัดเก็บลงรายการอัตโนมัติ';
+        loadingOverlay.style.display = 'flex';
+    }
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    // Determine active service type based on active tab
+    const isSpecialTab = currentServiceTab === 'EMS_SPECIAL';
+    const activeServiceType = isSpecialTab ? 'EMS' : currentServiceTab;
+    
+    // Get sidebar digits for consecutive generation
+    const startD = (bulkToggle.checked ? num8StartInput.value : digitsInput.value).trim();
+    let currentNum = parseInt(startD);
+    if (isNaN(currentNum)) currentNum = 10000001;
+    
+    let importedCount = 0;
+    let skippedCount = 0;
+    
+    // Auto-detect columns structure:
+    // Case 1: 1 column -> Recipient Name
+    // Case 2: 2 columns -> Recipient Name | Zipcode
+    // Case 3: 3 columns -> Recipient Name | Zipcode | Weight (g)
+    // Case 4: 4 columns -> Service Name | Recipient Name | Zipcode | Weight (g)
+    // Case 5: 8 columns -> Full Template: Service Name | Recipient Name | Zipcode | Weight | Width | Length | Height | Tracking
+    
+    for (let row of rows) {
+        if (row.length === 0 || (row.length === 1 && !row[0])) continue;
+        
+        // Skip header if it contains header keywords
+        const firstCell = row[0].toLowerCase();
+        if (firstCell.includes('บริการ') || firstCell.includes('ชื่อผู้รับ') || firstCell.includes('service') || firstCell.includes('recipient')) {
+            continue;
+        }
+        
+        let targetServiceType = activeServiceType;
+        let recipient = '';
+        let rawZip = '';
+        let rawWeight = 0;
+        let dimW = 0, dimL = 0, dimH = 0;
+        let trackingFormatted = '';
+        
+        const colCount = row.length;
+        if (colCount === 1) {
+            recipient = row[0];
+        } else if (colCount === 2) {
+            recipient = row[0];
+            rawZip = row[1];
+        } else if (colCount === 3) {
+            recipient = row[0];
+            rawZip = row[1];
+            rawWeight = parseFloat(row[2]) || 0;
+        } else if (colCount === 4) {
+            const rawSvc = row[0].toUpperCase();
+            if (rawSvc === 'EMS') targetServiceType = 'EMS';
+            else if (rawSvc.includes('ลงทะเบียน') || rawSvc === 'REG') targetServiceType = 'REG';
+            else if (rawSvc.includes('ECO') || rawSvc === 'ECO-POST') targetServiceType = 'ECO';
+            else if (rawSvc.includes('พัสดุ') || rawSvc === 'PARCEL') targetServiceType = 'PARCEL';
+            else if (rawSvc.includes('อื่น') || rawSvc === 'CUSTOM') targetServiceType = 'CUSTOM';
+            
+            recipient = row[1];
+            rawZip = row[2];
+            rawWeight = parseFloat(row[3]) || 0;
+        } else {
+            // Full template or multi-column layout
+            const rawSvc = row[0].toUpperCase();
+            if (rawSvc === 'EMS') targetServiceType = 'EMS';
+            else if (rawSvc.includes('ลงทะเบียน') || rawSvc === 'REG') targetServiceType = 'REG';
+            else if (rawSvc.includes('ECO') || rawSvc === 'ECO-POST') targetServiceType = 'ECO';
+            else if (rawSvc.includes('พัสดุ') || rawSvc === 'PARCEL') targetServiceType = 'PARCEL';
+            else if (rawSvc.includes('อื่น') || rawSvc === 'CUSTOM') targetServiceType = 'CUSTOM';
+            
+            recipient = row[1] || '';
+            rawZip = row[2] || '';
+            rawWeight = parseFloat(row[3]) || 0;
+            
+            if (colCount >= 7) {
+                dimW = parseFloat(row[4]) || 0;
+                dimL = parseFloat(row[5]) || 0;
+                dimH = parseFloat(row[6]) || 0;
+            }
+            if (colCount >= 8 && row[7]) {
+                const rawTracking = row[7].toUpperCase().replace(/[^A-Z0-9]/g, '');
+                if (rawTracking.length >= 5) {
+                    const match = rawTracking.match(/^([A-Z]{2})(\d{8})(\d)([A-Z]{2})$/);
+                    if (match) {
+                        trackingFormatted = formatTrackingNumber(match[1], match[2], match[3]);
+                    } else {
+                        const simpleMatch = rawTracking.match(/^([A-Z]{2})(\d{8})([A-Z]{2})$/);
+                        if (simpleMatch) {
+                            const cd = calculateCheckDigit(simpleMatch[2]);
+                            trackingFormatted = formatTrackingNumber(simpleMatch[1], simpleMatch[2], cd);
+                        } else {
+                            trackingFormatted = rawTracking;
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (!recipient) {
+            skippedCount++;
+            continue;
+        }
+        
+        const normZip = normalizeDestinationText(rawZip);
+        
+        // Generate tracking if not provided
+        if (!trackingFormatted) {
+            let servicePrefix = 'EX';
+            if (targetServiceType === 'REG') servicePrefix = 'RE';
+            else if (targetServiceType === 'ECO') servicePrefix = 'DX';
+            else if (targetServiceType === 'PARCEL') servicePrefix = 'PD';
+            
+            if (targetServiceType === activeServiceType) {
+                const sidebarPrefix = prefixInput.value.trim().toUpperCase();
+                if (sidebarPrefix) servicePrefix = sidebarPrefix;
+            } else {
+                const defaults = settings.defaultPrefixes || {};
+                if (defaults[targetServiceType] && defaults[targetServiceType][0]) {
+                    servicePrefix = defaults[targetServiceType][0];
+                }
+            }
+
+            const step = ((targetServiceType === 'REG' && optArTracking.checked) || (targetServiceType === 'EMS' && optAR.checked)) ? 2 : 1;
+            const nextAvail = await getNextAvailableTrackingNumber(servicePrefix, currentNum.toString().padStart(8, '0'), step);
+            trackingFormatted = nextAvail.trackingFormatted;
+            currentNum = parseInt(nextAvail.d) + step;
+        }
+        
+        // Remote area flags
+        const zipMatch = normZip.match(/\d{5}/);
+        const extractedZip = zipMatch ? zipMatch[0] : '';
+        const isAlwaysRemote = !!REMOTE_AREAS[extractedZip] && !PARTIAL_REMOTE_ZIPS.includes(extractedZip);
+        const isIslandPotential = PARTIAL_REMOTE_ZIPS.includes(extractedZip);
+        
+        let calcWeight = rawWeight;
+        let useVolWeight = false;
+        let dimensions = null;
+        if (dimW > 0 && dimL > 0 && dimH > 0) {
+            dimensions = { w: dimW, l: dimL, h: dimH };
+            const volWeight = Math.ceil((dimW * dimL * dimH) / 6);
+            if (volWeight > rawWeight) {
+                useVolWeight = true;
+                calcWeight = volWeight;
+            }
+        }
+        
+        const baseRate = calculateServiceRate(targetServiceType, calcWeight, normZip, useVolWeight);
+        let extraCharge = 0;
+        let detailLines = [];
+        
+        if (isAlwaysRemote) {
+            extraCharge = 50;
+            detailLines.push('พื้นที่ห่างไกล (50 บาท)');
+        }
+        
+        const totalFee = baseRate + extraCharge;
+        
+        // Push shipment object
+        const shipment = {
+            id: 'SHIP-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+            tracking: trackingFormatted,
+            recipient: recipient,
+            destination: normZip,
+            weight: rawWeight,
+            dimensions: dimensions,
+            useVolWeight: useVolWeight,
+            baseRate: baseRate,
+            extraCharge: extraCharge,
+            totalFee: totalFee,
+            isAr: false,
+            isInsured: false,
+            insuranceValue: 0,
+            insuranceFee: 0,
+            isRemote: isAlwaysRemote,
+            isIslandPotential: isIslandPotential,
+            timestamp: Date.now()
+        };
+        
+        if (!shipments[targetServiceType]) shipments[targetServiceType] = [];
+        shipments[targetServiceType].push(shipment);
+        importedCount++;
+    }
+    
+    // Save to IndexedDB, update UI
+    await saveToDB('shipments', shipments);
+    renderShipmentsTable();
+    updateTabCounters();
+    updateSummaryWidgets();
+    
+    // Sync starting digits
+    if (bulkToggle.checked) {
+        num8StartInput.value = currentNum.toString().padStart(8, '0');
+    } else {
+        digitsInput.value = currentNum.toString().padStart(8, '0');
+    }
+    
+    if (loadingOverlay) loadingOverlay.style.display = 'none';
+    
+    pasteInput.value = '';
+    alert(`🎉 นำเข้าข้อมูลจากการวางสำเร็จ ${importedCount} รายการ (ข้ามรายการว่าง ${skippedCount} รายการ)`);
 }
 
 async function parseAndImportExcelFile() {
@@ -6672,6 +6974,11 @@ if (downloadTemplateBtn) {
 const excelUploadBtn = document.getElementById('excel-upload-btn');
 if (excelUploadBtn) {
     excelUploadBtn.onclick = parseAndImportExcelFile;
+}
+
+const excelPasteImportBtn = document.getElementById('excel-paste-import-btn');
+if (excelPasteImportBtn) {
+    excelPasteImportBtn.onclick = parseAndImportPastedExcel;
 }
 
 const excelFileDropzone = document.getElementById('excel-file-dropzone');
