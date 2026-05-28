@@ -3974,6 +3974,8 @@ const txDateInput = document.getElementById('tx-date');
 const txServiceSelect = document.getElementById('tx-service-select');
 const txServiceCustomGroup = document.getElementById('tx-service-custom-group');
 const txServiceCustom = document.getElementById('tx-service-custom');
+const txTrackingGroup = document.getElementById('tx-tracking-group');
+const txTracking = document.getElementById('tx-tracking');
 const txType = document.getElementById('tx-type');
 const txQuantity = document.getElementById('tx-quantity');
 const txAmount = document.getElementById('tx-amount');
@@ -3994,6 +3996,8 @@ if (btnMeterAdjustment) {
         txServiceSelect.value = 'ธรรมดา/สิ่งพิมพ์';
         txServiceCustomGroup.style.display = 'none';
         txServiceCustom.value = '';
+        txTrackingGroup.style.display = 'none';
+        txTracking.value = '';
         txType.value = 'ใช้งานนอกระบบ';
         txQuantity.value = '1';
         txAmount.value = '';
@@ -4009,12 +4013,19 @@ if (closeMeterTxModal) {
     };
 }
 
-// Toggle custom service input field
+// Toggle custom service input field and tracking number group
 if (txServiceSelect) {
     txServiceSelect.onchange = () => {
-        txServiceCustomGroup.style.display = (txServiceSelect.value === 'อื่นๆ') ? 'flex' : 'none';
-        if (txServiceSelect.value === 'อื่นๆ') {
+        const serviceVal = txServiceSelect.value;
+        const showTracking = (serviceVal !== 'ธรรมดา/สิ่งพิมพ์' && serviceVal !== 'จดหมายระหว่างประเทศ');
+        
+        txServiceCustomGroup.style.display = (serviceVal === 'อื่นๆ') ? 'flex' : 'none';
+        txTrackingGroup.style.display = showTracking ? 'flex' : 'none';
+        
+        if (serviceVal === 'อื่นๆ') {
             txServiceCustom.focus();
+        } else if (showTracking) {
+            txTracking.focus();
         }
     };
 }
@@ -4032,6 +4043,8 @@ if (btnSaveMeterTx) {
         if (serviceVal === 'อื่นๆ') {
             serviceVal = txServiceCustom.value.trim() || 'อื่นๆ';
         }
+        
+        const trackingVal = (txServiceSelect.value !== 'ธรรมดา/สิ่งพิมพ์' && txServiceSelect.value !== 'จดหมายระหว่างประเทศ') ? txTracking.value.trim() : '';
         
         if (!dateVal) {
             alert('⚠️ กรุณาระบุวันที่ทำรายการ');
@@ -4061,6 +4074,7 @@ if (btnSaveMeterTx) {
             session: sessionVal,
             type: typeVal,
             service: serviceVal,
+            tracking: trackingVal, // Save tracking info
             qty: qtyVal,
             amount: amountVal
         };
@@ -4068,9 +4082,10 @@ if (btnSaveMeterTx) {
         
         await saveToDB('settings', settings);
         
-        // Reset amount and custom service inputs
+        // Reset inputs
         txAmount.value = '';
         txServiceCustom.value = '';
+        txTracking.value = '';
         txQuantity.value = '1';
         
         updateMeterStatus();
@@ -4120,7 +4135,10 @@ function renderMeterTransactions() {
         tr.innerHTML = `
             <td style="padding: 8px 10px;">${tx.date}<br><span style="color: #64748b; font-size: 0.7rem; font-weight: bold;">รอบ${tx.session}</span></td>
             <td style="padding: 8px 10px; color: ${typeColor}; font-weight: 600;">${typeLabel}</td>
-            <td style="padding: 8px 10px; font-weight: 500;">${tx.service}</td>
+            <td style="padding: 8px 10px; font-weight: 500;">
+                ${tx.service}
+                ${tx.tracking ? `<br><span style="color: #0284c7; font-size: 0.7rem; font-weight: bold;">${tx.tracking}</span>` : ''}
+            </td>
             <td style="padding: 8px 10px; text-align: right; font-weight: 600;">${tx.qty.toLocaleString()}</td>
             <td style="padding: 8px 10px; text-align: right; font-weight: bold; color: #be123c;">-${tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} บ.</td>
             <td style="padding: 8px 10px; text-align: center;">
