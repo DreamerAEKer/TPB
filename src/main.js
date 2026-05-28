@@ -1620,8 +1620,8 @@ function generateMeterLineHtml() {
         <div style="margin-top: 2mm; border-top: 1px dashed #ccc; padding-top: 1mm; font-size: 10pt; display: flex; justify-content: space-between;">
             <div>เลขเครื่องประทับ: <b>${settings.license || ''}</b></div>
             <div style="display: flex; gap: 10mm;">
-                <span>คงเหลือ: <b>${(settings.meterDescending || 0).toLocaleString()}</b> บาท</span>
-                <span>สะสม: <b>${(settings.meterAscending || 0).toLocaleString()}</b> บาท</span>
+                <span>แถวบน (คงเหลือ): <b>${(settings.meterDescending || 0).toLocaleString()}</b> บาท</span>
+                <span>แถวล่าง (ใช้ไป): <b>${(settings.meterAscending || 0).toLocaleString()}</b> บาท</span>
             </div>
         </div>
     `;
@@ -2334,8 +2334,8 @@ function generateSummarySheet(items, titleSuffix, copies = 1) {
             
             ${paymentType === 'เครื่องประทับไปรษณียากร' ? `
             <div style="margin-top: 18px; margin-bottom: 18px; font-size: 11.5pt; border: 1.5px dashed #bbb; padding: 12px 20px; border-radius: 8px; background: #fafafa; display: flex; justify-content: center; gap: 40px; align-items: center; width: fit-content; margin-left: auto; margin-right: auto; page-break-inside: avoid;">
-                <div>คงเหลือ (แถวบน): <b>${(settings.meterDescending || 0).toLocaleString()}</b> บาท</div>
-                <div>ใช้ไปทั้งหมด (แถวล่าง): <b>${(settings.meterAscending || 0).toLocaleString()}</b> บาท</div>
+                <div>แถวบน (คงเหลือ): <b>${(settings.meterDescending || 0).toLocaleString()}</b> บาท</div>
+                <div>แถวล่าง (ใช้ไป): <b>${(settings.meterAscending || 0).toLocaleString()}</b> บาท</div>
             </div>
             ` : ''}
             
@@ -5119,7 +5119,7 @@ async function renderArchiveView() {
                         }
                         let meterStr = '';
                         if (b.meterAfter) {
-                            meterStr = ` [คงเหลือ: ${(b.meterAfter.desc || 0).toLocaleString()} บ. / ล่าง: ${(b.meterAfter.asc || 0).toLocaleString()}]`;
+                            meterStr = ` [แถวบน: ${(b.meterAfter.desc || 0).toLocaleString()} บ. / แถวล่าง: ${(b.meterAfter.asc || 0).toLocaleString()}]`;
                         }
                         let remarkStr = b.remarks ? ` - ${b.remarks}` : '';
                         return `<option value="${b.id}">${typeStr}${timeStr} (${b.items.length} รายการ)${meterStr}${remarkStr}</option>`;
