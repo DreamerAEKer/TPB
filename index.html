@@ -83,7 +83,7 @@
             </button>
             <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.2;">
                 <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; opacity: 0.4;">&copy; MrAEK</div>
-                <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v7.7.8</div>
+                <div id="app-version-trigger" style="font-size: 0.65rem; color: #64748b; opacity: 0.9; font-family: monospace; cursor: pointer; user-select: none;" title="ดับเบิ้ลคลิกเพื่อปลดล็อคตั้งค่าพิเศษ">v7.8.0</div>
             </div>
         </div>
     </div>
@@ -358,6 +358,10 @@
                     <div style="color: #047857; font-weight: bold;">บน (คงเหลือ): <span id="meter-descending-val" style="font-size: 0.9rem;">0.00</span></div>
                     <div style="height: 12px; width: 1px; background: #bbf7d0;"></div>
                     <div style="color: #0369a1; font-weight: bold;">ล่าง (ใช้ไป): <span id="meter-ascending-val" style="font-size: 0.9rem;">0.00</span></div>
+                    <div style="height: 12px; width: 1px; background: #bbf7d0;"></div>
+                    <button type="button" id="btn-meter-adjustment" style="background: #0284c7; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 3px;" title="บันทึกยอดคีย์นอกระบบเก่า / ปรับปรุงยอดเงินขาด">
+                        📝 บันทึกยอดคีย์นอก / ปรับปรุง
+                    </button>
                     <div id="meter-low-warn" style="display: none; background: #fee2e2; color: #be123c; padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; animation: pulse 2s infinite;">⚠️ เงินใกล้หมด!</div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.4rem; justify-content: flex-end;">
@@ -624,7 +628,7 @@
                     </tfoot>
                 </table>
             </div>
-            <!-- Sleek detailed bill breakdown panel (v7.7.8-custom) -->
+            <!-- Sleek detailed bill breakdown panel (v7.8.0-custom) -->
             <div id="archive-bill-detail-panel" style="display: none; max-width: 1200px; margin: 1.5rem auto 0 auto; background: white; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.05); border: 1.5px solid #e2e8f0; padding: 1.5rem; transition: all 0.3s ease;">
                 <!-- Content generated dynamically in JS -->
             </div>
@@ -634,6 +638,109 @@
 
     <div id="print-section">
         <!-- Print content will be generated dynamically here -->
+    </div>
+
+    <!-- 📠 Postage Meter Transaction & Adjustment Modal (v7.8.0) -->
+    <div id="meter-transaction-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1060; justify-content: center; align-items: center; backdrop-filter: blur(4px); transition: all 0.3s ease;">
+        <div style="background: white; padding: 1.75rem; border-radius: 16px; width: 680px; max-width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; gap: 1.25rem;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem;">
+                <h2 style="color: #0284c7; margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1.3rem;">
+                    📠 บันทึกยอดเงินเครื่องประทับฯ (งานนอกระบบ / ปรับยอด)
+                </h2>
+                <button type="button" id="close-meter-tx-modal" style="background: none; border: none; font-size: 1.3rem; color: #64748b; cursor: pointer; transition: color 0.2s;">✕</button>
+            </div>
+
+            <!-- Form section -->
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; background: #f0f9ff; padding: 1rem; border-radius: 12px; border: 1.5px solid #bae6fd;">
+                
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 2px;">
+                    <label style="font-size: 0.75rem; font-weight: bold; color: #0369a1;">📅 วันที่ทำรายการ</label>
+                    <input type="date" id="tx-date" style="padding: 6px; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 6px; background: white;">
+                </div>
+
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 2px;">
+                    <label style="font-size: 0.75rem; font-weight: bold; color: #0369a1;">⏰ รอบเวลา</label>
+                    <div style="display: flex; gap: 6px; height: 32px;">
+                        <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-size: 0.8rem; cursor: pointer; font-weight: 500;">
+                            <input type="radio" name="tx-session" value="เช้า" checked style="margin: 0;"> ☀️ เช้า
+                        </label>
+                        <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font-size: 0.8rem; cursor: pointer; font-weight: 500;">
+                            <input type="radio" name="tx-session" value="บ่าย" style="margin: 0;"> 🌙 บ่าย
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 2px;">
+                    <label style="font-size: 0.75rem; font-weight: bold; color: #0369a1;">ประเภทรายการ</label>
+                    <select id="tx-type" style="padding: 6px; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 6px; background: white; height: 34px;">
+                        <option value="ใช้งานนอกระบบ">📋 ใช้งานนอกระบบ (ระบบเก่า)</option>
+                        <option value="ปรับปรุงยอดเงินขาด">⚠️ ปรับยอดเงินขาด (ส่วนต่าง)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 2px;">
+                    <label style="font-size: 0.75rem; font-weight: bold; color: #0369a1;">ชื่อบริการ</label>
+                    <select id="tx-service-select" style="padding: 6px; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 6px; background: white; height: 34px;">
+                        <option value="ธรรมดา/สิ่งพิมพ์">ธรรมดา/สิ่งพิมพ์</option>
+                        <option value="ลงทะเบียน">ลงทะเบียน</option>
+                        <option value="eCo-Post">eCo-Post</option>
+                        <option value="EMS">EMS</option>
+                        <option value="พัสดุ">พัสดุ</option>
+                        <option value="จดหมายระหว่างประเทศ">จดหมายระหว่างประเทศ</option>
+                        <option value="ลงทะเบียนระหว่างประเทศทางอากาศ">ลงทะเบียนระหว่างประเทศทางอากาศ</option>
+                        <option value="EMS World">EMS World</option>
+                        <option value="อื่นๆ">อื่นๆ (ระบุเอง)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="tx-service-custom-group" style="display: none; grid-column: span 2; flex-direction: column; gap: 2px;">
+                    <label style="font-size: 0.75rem; font-weight: bold; color: #0369a1;">ระบุชื่อบริการ / หมายเหตุเพิ่มเติม</label>
+                    <input type="text" id="tx-service-custom" placeholder="ตัวอย่าง: ปรับส่วนต่างบิล M-xxxxxxxx ขาด 1 บาท" style="padding: 6px; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+                </div>
+
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 2px;">
+                    <label style="font-size: 0.75rem; font-weight: bold; color: #0369a1;">📦 จำนวนพัสดุ (ชิ้น)</label>
+                    <input type="number" id="tx-quantity" min="1" value="1" style="padding: 6px; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 6px; background: white;">
+                </div>
+
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 2px;">
+                    <label style="font-size: 0.75rem; font-weight: bold; color: #0369a1;">💰 จำนวนเงินที่จะหัก (บาท)</label>
+                    <input type="number" id="tx-amount" step="0.01" min="0.01" placeholder="0.00" style="padding: 6px; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 6px; background: white;">
+                </div>
+
+                <div style="grid-column: span 2; display: flex; gap: 8px; margin-top: 4px;">
+                    <button type="button" id="btn-save-meter-tx" style="flex: 1; background: #0284c7; color: white; border: none; padding: 8px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; transition: background 0.2s;">
+                        🚀 ยืนยันการบันทึกรายการ
+                    </button>
+                </div>
+            </div>
+
+            <!-- History section -->
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="font-weight: bold; color: #64748b; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+                    <span>📋 ประวัติรายการคีย์นอกและปรับปรุงยอดเงิน</span>
+                    <span style="font-size: 0.75rem; font-weight: normal; color: #94a3b8;">* ลบรายการเพื่อกู้ยอดเงินคืนตู้อัตโนมัติ</span>
+                </div>
+                <div style="max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <table style="width: 100%; font-size: 0.78rem; border-collapse: collapse; text-align: left;">
+                        <thead style="background: #f8fafc; position: sticky; top: 0; border-bottom: 1.5px solid #e2e8f0;">
+                            <tr>
+                                <th style="padding: 6px 10px;">วันที่/รอบ</th>
+                                <th style="padding: 6px 10px;">ประเภท</th>
+                                <th style="padding: 6px 10px;">ชื่อบริการ</th>
+                                <th style="padding: 6px 10px; text-align: right;">จำนวนชิ้น</th>
+                                <th style="padding: 6px 10px; text-align: right;">จำนวนเงิน</th>
+                                <th style="padding: 6px 10px; text-align: center;">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="meter-tx-history-list">
+                            <!-- List will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Postal Service Guide Modal -->

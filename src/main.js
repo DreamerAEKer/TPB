@@ -3966,6 +3966,200 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
+// 📠 Postage Meter Transaction & Adjustment Manager logic (v7.8.0-custom)
+const meterTxModal = document.getElementById('meter-transaction-modal');
+const btnMeterAdjustment = document.getElementById('btn-meter-adjustment');
+const closeMeterTxModal = document.getElementById('close-meter-tx-modal');
+const txDateInput = document.getElementById('tx-date');
+const txServiceSelect = document.getElementById('tx-service-select');
+const txServiceCustomGroup = document.getElementById('tx-service-custom-group');
+const txServiceCustom = document.getElementById('tx-service-custom');
+const txType = document.getElementById('tx-type');
+const txQuantity = document.getElementById('tx-quantity');
+const txAmount = document.getElementById('tx-amount');
+const btnSaveMeterTx = document.getElementById('btn-save-meter-tx');
+const meterTxHistoryList = document.getElementById('meter-tx-history-list');
+
+// Open / Close modal
+if (btnMeterAdjustment) {
+    btnMeterAdjustment.onclick = () => {
+        if (!settings.meterAdjustments) settings.meterAdjustments = [];
+        
+        // Set default date to local today
+        const now = new Date();
+        const tzOffset = now.getTimezoneOffset() * 60000;
+        txDateInput.value = (new Date(now - tzOffset)).toISOString().split('T')[0];
+        
+        // Reset inputs
+        txServiceSelect.value = 'ธรรมดา/สิ่งพิมพ์';
+        txServiceCustomGroup.style.display = 'none';
+        txServiceCustom.value = '';
+        txType.value = 'ใช้งานนอกระบบ';
+        txQuantity.value = '1';
+        txAmount.value = '';
+        
+        renderMeterTransactions();
+        meterTxModal.style.display = 'flex';
+    };
+}
+
+if (closeMeterTxModal) {
+    closeMeterTxModal.onclick = () => {
+        meterTxModal.style.display = 'none';
+    };
+}
+
+// Toggle custom service input field
+if (txServiceSelect) {
+    txServiceSelect.onchange = () => {
+        txServiceCustomGroup.style.display = (txServiceSelect.value === 'อื่นๆ') ? 'flex' : 'none';
+        if (txServiceSelect.value === 'อื่นๆ') {
+            txServiceCustom.focus();
+        }
+    };
+}
+
+// Save transaction
+if (btnSaveMeterTx) {
+    btnSaveMeterTx.onclick = async () => {
+        const dateVal = txDateInput.value;
+        const amountVal = parseFloat(txAmount.value);
+        const qtyVal = parseInt(txQuantity.value) || 1;
+        const typeVal = txType.value;
+        const sessionVal = document.querySelector('input[name="tx-session"]:checked').value;
+        
+        let serviceVal = txServiceSelect.value;
+        if (serviceVal === 'อื่นๆ') {
+            serviceVal = txServiceCustom.value.trim() || 'อื่นๆ';
+        }
+        
+        if (!dateVal) {
+            alert('⚠️ กรุณาระบุวันที่ทำรายการ');
+            return;
+        }
+        if (isNaN(amountVal) || amountVal <= 0) {
+            alert('⚠️ กรุณาระบุจำนวนเงินที่ถูกต้อง (มากกว่า 0 บาท)');
+            txAmount.focus();
+            return;
+        }
+        if (qtyVal < 1) {
+            alert('⚠️ จำนวนพัสดุต้องไม่ต่ำกว่า 1 ชิ้น');
+            txQuantity.focus();
+            return;
+        }
+
+        // Deduct from Descending, Add to Ascending
+        settings.meterDescending = (settings.meterDescending || 0) - amountVal;
+        settings.meterAscending = (settings.meterAscending || 0) + amountVal;
+        
+        if (!settings.meterAdjustments) settings.meterAdjustments = [];
+        
+        // Push transaction
+        const tx = {
+            id: 'TX-' + Date.now(),
+            date: dateVal,
+            session: sessionVal,
+            type: typeVal,
+            service: serviceVal,
+            qty: qtyVal,
+            amount: amountVal
+        };
+        settings.meterAdjustments.push(tx);
+        
+        await saveToDB('settings', settings);
+        
+        // Reset amount and custom service inputs
+        txAmount.value = '';
+        txServiceCustom.value = '';
+        txQuantity.value = '1';
+        
+        updateMeterStatus();
+        renderMeterTransactions();
+        
+        // Brief success indicator
+        const origText = btnSaveMeterTx.innerHTML;
+        btnSaveMeterTx.innerHTML = '✅ บันทึกสำเร็จ!';
+        btnSaveMeterTx.style.background = '#10b981';
+        setTimeout(() => {
+            btnSaveMeterTx.innerHTML = origText;
+            btnSaveMeterTx.style.background = '#0284c7';
+        }, 1200);
+    };
+}
+
+// Render history list inside modal
+function renderMeterTransactions() {
+    if (!meterTxHistoryList) return;
+    meterTxHistoryList.innerHTML = '';
+    
+    const list = settings.meterAdjustments || [];
+    // Sort descending by date, then ID
+    const sorted = [...list].sort((a, b) => {
+        if (a.date !== b.date) {
+            return b.date.localeCompare(a.date);
+        }
+        return b.id.localeCompare(a.id);
+    });
+    
+    if (sorted.length === 0) {
+        meterTxHistoryList.innerHTML = `
+            <tr>
+                <td colspan="6" style="padding: 15px; text-align: center; color: #94a3b8;">ยังไม่มีประวัติการหักเงิน/ปรับยอดแมนนวล</td>
+            </tr>
+        `;
+        return;
+    }
+    
+    sorted.forEach(tx => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #f1f5f9';
+        
+        const typeColor = tx.type === 'ปรับปรุงยอดเงินขาด' ? '#be123c' : '#1e293b';
+        const typeLabel = tx.type === 'ปรับปรุงยอดเงินขาด' ? '⚠️ ปรับยอดเงินขาด' : '📋 คีย์นอก';
+        
+        tr.innerHTML = `
+            <td style="padding: 8px 10px;">${tx.date}<br><span style="color: #64748b; font-size: 0.7rem; font-weight: bold;">รอบ${tx.session}</span></td>
+            <td style="padding: 8px 10px; color: ${typeColor}; font-weight: 600;">${typeLabel}</td>
+            <td style="padding: 8px 10px; font-weight: 500;">${tx.service}</td>
+            <td style="padding: 8px 10px; text-align: right; font-weight: 600;">${tx.qty.toLocaleString()}</td>
+            <td style="padding: 8px 10px; text-align: right; font-weight: bold; color: #be123c;">-${tx.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} บ.</td>
+            <td style="padding: 8px 10px; text-align: center;">
+                <button type="button" class="btn-icon delete-tx-btn" data-id="${tx.id}" style="padding: 2px 6px; background: #fff1f2; color: #ef4444; border: 1px solid #fecaca; border-radius: 4px; font-size: 0.7rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="ลบรายการนี้เพื่อคืนยอดเงิน">🗑️</button>
+            </td>
+        `;
+        meterTxHistoryList.appendChild(tr);
+    });
+    
+    // Bind delete events
+    document.querySelectorAll('.delete-tx-btn').forEach(btn => {
+        btn.onclick = async (e) => {
+            const id = e.currentTarget.dataset.id;
+            const tx = settings.meterAdjustments.find(t => t.id === id);
+            if (!tx) return;
+            
+            if (confirm(`⚠️ ยืนยันการลบประวัติรายการนี้?\n\n(ยอดเงินที่เคยหักไปจำนวน ${tx.amount.toLocaleString()} บาท จะถูกกู้คืนกลับเข้าเครื่องประทับอัตโนมัติ)`)) {
+                // Refund
+                settings.meterDescending = (settings.meterDescending || 0) + tx.amount;
+                settings.meterAscending = (settings.meterAscending || 0) - tx.amount;
+                
+                // Filter out
+                settings.meterAdjustments = settings.meterAdjustments.filter(t => t.id !== id);
+                
+                await saveToDB('settings', settings);
+                updateMeterStatus();
+                renderMeterTransactions();
+            }
+        };
+    });
+}
+
+// Bind Escape key event to close this modal too
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && meterTxModal.style.display === 'flex') {
+        meterTxModal.style.display = 'none';
+    }
+});
+
 // Warn user of unsaved changes on tab close/refresh (v7.7.7-custom)
 window.addEventListener('beforeunload', (e) => {
     const hasUnsavedSettings = settingsBackup !== null;
