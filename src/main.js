@@ -7484,5 +7484,44 @@ if (batchImportBtn) {
     batchImportBtn.onclick = applyBulkImport;
 }
 
-// Call once on page load to initialize the toggle button styling
 updateToggleButtonsState();
+
+window.copyTrackingNumbers = function() {
+    const isSpecialTab = currentServiceTab === 'EMS_SPECIAL';
+    const activeTabShipments = shipments.map((s, originalIdx) => ({ ...s, originalIdx }))
+                             .filter(s => {
+                                 if (isSpecialTab) return s.serviceType === 'EMS' && s.options?.isSpecialEms;
+                                 return s.serviceType === currentServiceTab;
+                             });
+                             
+    if (activeTabShipments.length === 0) {
+        alert('❌ ไม่มีพัสดุในหน้าต่างนี้ให้คัดลอกครับ');
+        return;
+    }
+
+    let toCopy = [];
+    if (selectedShipmentIndices.size > 0) {
+        toCopy = activeTabShipments.filter(s => selectedShipmentIndices.has(s.originalIdx));
+        if (toCopy.length === 0) {
+            toCopy = activeTabShipments;
+        }
+    } else {
+        toCopy = activeTabShipments;
+    }
+
+    const trackingList = toCopy
+        .map(s => (s.trackingFormatted || '').replace(/[\s-]/g, '').toUpperCase())
+        .filter(t => t && t.length >= 13); // valid THP tracking format is 13 chars
+
+    if (trackingList.length === 0) {
+        alert('❌ ไม่พบเลขแทร็กกิ้งที่ถูกต้องให้คัดลอก (อาจเป็นพัสดุธรรมดา หรือยังไม่ได้รันเลข)');
+        return;
+    }
+
+    const textToCopy = trackingList.join(', ');
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        alert(`📋 คัดลอกเลขแทร็กสำเร็จ ${trackingList.length} รายการ!\n\nรูปแบบ: ${trackingList[0]}${trackingList.length > 1 ? ', ...' : ''}\n(คั่นด้วยลูกน้ำ นำไปวางใน Track.thailandpost ได้เลยครับ)`);
+    }).catch(err => {
+        alert('❌ ไม่สามารถคัดลอกได้: ' + err);
+    });
+};
