@@ -4985,6 +4985,87 @@ window.closeArchiveBillDetail = () => {
     }
 };
 
+window.editArchiveBatch = async (batchId, batches) => {
+    if (!batchId) return;
+    const batch = batches.find(b => b.id === batchId);
+    if (!batch) return;
+    
+    // Check if we need to auto-backup active shipments on dashboard
+    if (shipments.length > 0) {
+        const activeBatchIdx = batches.findIndex(b => b.id === batchId);
+        const batchLabel = batches[activeBatchIdx] && !batches[activeBatchIdx].isBackup ? `บิลที่ ${activeBatchIdx + 1}` : 'บิล';
+        if (!confirm(`ต้องการโหลดรายการนี้เข้าไปในแผงควบคุมหลักใช่หรือไม่?\n\n(ระบบตรวจพบพัสดุเดิมค้างอยู่บนจอหลักจำนวน ${shipments.length} รายการ ระบบจะทำการ [สำรองข้อมูลเดิมให้อัตโนมัติ] ไปยังประวัติรายงานก่อนเพื่อความปลอดภัย)`)) return;
+        
+        // Perform Auto-Backup of dashboard state
+        const backupId = 'M-BACKUP-' + Date.now();
+        const dateStr = new Date().toISOString();
+        await saveArchive({
+            id: backupId,
+            date: dateStr,
+            items: [...shipments],
+            paymentType: settings.paymentType,
+            isBackup: true,
+            remarks: `ระบบสำรองอัตโนมัติก่อนแก้ไข ${batchLabel}`
+        });
+    } else {
+        if (!confirm('ต้องการโหลดรายการนี้เข้าไปในแผงควบคุมหลัก เพื่อแก้ไขและพิมพ์ใช่หรือไม่?')) return;
+    }
+    
+    shipments = [...batch.items];
+    history = [JSON.parse(JSON.stringify(shipments))];
+    historyIndex = 0;
+    editingArchiveId = batchId;
+    
+    await Promise.all([
+        saveToDB('shipments', shipments),
+        saveToDB('history', history),
+        saveToDB('historyIndex', historyIndex),
+        saveToDB('editingArchiveId', editingArchiveId)
+    ]);
+    
+    // Re-sync global state to be safe
+    await initApp(); 
+
+    navDashboard.click(); // switch to dashboard view
+    
+    setTimeout(() => {
+        renderShipments();
+        updateSummary();
+        updateHistoryButtons();
+        updatePreview();
+    }, 50);
+};
+
+window.deleteArchiveBatch = async (batchId, batches) => {
+    if (!batchId) return;
+    const batch = batches.find(b => b.id === batchId);
+    if (!batch) return;
+    
+    const passcode = prompt('🔑 กรุณากรอกรหัสผ่านเพื่อยืนยันการลบประวัติบิลนี้ (รหัสผ่านเริ่มต้น: 10501):');
+    if (passcode === null) return; // cancelled
+    if (passcode !== '10501') {
+        alert('❌ รหัสผ่านไม่ถูกต้อง ไม่สามารถลบข้อมูลบิลประวัติได้ครับ');
+        return;
+    }
+    
+    if (!confirm(`⚠️ ยืนยันการลบประวัติบิลนี้ออกจากระบบ?\n\n(หากระบบชำระเงินเป็นเครื่องประทับไปรษณียากร ยอดเงินที่หักไปจะถูกคืนกลับเข้าเครื่องประทับฯ อัตโนมัติ)`)) return;
+    
+    // Refund meter balance if applicable
+    if (batch.paymentType === 'เครื่องประทับไปรษณียากร') {
+        const refundFee = batch.items.reduce((sum, item) => sum + (parseFloat(item.fee) || 0), 0);
+        settings.meterDescending += refundFee;
+        settings.meterAscending -= refundFee;
+        await saveToDB('settings', settings);
+        updateMeterStatus();
+    }
+    
+    await deleteArchive(batchId);
+    alert('🗑️ ลบข้อมูลบิลประวัติและคืนยอดเครื่องประทับฯ เรียบร้อยแล้วครับ!');
+    
+    await renderStats();
+    await renderArchiveView();
+};
+
 async function updateArchiveBillDetail(batchId, batches) {
     const panel = document.getElementById('archive-bill-detail-panel');
     if (!panel) return;
@@ -5037,9 +5118,15 @@ async function updateArchiveBillDetail(batchId, batches) {
     
     let html = `
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <div style="display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap;">
                 <button onclick="closeArchiveBillDetail()" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px; height: 36px; margin-top: 4px;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
                     ✕ ปิดหน้านี้
+                </button>
+                <button class="detail-edit-btn" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px; height: 36px; margin-top: 4px;" onmouseover="this.style.background='#bae6fd'" onmouseout="this.style.background='#e0f2fe'">
+                    ✏️ แก้ไข / พิมพ์
+                </button>
+                <button class="detail-delete-btn" style="background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px; height: 36px; margin-top: 4px;" onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'">
+                    🗑️ ลบข้อมูลบิลนี้
                 </button>
                 <div>
                     <h3 style="margin: 0; color: #1e293b; font-size: 1.15rem; font-weight: bold; display: flex; align-items: center; gap: 6px;">
@@ -5079,9 +5166,9 @@ async function updateArchiveBillDetail(batchId, batches) {
                             const g = serviceGroups[svc];
                             return `
                                 <tr style="border-bottom: 1px dashed #e2e8f0;">
-                                    <td style="padding: 6px 0; font-weight: 600; color: #1e293b;">${svc}</td>
-                                    <td style="text-align: right; padding: 6px 0; color: #475569;">${g.count.toLocaleString()}</td>
-                                    <td style="text-align: right; padding: 6px 0; font-weight: bold; color: #0f766e;">${g.totalFee.toLocaleString()}</td>
+                                     <td style="padding: 6px 0; font-weight: 600; color: #1e293b;">${svc}</td>
+                                     <td style="text-align: right; padding: 6px 0; color: #475569;">${g.count.toLocaleString()}</td>
+                                     <td style="text-align: right; padding: 6px 0; font-weight: bold; color: #0f766e;">${g.totalFee.toLocaleString()}</td>
                                 </tr>
                             `;
                         }).join('')}
@@ -5111,6 +5198,17 @@ async function updateArchiveBillDetail(batchId, batches) {
     `;
     
     panel.innerHTML = html;
+    
+    // Attach event listeners
+    const editBtn = panel.querySelector('.detail-edit-btn');
+    const deleteBtn = panel.querySelector('.detail-delete-btn');
+    if (editBtn) {
+        editBtn.onclick = () => window.editArchiveBatch(batchId, batches);
+    }
+    if (deleteBtn) {
+        deleteBtn.onclick = () => window.deleteArchiveBatch(batchId, batches);
+    }
+    
     panel.style.display = 'block';
 }
 
@@ -5227,88 +5325,8 @@ async function renderArchiveView() {
             updateArchiveBillDetail(select.value, batches);
         };
         
-        editBtn.onclick = async () => {
-            const batchId = select.value;
-            if (!batchId) return;
-            const batch = batches.find(b => b.id === batchId);
-            if (!batch) return;
-            
-            // Check if we need to auto-backup active shipments on dashboard
-            if (shipments.length > 0) {
-                const activeBatchIdx = batches.findIndex(b => b.id === batchId);
-                const batchLabel = batches[activeBatchIdx] && !batches[activeBatchIdx].isBackup ? `บิลที่ ${activeBatchIdx + 1}` : 'บิล';
-                if (!confirm(`ต้องการโหลดรายการนี้เข้าไปในแผงควบคุมหลักใช่หรือไม่?\n\n(ระบบตรวจพบพัสดุเดิมค้างอยู่บนจอหลักจำนวน ${shipments.length} รายการ ระบบจะทำการ [สำรองข้อมูลเดิมให้อัตโนมัติ] ไปยังประวัติรายงานก่อนเพื่อความปลอดภัย)`)) return;
-                
-                // Perform Auto-Backup of dashboard state
-                const backupId = 'M-BACKUP-' + Date.now();
-                const dateStr = new Date().toISOString();
-                await saveArchive({
-                    id: backupId,
-                    date: dateStr,
-                    items: [...shipments],
-                    paymentType: settings.paymentType,
-                    isBackup: true,
-                    remarks: `ระบบสำรองอัตโนมัติก่อนแก้ไข ${batchLabel}`
-                });
-            } else {
-                if (!confirm('ต้องการโหลดรายการนี้เข้าไปในแผงควบคุมหลัก เพื่อแก้ไขและพิมพ์ใช่หรือไม่?')) return;
-            }
-            
-            shipments = [...batch.items];
-            history = [JSON.parse(JSON.stringify(shipments))];
-            historyIndex = 0;
-            editingArchiveId = batchId;
-            
-            await Promise.all([
-                saveToDB('shipments', shipments),
-                saveToDB('history', history),
-                saveToDB('historyIndex', historyIndex),
-                saveToDB('editingArchiveId', editingArchiveId)
-            ]);
-            
-            // Re-sync global state to be safe
-            await initApp(); 
-
-            navDashboard.click(); // switch to dashboard view
-            
-            setTimeout(() => {
-                renderShipments();
-                updateSummary();
-                updateHistoryButtons();
-                updatePreview();
-            }, 50);
-        };
-
-        deleteBtn.onclick = async () => {
-            const batchId = select.value;
-            if (!batchId) return;
-            const batch = batches.find(b => b.id === batchId);
-            if (!batch) return;
-            
-            const passcode = prompt('🔑 กรุณากรอกรหัสผ่านเพื่อยืนยันการลบประวัติบิลนี้ (รหัสผ่านเริ่มต้น: 10501):');
-            if (passcode === null) return; // cancelled
-            if (passcode !== '10501') {
-                alert('❌ รหัสผ่านไม่ถูกต้อง ไม่สามารถลบข้อมูลบิลประวัติได้ครับ');
-                return;
-            }
-            
-            if (!confirm(`⚠️ ยืนยันการลบประวัติบิลนี้ออกจากระบบ?\n\n(หากระบบชำระเงินเป็นเครื่องประทับไปรษณียากร ยอดเงินที่หักไปจะถูกคืนกลับเข้าเครื่องประทับฯ อัตโนมัติ)`)) return;
-            
-            // Refund meter balance if applicable
-            if (batch.paymentType === 'เครื่องประทับไปรษณียากร') {
-                const refundFee = batch.items.reduce((sum, item) => sum + (parseFloat(item.fee) || 0), 0);
-                settings.meterDescending += refundFee;
-                settings.meterAscending -= refundFee;
-                await saveToDB('settings', settings);
-                updateMeterStatus();
-            }
-            
-            await deleteArchive(batchId);
-            alert('🗑️ ลบข้อมูลบิลประวัติและคืนยอดเครื่องประทับฯ เรียบร้อยแล้วครับ!');
-            
-            await renderStats();
-            await renderArchiveView();
-        };
+        editBtn.onclick = () => window.editArchiveBatch(select.value, batches);
+        deleteBtn.onclick = () => window.deleteArchiveBatch(select.value, batches);
         
         archiveList.appendChild(tr);
     });
