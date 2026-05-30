@@ -7518,9 +7518,67 @@ window.copyTrackingNumbers = function() {
         return;
     }
 
-    const textToCopy = trackingList.join(', ');
+    if (trackingList.length <= 300) {
+        const textToCopy = trackingList.join(', ');
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            alert(`📋 คัดลอกเลขแทร็กสำเร็จ ${trackingList.length} รายการ!\n\nรูปแบบ: ${trackingList[0]}${trackingList.length > 1 ? ', ...' : ''}\n(คั่นด้วยลูกน้ำ นำไปวางใน Track.thailandpost ได้เลยครับ)`);
+        }).catch(err => {
+            alert('❌ ไม่สามารถคัดลอกได้: ' + err);
+        });
+    } else {
+        showBatchCopyModal(trackingList);
+    }
+};
+
+window.showBatchCopyModal = function(trackingList) {
+    let modal = document.getElementById('batch-copy-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'batch-copy-modal';
+        modal.style.cssText = 'display: flex; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 3000; justify-content: center; align-items: center; backdrop-filter: blur(4px);';
+        document.body.appendChild(modal);
+    }
+    
+    const chunks = [];
+    const chunkSize = 300;
+    for (let i = 0; i < trackingList.length; i += chunkSize) {
+        chunks.push(trackingList.slice(i, i + chunkSize));
+    }
+    
+    let buttonsHtml = chunks.map((chunk, index) => {
+        const start = index * chunkSize + 1;
+        const end = start + chunk.length - 1;
+        return `<button onclick="copyBatch(${index})" style="width: 100%; padding: 12px; margin-bottom: 8px; background: #fdf4ff; border: 1px solid #f5d0fe; border-radius: 8px; color: #a21caf; font-size: 0.95rem; font-weight: bold; cursor: pointer; text-align: left; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05);" onmouseover="this.style.background='#fae8ff'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#fdf4ff'; this.style.transform='none';">
+            📋 คัดลอกชุดที่ ${index + 1} (ลำดับที่ ${start} - ${end}) [${chunk.length} รายการ]
+        </button>`;
+    }).join('');
+    
+    modal.innerHTML = `
+        <div style="background: white; padding: 2rem; border-radius: 16px; width: 500px; max-width: 90%; max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; border-bottom: 2px solid #f8fafc; padding-bottom: 0.8rem;">
+                <h2 style="margin: 0; color: #0f172a; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">📦 แบ่งชุดคัดลอกแทร็กกิ้ง</h2>
+                <button onclick="document.getElementById('batch-copy-modal').style.display='none'" style="background: none; border: none; font-size: 1.8rem; line-height: 1; color: #94a3b8; cursor: pointer; padding: 0 4px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">&times;</button>
+            </div>
+            <div style="color: #475569; font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.5; background: #f8fafc; padding: 12px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                คุณเลือกหรือมีเลขแทร็กกิ้งทั้งหมด <b>${trackingList.length}</b> รายการ<br>
+                ระบบ Track.thailandpost รองรับสูงสุด 300 รายการต่อครั้ง กรุณากดคัดลอกทีละชุดครับ
+            </div>
+            <div id="batch-copy-buttons-container" style="display: flex; flex-direction: column; gap: 4px;">
+                ${buttonsHtml}
+            </div>
+        </div>
+    `;
+    
+    window._batchCopyChunks = chunks;
+    modal.style.display = 'flex';
+};
+
+window.copyBatch = function(index) {
+    if (!window._batchCopyChunks || !window._batchCopyChunks[index]) return;
+    const chunk = window._batchCopyChunks[index];
+    const textToCopy = chunk.join(', ');
     navigator.clipboard.writeText(textToCopy).then(() => {
-        alert(`📋 คัดลอกเลขแทร็กสำเร็จ ${trackingList.length} รายการ!\n\nรูปแบบ: ${trackingList[0]}${trackingList.length > 1 ? ', ...' : ''}\n(คั่นด้วยลูกน้ำ นำไปวางใน Track.thailandpost ได้เลยครับ)`);
+        alert(`📋 คัดลอกชุดที่ ${index + 1} สำเร็จ! (${chunk.length} รายการ)\nนำไปวางในเว็บ Track ได้เลยครับ`);
     }).catch(err => {
         alert('❌ ไม่สามารถคัดลอกได้: ' + err);
     });
