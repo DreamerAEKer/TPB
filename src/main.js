@@ -980,28 +980,29 @@ function renderShipments() {
                         return;
                     }
                     s.trackingFormatted = parsedTracking;
+                    
+                    const promptMsg = "ต้องการให้ระบบจัดลำดับเลขพัสดุของรายการถัดๆ ไปโดยอัตโนมัติด้วยหรือไม่ เพื่อป้องกันการใช้เลขซ้ำ?\n\n" +
+                                     "- กด 'ตกลง' (OK) เพื่อจัดลำดับใหม่ทั้งหมดจนถึงรายการสุดท้าย\n" +
+                                     "- พิมพ์ตัวเลข (เช่น 5) เพื่อจัดลำดับเฉพาะ 5 รายการถัดไป\n" +
+                                     "- กด 'ยกเลิก' (Cancel) เพื่อแก้ไขเฉพาะรายการนี้รายการเดียว";
+                
+                    showSequencePrompt(promptMsg, async (promptVal) => {
+                        if (promptVal !== null) {
+                            const limit = parseInt(promptVal.trim());
+                            recalculateTabSequencesFrom(s.serviceType, parseInt(idx), isNaN(limit) ? null : limit);
+                        }
+                        updateSummary();
+                        await updateHistory();
+                        renderShipments();
+                    });
+                    return;
                 } else {
                     s.trackingFormatted = oldVal || s.trackingFormatted;
                     renderShipments();
                     return;
                 }
-                
-                const promptVal = prompt(
-                    "ต้องการให้ระบบจัดลำดับเลขพัสดุของรายการถัดๆ ไปโดยอัตโนมัติด้วยหรือไม่ เพื่อป้องกันการใช้เลขซ้ำ?\n\n" +
-                    "• กด 'ตกลง' (OK) เพื่อจัดลำดับใหม่ทั้งหมดจนถึงรายการสุดท้าย\n" +
-                    "• พิมพ์ตัวเลข (เช่น 5) เพื่อจัดลำดับเฉพาะ 5 รายการถัดไป\n" +
-                    "• กด 'ยกเลิก' (Cancel) เพื่อแก้ไขเฉพาะรายการนี้รายการเดียว",
-                    ""
-                );
-                if (promptVal !== null) {
-                    const limit = parseInt(promptVal.trim());
-                    recalculateTabSequencesFrom(s.serviceType, parseInt(idx), isNaN(limit) ? null : limit);
-                }
-                
-                updateSummary();
-                await updateHistory();
-                renderShipments();
             }, 50);
+
             return;
         }
         
@@ -1142,8 +1143,7 @@ window.toggleRowService = async (i, serviceType, checked) => {
         updateSummary();
         await updateHistory();
 
-        setTimeout(async () => {
-            const promptVal = prompt(msg, "");
+        showSequencePrompt(msg, async (promptVal) => {
             if (promptVal !== null) {
                 const limit = parseInt(promptVal.trim());
                 recalculateTabSequencesFrom(s.serviceType, i, isNaN(limit) ? null : limit);
@@ -1151,7 +1151,7 @@ window.toggleRowService = async (i, serviceType, checked) => {
                 updateSummary();
                 await updateHistory();
             }
-        }, 50);
+        });
     } else {
         renderShipments();
         updateSummary();
@@ -7589,4 +7589,71 @@ window.copyBatch = function(index) {
     
     alert(`✅ คัดลอกชุดที่ ${index + 1} สำเร็จ! (${chunk.length} รายการ)\n\nขั้นตอนต่อไป:\n1. ระบบจะเปิดหน้าเว็บ Track.thailandpost ให้\n2. เมื่อหน้าเว็บเปิดขึ้นมา ให้คลิกที่ "ช่องค้นหาสีขาว"\n3. กดปุ่ม "Ctrl + V" (วาง) บนคีย์บอร์ดเพื่อกรอกเลขทั้งหมด\n\n👉 กด "ตกลง/OK" เพื่อเปิดหน้าเว็บได้เลยครับ`);
     window.open(trackUrl, '_blank');
+};
+
+window.showSequencePrompt = function(message, onConfirm) {
+    let modal = document.getElementById('sequence-prompt-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'sequence-prompt-modal';
+        modal.style.cssText = 'display: flex; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 3000; justify-content: center; align-items: center; backdrop-filter: blur(4px);';
+        document.body.appendChild(modal);
+    }
+    
+    // Extract only the header text before the first bullet point
+    const headerText = message.split('- กด')[0].replace(/\n/g, '<br>').trim();
+    
+    modal.innerHTML = `
+        <div style="background: white; padding: 2rem; border-radius: 16px; width: 480px; max-width: 90%; max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; text-align: center;">
+            <div style="margin-bottom: 1.5rem;">
+                <div style="font-size: 3.5rem; margin-bottom: 1rem;">🔄</div>
+                <h3 style="margin: 0 0 0.75rem 0; color: #0f172a; font-size: 1.3rem;">จัดลำดับเลขพัสดุรายการถัดไปไหม?</h3>
+                <div style="color: #475569; font-size: 0.95rem; line-height: 1.5; background: #f8fafc; padding: 12px; border-radius: 8px;">
+                    ${headerText}
+                </div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="seq-prompt-all-btn" style="width: 100%; padding: 14px; background: #0ea5e9; border: none; border-radius: 10px; color: white; font-size: 1.05rem; font-weight: bold; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(14,165,233,0.2);" onmouseover="this.style.background='#0284c7'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='#0ea5e9'; this.style.transform='none';">
+                    🔄 รันเลขใหม่ตั้งแต่รายการถัดไปทั้งหมด
+                </button>
+                <div style="display: flex; gap: 8px; align-items: stretch;">
+                    <input type="number" id="seq-prompt-limit-input" placeholder="ระบุจำนวนรายการ" min="1" style="flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; text-align: center; font-size: 1rem;">
+                    <button id="seq-prompt-limit-btn" style="padding: 12px 20px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 10px; color: #334155; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                        รันแค่จำนวนนี้
+                    </button>
+                </div>
+                <button id="seq-prompt-cancel-btn" style="width: 100%; padding: 14px; margin-top: 8px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; color: #dc2626; font-size: 1.05rem; font-weight: bold; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#fee2e2'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#fef2f2'; this.style.transform='none';">
+                    ❌ ไม่รัน (คงเลขเดิมไว้ แก้แค่บรรทัดเดียว)
+                </button>
+            </div>
+        </div>
+    `;
+    
+    modal.style.display = 'flex';
+    // Focus the cancel button by default so Enter closes it
+    setTimeout(() => {
+        const cancelBtn = document.getElementById('seq-prompt-cancel-btn');
+        if (cancelBtn) cancelBtn.focus();
+    }, 50);
+    
+    document.getElementById('seq-prompt-all-btn').onclick = () => {
+        modal.style.display = 'none';
+        onConfirm("");
+    };
+    
+    document.getElementById('seq-prompt-limit-btn').onclick = () => {
+        const val = document.getElementById('seq-prompt-limit-input').value;
+        if (!val) {
+            alert('โปรดระบุจำนวนรายการที่ต้องการรัน');
+            return;
+        }
+        modal.style.display = 'none';
+        onConfirm(val);
+    };
+    
+    document.getElementById('seq-prompt-cancel-btn').onclick = () => {
+        modal.style.display = 'none';
+        onConfirm(null);
+    };
 };
