@@ -7520,10 +7520,13 @@ window.copyTrackingNumbers = function() {
 
     if (trackingList.length <= 300) {
         const textToCopy = trackingList.join(', ');
+        const trackUrl = 'https://track.thailandpost.co.th/dashboard';
+        window.open(trackUrl, '_blank');
+        
         navigator.clipboard.writeText(textToCopy).then(() => {
-            alert(`📋 คัดลอกเลขแทร็กสำเร็จ ${trackingList.length} รายการ!\n\nรูปแบบ: ${trackingList[0]}${trackingList.length > 1 ? ', ...' : ''}\n(คั่นด้วยลูกน้ำ นำไปวางใน Track.thailandpost ได้เลยครับ)`);
+            alert(`✅ คัดลอกเลขแทร็กสำเร็จ ${trackingList.length} รายการ!\n\nระบบกำลังเปิดหน้าเว็บ Track.thailandpost ให้...\n👉 กรุณากด "วาง" (Ctrl+V) ในช่องค้นหาได้เลยครับ`);
         }).catch(err => {
-            alert('❌ ไม่สามารถคัดลอกได้: ' + err);
+            alert('❌ ไม่สามารถคัดลอกลง Clipboard ได้อัตโนมัติ กรุณาคัดลอกด้วยตนเองครับ\n\n' + textToCopy);
         });
     } else {
         showBatchCopyModal(trackingList);
@@ -7577,9 +7580,12 @@ window.copyBatch = function(index) {
     if (!window._batchCopyChunks || !window._batchCopyChunks[index]) return;
     const chunk = window._batchCopyChunks[index];
     const textToCopy = chunk.join(', ');
+    const trackUrl = 'https://track.thailandpost.co.th/dashboard';
+    window.open(trackUrl, '_blank');
+    
     navigator.clipboard.writeText(textToCopy).then(() => {
-        alert(`📋 คัดลอกชุดที่ ${index + 1} สำเร็จ! (${chunk.length} รายการ)\nนำไปวางในเว็บ Track ได้เลยครับ`);
+        alert(`✅ คัดลอกชุดที่ ${index + 1} สำเร็จ! (${chunk.length} รายการ)\n\nระบบกำลังเปิดหน้าเว็บ Track.thailandpost ให้...\n👉 กรุณากด "วาง" (Ctrl+V) ในช่องค้นหาได้เลยครับ`);
     }).catch(err => {
-        alert('❌ ไม่สามารถคัดลอกได้: ' + err);
+        alert('❌ ไม่สามารถคัดลอกลง Clipboard ได้อัตโนมัติ กรุณาคัดลอกด้วยตนเองครับ\n\n' + textToCopy);
     });
 };
