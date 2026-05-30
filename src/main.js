@@ -7316,7 +7316,28 @@ async function applyBatchChanges() {
         if (loadingOverlay) loadingOverlay.style.display = 'none';
     }
 
-    alert(`🎉 ปรับปรุงข้อมูลแบบกลุ่มสำเร็จเรียบร้อยแล้ว จำนวน ${updatedCount} รายการ!`);
+    if (enableAR && updatedCount > 0) {
+        const firstModifiedOriginalIdx = filtered[startIdx - 1].originalIdx;
+        const msg = "คุณมีการปรับเปลี่ยนสถานะใบตอบรับ (AR) ผ่านเครื่องมือแบบกลุ่ม\n\n" +
+                    "ต้องการให้ระบบจัดลำดับเลขพัสดุในตารางใหม่ให้ถูกต้องตามหลักการข้ามเลขหรือไม่?\n\n" +
+                    "- กด 'ตกลง' (OK) เพื่อจัดลำดับใหม่ทั้งหมดจนถึงรายการสุดท้าย\n" +
+                    "- พิมพ์ตัวเลข (เช่น 5) เพื่อจัดลำดับเฉพาะ 5 รายการถัดไป\n" +
+                    "- กด 'ยกเลิก' (Cancel) เพื่อคงเลขเดิมไว้";
+                    
+        showSequencePrompt(msg, async (promptVal) => {
+            if (promptVal !== null) {
+                const limit = parseInt(promptVal.trim());
+                recalculateTabSequencesFrom(shipments[firstModifiedOriginalIdx].serviceType, firstModifiedOriginalIdx, isNaN(limit) ? null : limit);
+                await updateHistory();
+                updatePreview();
+                renderShipments();
+                updateSummary();
+            }
+            alert(`🎉 ปรับปรุงข้อมูลแบบกลุ่มสำเร็จเรียบร้อยแล้ว จำนวน ${updatedCount} รายการ!`);
+        });
+    } else {
+        alert(`🎉 ปรับปรุงข้อมูลแบบกลุ่มสำเร็จเรียบร้อยแล้ว จำนวน ${updatedCount} รายการ!`);
+    }
 }
 
 async function applyBulkImport() {
