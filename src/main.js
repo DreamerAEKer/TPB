@@ -3966,7 +3966,7 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// 📠 Postage Meter Transaction & Adjustment Manager logic (v7.9.2-custom)
+// 📠 Postage Meter Transaction & Adjustment Manager logic (v8.0.0-custom)
 const meterTxModal = document.getElementById('meter-transaction-modal');
 const btnMeterAdjustment = document.getElementById('btn-meter-adjustment');
 const closeMeterTxModal = document.getElementById('close-meter-tx-modal');
@@ -5185,30 +5185,34 @@ async function renderArchiveView() {
             <td style="text-align: right; padding: 12px; color: #0369a1;">${dayOtherCount.toLocaleString()}</td>
             <td style="text-align: right; padding: 12px; color: #0369a1; border-right: 1px solid #e2e8f0;">${dayOtherFee.toLocaleString()}</td>
             <td style="text-align: right; padding: 12px; font-weight: bold; color: #0f766e;">${dayTotalFee.toLocaleString()}</td>
-            <td style="text-align: center; padding: 12px;">
-                <select class="view-batch-select" style="padding: 4px; border-radius: 4px; border: 1px solid #ccc; max-width: 250px;">
-                    <option value="">-- เลือกรายการบิล --</option>
-                    ${batches.map((b, idx) => {
-                        let typeStr = b.isBackup ? '🔄 สำรองอัตโนมัติ' : `บิลที่ ${idx + 1}`;
-                        let timeStr = '';
-                        if (b.date) {
-                            try {
-                                const d = new Date(b.date);
-                                const h = String(d.getHours()).padStart(2, '0');
-                                const m = String(d.getMinutes()).padStart(2, '0');
-                                timeStr = ` [เวลา ${h}:${m}]`;
-                            } catch(e) {}
-                        }
-                        let meterStr = '';
-                        if (b.meterAfter) {
-                            meterStr = ` [แถวบน: ${(b.meterAfter.desc || 0).toLocaleString()} บ. / แถวล่าง: ${(b.meterAfter.asc || 0).toLocaleString()}]`;
-                        }
-                        let remarkStr = b.remarks ? ` - ${b.remarks}` : '';
-                        return `<option value="${b.id}">${typeStr}${timeStr} (${b.items.length} รายการ)${meterStr}${remarkStr}</option>`;
-                    }).join('')}
-                </select>
-                <button class="btn-icon edit-batch-btn" style="display: none; background: #e0f2fe; color: #0284c7; font-weight: bold; padding: 4px 10px; margin-left: 5px;">แก้ไข / พิมพ์</button>
-                <button class="btn-icon delete-batch-btn" style="display: none; background: #fee2e2; color: #ef4444; font-weight: bold; padding: 4px 10px; margin-left: 5px;">🗑️ ลบข้อมูลการนำส่ง</button>
+            <td style="text-align: center; padding: 12px; min-width: 250px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; justify-content: center;">
+                    <select class="view-batch-select" style="padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; width: 100%; max-width: 240px; font-size: 0.85rem; height: 32px; background: white; cursor: pointer;">
+                        <option value="">-- เลือกรายการบิล --</option>
+                        ${batches.map((b, idx) => {
+                            let typeStr = b.isBackup ? '🔄 สำรองอัตโนมัติ' : `บิลที่ ${idx + 1}`;
+                            let timeStr = '';
+                            if (b.date) {
+                                try {
+                                    const d = new Date(b.date);
+                                    const h = String(d.getHours()).padStart(2, '0');
+                                    const m = String(d.getMinutes()).padStart(2, '0');
+                                    timeStr = ` [เวลา ${h}:${m}]`;
+                                } catch(e) {}
+                            }
+                            let meterStr = '';
+                            if (b.meterAfter) {
+                                meterStr = ` [แถวบน: ${(b.meterAfter.desc || 0).toLocaleString()} บ. / แถวล่าง: ${(b.meterAfter.asc || 0).toLocaleString()}]`;
+                            }
+                            let remarkStr = b.remarks ? ` - ${b.remarks}` : '';
+                            return `<option value="${b.id}">${typeStr}${timeStr} (${b.items.length} รายการ)${meterStr}${remarkStr}</option>`;
+                        }).join('')}
+                    </select>
+                    <div style="display: flex; gap: 6px; justify-content: center; width: 100%;">
+                        <button class="btn-icon edit-batch-btn" style="display: none; background: #e0f2fe; color: #0284c7; font-weight: bold; padding: 5px 12px; font-size: 0.75rem; border: 1px solid #bae6fd; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#bae6fd'" onmouseout="this.style.background='#e0f2fe'">แก้ไข / พิมพ์</button>
+                        <button class="btn-icon delete-batch-btn" style="display: none; background: #fee2e2; color: #ef4444; font-weight: bold; padding: 5px 12px; font-size: 0.75rem; border: 1px solid #fecaca; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'">🗑️ ลบข้อมูล</button>
+                    </div>
+                </div>
             </td>
         `;
         
