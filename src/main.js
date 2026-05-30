@@ -7316,25 +7316,17 @@ async function applyBatchChanges() {
         if (loadingOverlay) loadingOverlay.style.display = 'none';
     }
 
-    if (enableAR && updatedCount > 0) {
+    if (enableAR && updatedCount > 0 && (currentServiceTab === 'EMS' || currentServiceTab === 'REG' || currentServiceTab === 'EMS_SPECIAL')) {
         const firstModifiedOriginalIdx = filtered[startIdx - 1].originalIdx;
-        const msg = "คุณมีการปรับเปลี่ยนสถานะใบตอบรับ (AR) ผ่านเครื่องมือแบบกลุ่ม\n\n" +
-                    "ต้องการให้ระบบจัดลำดับเลขพัสดุในตารางใหม่ให้ถูกต้องตามหลักการข้ามเลขหรือไม่?\n\n" +
-                    "- กด 'ตกลง' (OK) เพื่อจัดลำดับใหม่ทั้งหมดจนถึงรายการสุดท้าย\n" +
-                    "- พิมพ์ตัวเลข (เช่น 5) เพื่อจัดลำดับเฉพาะ 5 รายการถัดไป\n" +
-                    "- กด 'ยกเลิก' (Cancel) เพื่อคงเลขเดิมไว้";
-                    
-        showSequencePrompt(msg, async (promptVal) => {
-            if (promptVal !== null) {
-                const limit = parseInt(promptVal.trim());
-                recalculateTabSequencesFrom(shipments[firstModifiedOriginalIdx].serviceType, firstModifiedOriginalIdx, isNaN(limit) ? null : limit);
-                await updateHistory();
-                updatePreview();
-                renderShipments();
-                updateSummary();
-            }
-            alert(`🎉 ปรับปรุงข้อมูลแบบกลุ่มสำเร็จเรียบร้อยแล้ว จำนวน ${updatedCount} รายการ!`);
-        });
+        
+        // Auto-recalculate sequences without prompting, as requested by user
+        recalculateTabSequencesFrom(shipments[firstModifiedOriginalIdx].serviceType, firstModifiedOriginalIdx, null);
+        await updateHistory();
+        updatePreview();
+        renderShipments();
+        updateSummary();
+        
+        alert(`🎉 ปรับปรุงข้อมูลแบบกลุ่มสำเร็จเรียบร้อยแล้ว จำนวน ${updatedCount} รายการ!\n\n💡 เมื่อคุณปรับเปลี่ยนสถานะใบตอบรับ (AR) ผ่านเครื่องมือแบบกลุ่ม ระบบจะจัดลำดับเลขที่ในตารางใหม่ให้ถูกต้อง`);
     } else {
         alert(`🎉 ปรับปรุงข้อมูลแบบกลุ่มสำเร็จเรียบร้อยแล้ว จำนวน ${updatedCount} รายการ!`);
     }
