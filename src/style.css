@@ -100,40 +100,54 @@ body {
     color: white;
 }
 
-/* Service Tab Top Color Bars */
+/* Service Tab Dynamic Colors */
 .service-tab {
     position: relative;
 }
 
-.service-tab::before {
+.service-tab::after {
     content: '';
     position: absolute;
-    top: 0;
+    bottom: -1px; /* Align over the border */
     left: 0;
     right: 0;
-    height: 3px;
+    height: 2px;
+    opacity: 0;
+    transition: opacity 0.2s;
 }
 
-.service-tab[data-service="EMS"]::before {
-    background: linear-gradient(to right, #0284c7, #ea580c);
+.service-tab.active {
+    border-bottom-color: transparent !important; /* Hide default border */
 }
 
-.service-tab[data-service="REG"]::before {
-    background: #ef4444;
+.service-tab.active::after {
+    opacity: 1;
 }
 
-.service-tab[data-service="ECO"]::before {
-    background: #a855f7;
-}
+/* EMS */
+.service-tab[data-service="EMS"]::after { background: linear-gradient(to right, #0284c7, #ea580c); }
+.service-tab.active[data-service="EMS"] { color: #0284c7; }
+.service-tab.active[data-service="EMS"] .tab-count { background: #0284c7; }
 
-.service-tab[data-service="PARCEL"]::before {
-    background: #eab308;
-}
+/* REG */
+.service-tab[data-service="REG"]::after { background: #ef4444; }
+.service-tab.active[data-service="REG"] { color: #ef4444; }
+.service-tab.active[data-service="REG"] .tab-count { background: #ef4444; }
 
-.service-tab[data-service="CUSTOM"]::before {
-    background: #ffffff;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* So it's somewhat visible on light bg */
-}
+/* ECO */
+.service-tab[data-service="ECO"]::after { background: #a855f7; }
+.service-tab.active[data-service="ECO"] { color: #a855f7; }
+.service-tab.active[data-service="ECO"] .tab-count { background: #a855f7; }
+
+/* PARCEL */
+.service-tab[data-service="PARCEL"]::after { background: #eab308; }
+.service-tab.active[data-service="PARCEL"] { color: #d97706; } /* Slightly darker for text readability */
+.service-tab.active[data-service="PARCEL"] .tab-count { background: #eab308; }
+
+/* CUSTOM */
+.service-tab[data-service="CUSTOM"]::after { background: #22c55e; }
+.service-tab.active[data-service="CUSTOM"] { color: #16a34a; }
+.service-tab.active[data-service="CUSTOM"] .tab-count { background: #22c55e; }
 
 /* Bulk Toggle Label */
 .bulk-toggle-label {
