@@ -6672,6 +6672,7 @@ async function parseAndImportPastedExcel() {
         let calcWeight = rawWeight;
         let useVolWeight = false;
         let dimensions = null;
+
         if (dimW > 0 && dimL > 0 && dimH > 0) {
             dimensions = { w: dimW, l: dimL, h: dimH };
             const volWeight = Math.ceil((dimW * dimL * dimH) / 6);
@@ -6680,56 +6681,55 @@ async function parseAndImportPastedExcel() {
                 calcWeight = volWeight;
             }
         }
-        
-        const baseRate = calculateServiceRate(targetServiceType, calcWeight, normZip, useVolWeight);
-        let extraCharge = 0;
-        let detailLines = [];
-        
-        if (isAlwaysRemote) {
-            extraCharge = 50;
-            detailLines.push('พื้นที่ห่างไกล (50 บาท)');
-        }
-        
-        const totalFee = baseRate + extraCharge;
-        
-        // Push shipment object
-        const shipment = {
-            id: 'SHIP-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
-            tracking: trackingFormatted,
+
+        const s = {
+            serviceType: targetServiceType,
+            trackingFormatted: trackingFormatted,
             recipient: recipient,
             destination: normZip,
-            weight: rawWeight,
-            dimensions: dimensions,
-            useVolWeight: useVolWeight,
-            baseRate: baseRate,
-            extraCharge: extraCharge,
-            totalFee: totalFee,
-            isAr: false,
-            isInsured: false,
-            insuranceValue: 0,
-            insuranceFee: 0,
-            isRemote: isAlwaysRemote,
-            isIslandPotential: isIslandPotential,
-            timestamp: Date.now()
+            weight: calcWeight > 0 ? calcWeight : '',
+            fee: '',
+            isIsland: false,
+            options: {
+                ar: false,
+                arTracking: false,
+                insurance: false,
+                insuranceValue: 0,
+                isRemote: isAlwaysRemote,
+                isSpecialEms: isSpecialTab && targetServiceType === 'EMS'
+            }
         };
-        
-        if (!shipments[targetServiceType]) shipments[targetServiceType] = [];
-        shipments[targetServiceType].push(shipment);
+
+        if (dimensions) {
+            s.options.dimensions = dimensions;
+            s.options.useVolWeight = useVolWeight;
+        }
+
+        if (calcWeight > 0 && targetServiceType !== 'CUSTOM') {
+            let base = calculateBaseFee(targetServiceType, calcWeight, s.options);
+            if (settings.fuelSurcharge && (targetServiceType === 'EMS' || targetServiceType === 'ECO')) {
+                base += 3;
+            }
+            s.fee = base;
+        }
+
+        shipments.push(s);
         importedCount++;
     }
     
-    // Save to IndexedDB, update UI
-    await saveToDB('shipments', shipments);
-    renderShipmentsTable();
-    updateTabCounters();
-    updateSummaryWidgets();
+    // After loop finishes, update the sidebar input fields to the NEXT available tracking number!
+    const step = ((activeServiceType === 'REG' && optArTracking.checked) || (activeServiceType === 'EMS' && optAR.checked)) ? 2 : 1;
+    const nextAvailNum = await getNextAvailableTrackingNumber(prefixInput.value.trim().toUpperCase(), currentNum.toString().padStart(8, '0'), step);
+    digitsInput.value = nextAvailNum.d;
+    num8StartInput.value = nextAvailNum.d;
     
-    // Sync starting digits
-    if (bulkToggle.checked) {
-        num8StartInput.value = currentNum.toString().padStart(8, '0');
-    } else {
-        digitsInput.value = currentNum.toString().padStart(8, '0');
-    }
+    // Save and Refresh UI
+    await updateHistory();
+    updatePreview();
+    renderShipments();
+    updateSummary();
+    updateMeterStatus();
+    renderStats();
     
     if (loadingOverlay) loadingOverlay.style.display = 'none';
     
