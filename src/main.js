@@ -682,6 +682,9 @@ function updateDeleteSelectedBtnVisibility() {
 }
 
 function renderShipments() {
+  window.shipments = shipments;
+  window.renderShipments = renderShipments;
+  window.updateSummary = updateSummary;
   shipmentList.innerHTML = '';
 
   const isSpecialTab = currentServiceTab === 'EMS_SPECIAL';
