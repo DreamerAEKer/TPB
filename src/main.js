@@ -3115,7 +3115,7 @@ addBtn.onclick = async (e) => {
       const cachedArchives = await loadAllArchives();
       if (type !== 'CUSTOM') {
           const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
-          nextAvail = await getNextAvailableTrackingNumber(p, startD, step, cachedArchives);
+          nextAvail = await generateAndCheckTrackingNumber(p, startD, cachedArchives);
           finalD = nextAvail.d;
           trackingFormatted = nextAvail.trackingFormatted;
           
@@ -3468,7 +3468,7 @@ nextNumBtn.onclick = async () => {
     const type = getServiceType(p);
     const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
     const startVal = (parseInt(v) + step) % 100000000;
-    const nextAvail = await getNextAvailableTrackingNumber(p, startVal.toString().padStart(8, '0'), step);
+    const nextAvail = await generateAndCheckTrackingNumber(p, startVal.toString().padStart(8, '0'));
     digitsInput.value = nextAvail.d;
     num8StartInput.value = nextAvail.d;
     updatePreview();
@@ -6658,7 +6658,7 @@ async function parseAndImportPastedExcel() {
             }
 
             const step = ((targetServiceType === 'REG' && optArTracking.checked) || (targetServiceType === 'EMS' && optAR.checked)) ? 2 : 1;
-            const nextAvail = await getNextAvailableTrackingNumber(servicePrefix, currentNum.toString().padStart(8, '0'), step);
+            const nextAvail = await generateAndCheckTrackingNumber(servicePrefix, currentNum.toString().padStart(8, '0'));
             trackingFormatted = nextAvail.trackingFormatted;
             currentNum = parseInt(nextAvail.d) + step;
         }
@@ -6719,7 +6719,7 @@ async function parseAndImportPastedExcel() {
     
     // After loop finishes, update the sidebar input fields to the NEXT available tracking number!
     const step = ((activeServiceType === 'REG' && optArTracking.checked) || (activeServiceType === 'EMS' && optAR.checked)) ? 2 : 1;
-    const nextAvailNum = await getNextAvailableTrackingNumber(prefixInput.value.trim().toUpperCase(), currentNum.toString().padStart(8, '0'), step);
+    const nextAvailNum = await generateAndCheckTrackingNumber(prefixInput.value.trim().toUpperCase(), currentNum.toString().padStart(8, '0'));
     digitsInput.value = nextAvailNum.d;
     num8StartInput.value = nextAvailNum.d;
     
@@ -6873,7 +6873,7 @@ async function parseAndImportExcelFile() {
                 }
 
                 const step = ((targetServiceType === 'REG' && optArTracking.checked) || (targetServiceType === 'EMS' && optAR.checked)) ? 2 : 1;
-                const nextAvail = await getNextAvailableTrackingNumber(servicePrefix, currentNum.toString().padStart(8, '0'), step);
+                const nextAvail = await generateAndCheckTrackingNumber(servicePrefix, currentNum.toString().padStart(8, '0'));
                 trackingFormatted = nextAvail.trackingFormatted;
                 currentNum = parseInt(nextAvail.d) + step;
             }
@@ -6938,7 +6938,7 @@ async function parseAndImportExcelFile() {
 
         // After loop finishes, update the sidebar input fields to the NEXT available tracking number!
         const step = ((activeServiceType === 'REG' && optArTracking.checked) || (activeServiceType === 'EMS' && optAR.checked)) ? 2 : 1;
-        const nextAvailNum = await getNextAvailableTrackingNumber(prefixInput.value.trim().toUpperCase(), currentNum.toString().padStart(8, '0'), step);
+        const nextAvailNum = await generateAndCheckTrackingNumber(prefixInput.value.trim().toUpperCase(), currentNum.toString().padStart(8, '0'));
         digitsInput.value = nextAvailNum.d;
         num8StartInput.value = nextAvailNum.d;
 
