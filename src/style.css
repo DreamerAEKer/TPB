@@ -125,9 +125,9 @@ body {
 }
 
 /* EMS */
-.service-tab[data-service="EMS"]::after { background: linear-gradient(to right, #0284c7, #ea580c); }
-.service-tab.active[data-service="EMS"] { color: #0284c7; }
-.service-tab.active[data-service="EMS"] .tab-count { background: #0284c7; }
+.service-tab[data-service="EMS"]::after { background: linear-gradient(to right, #1d4ed8, #f97316); }
+.service-tab.active[data-service="EMS"] { color: #1d4ed8; }
+.service-tab.active[data-service="EMS"] .tab-count { background: #1d4ed8; }
 
 /* REG */
 .service-tab[data-service="REG"]::after { background: #ef4444; }
