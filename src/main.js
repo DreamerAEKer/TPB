@@ -6777,7 +6777,15 @@ async function parseAndImportPastedExcel() {
     if (loadingOverlay) loadingOverlay.style.display = 'none';
     
     pasteInput.value = '';
-    alert(`🎉 นำเข้าข้อมูลจากการวางสำเร็จ ${importedCount} รายการ (ข้ามรายการว่าง ${skippedCount} รายการ)`);
+    if (importedCount === 0) {
+        alert(skippedCount > 0 ? `⚠️ ไม่พบข้อมูลที่นำเข้าได้เลย (ข้ามรายการที่ไม่สมบูรณ์ ${skippedCount} รายการ)` : '⚠️ ไม่พบข้อมูลสำหรับนำเข้า');
+    } else {
+        let msg = `🎉 นำเข้าข้อมูลจากการวางสำเร็จ ${importedCount} รายการ`;
+        if (skippedCount > 0) {
+            msg += ` (ข้ามรายการว่าง ${skippedCount} รายการ)`;
+        }
+        alert(msg);
+    }
 }
 
 async function parseAndImportExcelFile() {
@@ -6994,7 +7002,12 @@ async function parseAndImportExcelFile() {
         renderStats();
 
         statusEl.textContent = `🎉 นำเข้าพัสดุสำเร็จ ${importedCount} รายการ!`;
-        alert(`🎉 นำเข้าข้อมูลพัสดุจากไฟล์สำเร็จเรียบร้อยแล้ว!\n\nนำเข้าสำเร็จ: ${importedCount} รายการ\nรันเลขแทรคกิ้งต่อให้อัตโนมัติเรียบร้อยครับ`);
+        
+        let msg = `🎉 นำเข้าข้อมูลพัสดุจากไฟล์สำเร็จเรียบร้อยแล้ว!\n\nนำเข้าสำเร็จ: ${importedCount} รายการ\nรันเลขแทรคกิ้งต่อให้อัตโนมัติเรียบร้อยครับ`;
+        if (skippedCount > 0) {
+            msg += `\n\n(ข้ามรายการว่างหรือไม่สมบูรณ์ ${skippedCount} รายการ)`;
+        }
+        alert(msg);
 
         // Reset file input and dropzone
         fileInput.value = '';
