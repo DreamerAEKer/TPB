@@ -6465,8 +6465,6 @@ async function generateExcelTemplate() {
         
         // Add sample rows according to specifications
         worksheet.addRow({ service: 'EMS', recipient: 'นายสมชาย รักดี', zipcode: '10500', weight: 550, width: 15, length: 20, height: 10, tracking: '' });
-        worksheet.addRow({ service: 'ลงทะเบียน', recipient: 'นางสาวสมศรี สุขใจ', zipcode: '20000', weight: 250, width: '', length: '', height: '', tracking: '' });
-        worksheet.addRow({ service: 'eCo-Post', recipient: 'นายประหยัด จันทร์', zipcode: '10110', weight: '', width: 30, length: 40, height: 20, tracking: '' });
 
         // Format Header row styling (beautiful premium header)
         const headerRow = worksheet.getRow(1);
