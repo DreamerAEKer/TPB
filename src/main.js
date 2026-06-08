@@ -7388,14 +7388,22 @@ async function applyBulkImport() {
         const targetShipment = shipments[originalIdx];
         const data = parsedData[dataIdx];
 
+        let appliedAnything = false;
+
         // Apply recipient name
         if (clearExisting || !targetShipment.recipient) {
             targetShipment.recipient = data.name;
+            appliedAnything = true;
         }
 
         // Apply zip code
         if (clearExisting || !targetShipment.destination) {
             targetShipment.destination = data.zip;
+            appliedAnything = true;
+        }
+
+        if (!appliedAnything) {
+            continue; // Skip this row, don't consume the pasted data
         }
 
         // Trigger remote area updates if any
