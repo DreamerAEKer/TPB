@@ -2757,7 +2757,7 @@ if (upcFeeInput) {
 customServiceManualInput.oninput = updatePreview;
 
 // --- UNIQUE TRACKING NUMBER GENERATOR & ADJUSTER (v5.8.2) ---
-async function checkTrackingDuplicateHistory(prefix, d, cd) {
+async function checkTrackingDuplicateHistory(prefix, d, cd, cachedArchives = null) {
     const trackingFormatted = formatTrackingNumber(prefix, d, cd);
     
     // Check local shipments (current manifest)
@@ -2781,7 +2781,7 @@ async function checkTrackingDuplicateHistory(prefix, d, cd) {
     
     // Check all archives
     try {
-        const allArchives = await loadAllArchives();
+        const allArchives = cachedArchives || await loadAllArchives();
         const archiveMatches = [];
         
         for (const arch of allArchives) {
@@ -2815,7 +2815,7 @@ async function checkTrackingDuplicateHistory(prefix, d, cd) {
     return null;
 }
 
-async function getNextAvailableTrackingNumber(prefix, startD, activeStep) {
+async function getNextAvailableTrackingNumber(prefix, startD, activeStep, cachedArchives = null) {
     let num = parseInt(startD);
     if (isNaN(num)) num = 0;
     
@@ -2826,7 +2826,7 @@ async function getNextAvailableTrackingNumber(prefix, startD, activeStep) {
         const cd = calculateCheckDigit(d);
         const trackingFormatted = formatTrackingNumber(prefix, d, cd);
         
-        const dupInfo = await checkTrackingDuplicateHistory(prefix, d, cd);
+        const dupInfo = await checkTrackingDuplicateHistory(prefix, d, cd, cachedArchives);
         if (!dupInfo) {
             return { d, cd, trackingFormatted, duplicateRecords };
         }
@@ -2984,12 +2984,14 @@ addBtn.onclick = async (e) => {
           const titleEl = loadingOverlay.querySelector('div:nth-of-type(2)');
           const detailEl = loadingOverlay.querySelector('div:nth-of-type(3)');
           if (titleEl) titleEl.textContent = 'กำลังประมวลผลเพิ่มรายการแบบชุด...';
-          if (detailEl) detailEl.textContent = `กรุณารอสักครู่ กำลังตรวจสอบและจัดสร้างข้อมูล ${count} รายการ`;
+          if (detailEl) detailEl.textContent = `กรุณารอสักครู่ กำลังจัดสร้างข้อมูล ${count} รายการ`;
           loadingOverlay.style.display = 'flex';
       }
 
       // Let DOM render loader
       await new Promise(resolve => setTimeout(resolve, 50));
+      
+      const cachedArchives = await loadAllArchives();
 
       const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
       let currentNum = parseInt(startD);
@@ -3010,7 +3012,7 @@ addBtn.onclick = async (e) => {
                  trackingFormatted = startD + (i > 0 ? `-${i}` : ''); 
               }
           } else {
-              const nextAvail = await getNextAvailableTrackingNumber(p, currentNum.toString().padStart(8, '0'), step);
+              const nextAvail = await getNextAvailableTrackingNumber(p, currentNum.toString().padStart(8, '0'), step, cachedArchives);
               trackingFormatted = nextAvail.trackingFormatted;
               lastGeneratedD = nextAvail.d;
               currentNum = parseInt(nextAvail.d) + step;
@@ -3143,9 +3145,11 @@ addBtn.onclick = async (e) => {
       let finalD = startD;
       let nextAvail = null;
       let trackingFormatted = startD;
+      
+      const cachedArchives = await loadAllArchives();
       if (type !== 'CUSTOM') {
           const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
-          nextAvail = await getNextAvailableTrackingNumber(p, startD, step);
+          nextAvail = await getNextAvailableTrackingNumber(p, startD, step, cachedArchives);
           finalD = nextAvail.d;
           trackingFormatted = nextAvail.trackingFormatted;
           
@@ -3249,7 +3253,7 @@ addBtn.onclick = async (e) => {
       
       if (type !== 'CUSTOM') {
           const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
-          const nextAvailNum = await getNextAvailableTrackingNumber(p, (parseInt(finalD) + step).toString().padStart(8, '0'), step);
+          const nextAvailNum = await getNextAvailableTrackingNumber(p, (parseInt(finalD) + step).toString().padStart(8, '0'), step, cachedArchives);
           digitsInput.value = nextAvailNum.d;
           num8StartInput.value = nextAvailNum.d;
       }
