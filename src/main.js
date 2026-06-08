@@ -6576,6 +6576,27 @@ async function parseAndImportPastedExcel() {
         let trackingFormatted = '';
         
         const colCount = row.length;
+
+        function extractTracking(text) {
+            if (!text) return '';
+            const rawTracking = text.toString().toUpperCase().replace(/[^A-Z0-9]/g, '');
+            if (rawTracking.length >= 5 && /^[A-Z]{2}/.test(rawTracking)) {
+                const match = rawTracking.match(/^([A-Z]{2})(\d{8})(\d)([A-Z]{2})$/);
+                if (match) {
+                    return formatTrackingNumber(match[1], match[2], match[3]);
+                } else {
+                    const simpleMatch = rawTracking.match(/^([A-Z]{2})(\d{8})([A-Z]{2})$/);
+                    if (simpleMatch) {
+                        const cd = calculateCheckDigit(simpleMatch[2]);
+                        return formatTrackingNumber(simpleMatch[1], simpleMatch[2], cd);
+                    } else if (rawTracking.length >= 13) {
+                        return rawTracking;
+                    }
+                }
+            }
+            return '';
+        }
+
         if (colCount === 1) {
             recipient = row[0];
         } else if (colCount === 2) {
@@ -6584,7 +6605,12 @@ async function parseAndImportPastedExcel() {
         } else if (colCount === 3) {
             recipient = row[0];
             rawZip = row[1];
-            rawWeight = parseFloat(row[2]) || 0;
+            const possibleTracking = extractTracking(row[2]);
+            if (possibleTracking) {
+                trackingFormatted = possibleTracking;
+            } else {
+                rawWeight = parseFloat(row[2]) || 0;
+            }
         } else if (colCount === 4) {
             const rawSvc = row[0].toUpperCase();
             if (rawSvc === 'EMS') targetServiceType = 'EMS';
@@ -6595,7 +6621,12 @@ async function parseAndImportPastedExcel() {
             
             recipient = row[1];
             rawZip = row[2];
-            rawWeight = parseFloat(row[3]) || 0;
+            const possibleTracking = extractTracking(row[3]);
+            if (possibleTracking) {
+                trackingFormatted = possibleTracking;
+            } else {
+                rawWeight = parseFloat(row[3]) || 0;
+            }
         } else {
             // Full template or multi-column layout
             const rawSvc = row[0].toUpperCase();
@@ -6615,21 +6646,33 @@ async function parseAndImportPastedExcel() {
                 dimH = parseFloat(row[6]) || 0;
             }
             if (colCount >= 8 && row[7]) {
-                const rawTracking = row[7].toUpperCase().replace(/[^A-Z0-9]/g, '');
-                if (rawTracking.length >= 5) {
-                    const match = rawTracking.match(/^([A-Z]{2})(\d{8})(\d)([A-Z]{2})$/);
-                    if (match) {
-                        trackingFormatted = formatTrackingNumber(match[1], match[2], match[3]);
-                    } else {
-                        const simpleMatch = rawTracking.match(/^([A-Z]{2})(\d{8})([A-Z]{2})$/);
-                        if (simpleMatch) {
-                            const cd = calculateCheckDigit(simpleMatch[2]);
-                            trackingFormatted = formatTrackingNumber(simpleMatch[1], simpleMatch[2], cd);
-                        } else {
-                            trackingFormatted = rawTracking;
-                        }
-                    }
+                trackingFormatted = extractTracking(row[7]);
+            }
+        }
+
+        // Auto-detect service from tracking prefix if not explicitly provided
+        if (trackingFormatted && targetServiceType === activeServiceType) {
+            const p = trackingFormatted.substring(0, 2).toUpperCase();
+            let matchedService = null;
+            
+            const defaults = settings.defaultPrefixes || {};
+            for (const [svc, prefixes] of Object.entries(defaults)) {
+                if (prefixes && prefixes.includes(p)) {
+                    matchedService = svc;
+                    break;
                 }
+            }
+            
+            if (!matchedService) {
+                if (p.startsWith('EE')) matchedService = 'CUSTOM';
+                else if (p.startsWith('E')) matchedService = 'EMS';
+                else if (p.startsWith('R')) matchedService = 'REG';
+                else if (p.startsWith('O') || p.startsWith('C')) matchedService = 'ECO';
+                else if (p.startsWith('P')) matchedService = 'PARCEL';
+            }
+            
+            if (matchedService) {
+                targetServiceType = matchedService;
             }
         }
         
