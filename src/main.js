@@ -2815,25 +2815,12 @@ async function checkTrackingDuplicateHistory(prefix, d, cd, cachedArchives = nul
     return null;
 }
 
-async function getNextAvailableTrackingNumber(prefix, startD, activeStep, cachedArchives = null) {
-    let num = parseInt(startD);
-    if (isNaN(num)) num = 0;
-    
-    const duplicateRecords = [];
-    
-    while (true) {
-        const d = num.toString().padStart(8, '0');
-        const cd = calculateCheckDigit(d);
-        const trackingFormatted = formatTrackingNumber(prefix, d, cd);
-        
-        const dupInfo = await checkTrackingDuplicateHistory(prefix, d, cd, cachedArchives);
-        if (!dupInfo) {
-            return { d, cd, trackingFormatted, duplicateRecords };
-        }
-        
-        duplicateRecords.push(dupInfo);
-        num += activeStep;
-    }
+// Renamed and refactored to just format and check once
+async function generateAndCheckTrackingNumber(prefix, d, cachedArchives = null) {
+    const cd = calculateCheckDigit(d);
+    const trackingFormatted = formatTrackingNumber(prefix, d, cd);
+    const dupInfo = await checkTrackingDuplicateHistory(prefix, d, cd, cachedArchives);
+    return { d, cd, trackingFormatted, duplicateRecord: dupInfo };
 }
 
 async function adjustSidebarTrackingNumberForStep() {
@@ -2844,11 +2831,11 @@ async function adjustSidebarTrackingNumberForStep() {
     const startD = (bulkToggle.checked ? num8StartInput.value : digitsInput.value).trim();
     if (startD.length !== 8) return;
     
-    const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
-    const nextAvail = await getNextAvailableTrackingNumber(p, startD, step);
-    
-    num8StartInput.value = nextAvail.d;
-    digitsInput.value = nextAvail.d;
+    const d = startD;
+    const cd = calculateCheckDigit(d);
+    const trackingFormatted = formatTrackingNumber(p, d, cd);
+    // Don't auto increment here anymore, let user fix it if it's dup.
+    // If we wanted to, we could, but for simplicity, we do nothing to the inputs.
     num8StartInput.dispatchEvent(new Event('input'));
 }
 
@@ -3012,13 +2999,14 @@ addBtn.onclick = async (e) => {
                  trackingFormatted = startD + (i > 0 ? `-${i}` : ''); 
               }
           } else {
-              const nextAvail = await getNextAvailableTrackingNumber(p, currentNum.toString().padStart(8, '0'), step, cachedArchives);
-              trackingFormatted = nextAvail.trackingFormatted;
-              lastGeneratedD = nextAvail.d;
-              currentNum = parseInt(nextAvail.d) + step;
+              const currentD = currentNum.toString().padStart(8, '0');
+              const checkResult = await generateAndCheckTrackingNumber(p, currentD, cachedArchives);
+              trackingFormatted = checkResult.trackingFormatted;
+              lastGeneratedD = checkResult.d;
+              currentNum = parseInt(checkResult.d) + step;
               
-              if (nextAvail.duplicateRecords && nextAvail.duplicateRecords.length > 0) {
-                  allBulkSkipped.push(...nextAvail.duplicateRecords);
+              if (checkResult.duplicateRecord) {
+                  allBulkSkipped.push(checkResult.duplicateRecord);
               }
           }
           
@@ -3104,39 +3092,17 @@ addBtn.onclick = async (e) => {
           num8StartInput.dispatchEvent(new Event('input'));
       }
       
-      // Alert once after the entire bulk generation completes!
+      // Alert if any duplicates were found and ABORT!
       if (allBulkSkipped.length > 0) {
-          let msg = `⚠️ ตรวจพบเลขพัสดุซ้ำ และระบบได้ทำการสอย/ข้ามไปใช้เลขถัดไปที่ไม่ซ้ำให้อัตโนมัติเรียบร้อยแล้ว:\n\n`;
-          // Dedup by trackingFormatted to avoid listing same duplicate multiple times
-          const uniqueSkipped = [];
-          const seenTracking = new Set();
-          allBulkSkipped.forEach(rec => {
-              if (!seenTracking.has(rec.trackingFormatted)) {
-                  seenTracking.add(rec.trackingFormatted);
-                  uniqueSkipped.push(rec);
-              }
-          });
+          if (loadingOverlay) loadingOverlay.style.display = 'none';
+          showDuplicateWarningModal(allBulkSkipped);
           
-          uniqueSkipped.slice(0, 10).forEach(rec => {
-              msg += `❌ เลขที่ข้าม: ${rec.trackingFormatted}\n`;
-              if (rec.source === 'current') {
-                  const tabNames = { 'EMS': 'EMS', 'REG': 'ลงทะเบียน', 'ECO': 'eCo-Post', 'PARCEL': 'พัสดุธรรมดา', 'CUSTOM': 'อื่นๆ (กำหนดเอง)' };
-                  const matchInfo = rec.matches.map(m => {
-                      const name = tabNames[m.serviceType] || m.serviceType;
-                      return `แท็บ ${name} แถวที่: ${m.index}`;
-                  }).join(', ');
-                  msg += `   • กำลังใช้อยู่ในใบนำส่งปัจจุบัน (${matchInfo})\n`;
-              } else {
-                  rec.matches.forEach(m => {
-                      msg += `   • เคยใช้ในใบนำส่ง: ${m.archiveId} (วันที่ ${m.date || 'ไม่ระบุ'})\n`;
-                      msg += `     ผู้รับ: ${m.recipient} -> ปลายทาง: ${m.destination}\n`;
-                  });
-              }
-          });
-          if (uniqueSkipped.length > 10) {
-              msg += `\n... และยังมีเลขที่ซ้ำถูกข้ามไปอีก ${uniqueSkipped.length - 10} รายการ`;
-          }
-          alert(msg);
+          // Revert shipments if we need to? Or wait, since shipments were ALREADY pushed in the loop
+          // we need to NOT push them if there's an error.
+          // Let's pop the last `count` elements!
+          shipments.splice(-count, count);
+          
+          return;
       }
   } else {
       if (!startD) return alert('กรุณากรอกข้อมูลเลขที่');
@@ -3153,26 +3119,10 @@ addBtn.onclick = async (e) => {
           finalD = nextAvail.d;
           trackingFormatted = nextAvail.trackingFormatted;
           
-          // Alert if any duplicates were skipped
-          if (nextAvail.duplicateRecords && nextAvail.duplicateRecords.length > 0) {
-              let msg = `⚠️ ตรวจพบเลขพัสดุซ้ำ และระบบได้เลื่อนไปใช้เลขถัดไปที่ไม่ซ้ำให้อัตโนมัติ:\n\n`;
-              nextAvail.duplicateRecords.forEach(rec => {
-                  msg += `❌ เลขที่ซ้ำ: ${rec.trackingFormatted}\n`;
-                  if (rec.source === 'current') {
-                      const tabNames = { 'EMS': 'EMS', 'REG': 'ลงทะเบียน', 'ECO': 'eCo-Post', 'PARCEL': 'พัสดุธรรมดา', 'CUSTOM': 'อื่นๆ (กำหนดเอง)' };
-                      const matchInfo = rec.matches.map(m => {
-                          const name = tabNames[m.serviceType] || m.serviceType;
-                          return `แท็บ ${name} แถวที่: ${m.index}`;
-                      }).join(', ');
-                      msg += `   • กำลังใช้ในใบนำส่งปัจจุบัน (${matchInfo})\n`;
-                  } else {
-                      rec.matches.forEach(m => {
-                          msg += `   • เคยใช้ในใบนำส่ง: ${m.archiveId} (วันที่ ${m.date || 'ไม่ระบุ'})\n`;
-                          msg += `     ผู้รับ: ${m.recipient} -> ปลายทาง: ${m.destination}\n`;
-                      });
-                  }
-              });
-              alert(msg);
+          // Alert if duplicate found and ABORT!
+          if (nextAvail && nextAvail.duplicateRecord) {
+              showDuplicateWarningModal([nextAvail.duplicateRecord]);
+              return;
           }
       }
       
@@ -3253,9 +3203,9 @@ addBtn.onclick = async (e) => {
       
       if (type !== 'CUSTOM') {
           const step = ((type === 'REG' && optArTracking.checked) || (type === 'EMS' && optAR.checked)) ? 2 : 1;
-          const nextAvailNum = await getNextAvailableTrackingNumber(p, (parseInt(finalD) + step).toString().padStart(8, '0'), step, cachedArchives);
-          digitsInput.value = nextAvailNum.d;
-          num8StartInput.value = nextAvailNum.d;
+          const nextStartD = (parseInt(finalD) + step).toString().padStart(8, '0');
+          digitsInput.value = nextStartD;
+          num8StartInput.value = nextStartD;
       }
       recipientInput.value = '';
       destInput.value = '';
